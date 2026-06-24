@@ -35,9 +35,15 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   اجرا می‌شود (سند 03 §2.1). خروجی N نود: با `producesMany=true` و `normalizeMany` (ADR-008)؛
   `normalize` تک‌نودی عمداً **خطای بلند** می‌دهد تا Silent Data Loss رخ ندهد (قانون ۹ ANTI_CHAOS).
   مصرف‌کننده‌ها از `normalizeAll(parser, extraction)` فکتوری استفاده می‌کنند.
+- **Sing-box Parser** (`core/parser/singbox/`، سند 04 Stage 05) — کانفیگ JSON با آرایه‌ی
+  `outbounds`/`endpoints`؛ اولین پارسر واقعیِ **چندنودی** (`producesMany`/`normalizeMany`، ADR-008).
+  نام‌های snake_case مخصوص sing-box (`server`/`server_port`/`type`، `tls.reality.public_key`، …) با
+  Priority Chain خودش به فیلدهای Canonical نگاشت می‌شوند؛ `security` از `tls.enabled`/`reality.enabled`
+  استنتاج می‌شود؛ WireGuard در `extensions.wireguard` (ADR-007). از Xray با نام فیلدها تفکیک می‌شود
+  (`type` در برابر `protocol`) تا Confidence تصادم نکند.
 - **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
-  `levenshtein/fuzzyKey/fuzzyMatch`، و `buildWireguardExtensions` (ADR-007)؛ جدول نگاشت از
-  `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
+  `levenshtein/fuzzyKey/fuzzyMatch`، `buildWireguardExtensions` (ADR-007)، و `repairJson`؛ جدول نگاشت
+  از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
 > بدون تغییر معتبر است.
@@ -71,7 +77,8 @@ npm run test:coverage
 
 ## گام بعدی
 
-Parserهای Phase 4 (**Sing-box**، **Clash/Clash-Meta**) که به بخش‌های WireGuard هم برخورد می‌کنند و
-از قرارداد `extensions.wireguard` (ADR-007) و helperهای اشتراکی استفاده خواهند کرد. سپس دیتاست خام
-۱۰۰تایی و گیت کامل Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط
-با Extend کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
+**Clash / Clash-Meta Parser** (Phase 4، سند 04 Stage 06) — YAML است و به یک تصمیم وابستگی نیاز
+دارد (افزودن کتابخانه‌ی YAML در برابر نوشتن Parser زیرمجموعه‌ی YAML) طبق سیاست وابستگی سند 14؛ این
+تصمیم سر Checkpoint بعدی گرفته می‌شود. سپس دیتاست خام ۱۰۰تایی و گیت کامل Parse→Validation طبق
+`docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
+`ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).

@@ -9,7 +9,8 @@ export { urlParser, registerUrlParser } from "./url/index.js";
 export {
   subscriptionParser, registerSubscriptionParser, parseSubscription,
 } from "./subscription/index.js";
+export { singboxParser, registerSingBoxParser } from "./singbox/index.js";
 export {
   resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
-  WIREGUARD_EXTENSION_NS, buildWireguardExtensions,
+  WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson,
 } from "./shared/index.js";
