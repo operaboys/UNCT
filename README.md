@@ -24,6 +24,13 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   (Stage 13.1) و نگاشت نام با Priority Chain (مثل `publicKey`→`pbk`، ثبت در `originalMappings`)، و
   Recovery مرحله‌ی 10/11 (ترمیم JSON خراب + Fuzzy Key با Levenshtein) — با قانون مطلق «هرگز
   uuid/password/pbk/sid را Invent نکن». VLESS/VMESS/Trojan/Shadowsocks با TLS/Reality/WS/gRPC.
+- **URL Parser** (`core/parser/url/`، سند 04 Stage 07) — اسکیم‌های
+  `vless/vmess/trojan/ss/hysteria2(hy2)/tuic/wireguard`. شامل لایه‌ی مجزای **Stage 12 — URL
+  Preprocessing** (`preprocess.js`؛ Escape/Normalize/Validate، با محافظت از Username/Password/UUID/
+  Path/Query)، رمزگشایی Base64 (vmess JSON، ss SIP002/legacy)، و Recovery مرحله‌ی 10/11 (Fuzzy Scheme
+  + پاک‌سازی Base64). کلیدهای WireGuard در `extensions` می‌نشینند (UNM Freeze دست‌نخورده).
+- **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain) و
+  `levenshtein/fuzzyKey/fuzzyMatch`؛ جدول نگاشت از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
 > بدون تغییر معتبر است.
@@ -57,6 +64,7 @@ npm run test:coverage
 
 ## گام بعدی
 
-Parserهای بعدی (URL، Sing-box، Clash، Subscription، WireGuard) — هرکدام فقط با Extend کردن
-`BaseParser` و ثبت در `ParserFactory`، بدون تغییر Parserهای موجود (سند 12 §6). سپس دیتاست خام ۱۰۰تایی
-و گیت کامل Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` اضافه می‌شود.
+**Subscription Parser** (سند 04 Stage 08) — Auto Decode/Split/Dedupe روی فهرست URLها، با
+بازاستفاده از URL Parser برای هر خط. سپس Sing-box/Clash، و در نهایت دیتاست خام ۱۰۰تایی و گیت کامل
+Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط با Extend کردن
+`BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
