@@ -1,0 +1,17 @@
+# Dependencies (dev-only — app itself stays Zero-Build / static)
+node_modules/
+
+# Test / coverage output
+coverage/
+.vitest/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Build artifacts (none expected in Phase 1 — kept for safety)
+dist/
+build/
+*.tsbuildinfo
