@@ -1,0 +1,19 @@
+{
+  "//": "Type-CHECK only (tsc --noEmit). The app ships as plain JS with no build step (ADR-005). This config never emits output.",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": []
+  },
+  "include": ["core/**/*.js", "core/**/*.d.ts", "tests/**/*.js"],
+  "exclude": ["node_modules", "dist", "build"]
+}

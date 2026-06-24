@@ -5,7 +5,24 @@
 ## وضعیت پروژه
 
 ✅ **Architecture Baseline** — تمام ۱۹ بلوپرینت معماری در `docs/blueprints/` نوشته و دو دور بازبینی شده‌اند.
-⏳ **Phase 1 (Foundation Layer)** — هنوز شروع نشده. این مرحله بعدی است.
+🚧 **Phase 1 (Foundation Layer)** — در حال انجام. لایه‌های زیر ساخته و تست شده‌اند:
+- **UNM** (`core/types/`, `core/unm/`) — Schema، Enumها، Factory با Immutability/Invariants (طبق سند 05 و ADR-002).
+- **Validation Engine** (`core/validator/`) — اعتبارسنجی Node-by-Node با Cross-Field (طبق Stage 13). پوشش تست > ۹۵٪.
+- **Error Code Registry** (`core/errors/`) — رجیستری مرکزی کدهای خطا با سطوح INFO/WARNING/ERROR/CRITICAL.
+- **Normalization Mapping Table** (`core/unm/mapper/`) — نگاشت مقدار خام به Enum استاندارد (Stage 13.1).
+- **Testing Infrastructure** — Vitest (dev-only، طبق ADR-005)، `tsc --noEmit` برای Type-Check.
+- **Foundation Acceptance Gate** (`tests/baseline-dataset/`) — در سطح UNM/Validation فعال است.
+
+> تصمیم Build-Path (Zero-Build در برابر Build-Step) دوباره بررسی و **Zero-Build موکول‌مانده** تأیید شد — ADR-005 بدون تغییر معتبر است. Parserها و دیتاست خام ۱۰۰تایی به Phase 2/3 موکول‌اند (توضیح در `tests/baseline-dataset/README.md`).
+
+### دستورها (dev-only)
+
+```
+npm install          # نصب ابزار توسعه (اپ خودش Zero-Build/استاتیک می‌ماند)
+npm test             # اجرای کل تست‌ها (Vitest)
+npm run typecheck    # بررسی تایپ بدون خروجی (tsc --noEmit)
+npm run test:coverage
+```
 
 ## قبل از هر کد: بخوان
 
@@ -27,4 +44,4 @@
 
 ## گام بعدی
 
-شروع Phase 1 طبق `09-DEVELOPMENT_ROADMAP.md`: ساخت ساختار پوشه (طبق `MASTER_FILE_STRUCTURE.md`)، سپس UNM + Validation Engine.
+تکمیل Foundation Acceptance Gate در سطح خام (نیازمند Parserها) و سپس Phase 2 (Parser Infrastructure / Factory) طبق `09-DEVELOPMENT_ROADMAP.md`. دیتاست خام ۱۰۰تایی و تست Recovery همراه با Parserها اضافه می‌شوند.

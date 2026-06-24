@@ -1,0 +1,19 @@
+{
+  "name": "unct",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Universal Network Config Toolkit — dev tooling only. The app itself stays Zero-Build / static (ADR-005).",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
+    "fake-indexeddb": "^6.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
