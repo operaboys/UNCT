@@ -12,53 +12,14 @@
  */
 
 import { selectOutbound, extractOutbound, PROXY_PROTOCOLS } from "./extract.js";
+import { levenshtein, fuzzyKey } from "../shared/fuzzy.js";
+
+// Re-exported so the public surface (xray/index.js) is unchanged after moving
+// these to the shared helper module — same functions, single source of truth.
+export { levenshtein, fuzzyKey };
 
 /** Canonical outbound-level keys we will fuzzy-match misspellings against. */
 const OUTBOUND_KEYS = Object.freeze(["protocol", "settings", "streamSettings", "tag"]);
-
-/**
- * Levenshtein edit distance (Stage 11 "Levenshtein Matching"). Pure helper.
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
-export function levenshtein(a, b) {
-  if (a === b) return 0;
-  if (a.length === 0) return b.length;
-  if (b.length === 0) return a.length;
-  /** @type {number[]} */
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 0; i < a.length; i++) {
-    const curr = [i + 1];
-    for (let j = 0; j < b.length; j++) {
-      const cost = a[i] === b[j] ? 0 : 1;
-      curr[j + 1] = Math.min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost);
-    }
-    prev = curr;
-  }
-  return prev[b.length];
-}
-
-/**
- * Find the key on `obj` that best matches `target` within `maxDist` edits.
- * Used to recover a misspelled key (`protocl` -> `protocol`) WITHOUT inventing
- * a value — it only re-points to a value that is already there.
- * @param {Record<string, unknown>} obj
- * @param {string} target
- * @param {number} [maxDist]
- * @returns {string | null} the actual key on obj, or null if none close enough
- */
-export function fuzzyKey(obj, target, maxDist = 2) {
-  if (Object.prototype.hasOwnProperty.call(obj, target)) return target;
-  /** @type {string | null} */
-  let best = null;
-  let bestDist = maxDist + 1;
-  for (const key of Object.keys(obj)) {
-    const d = levenshtein(key.toLowerCase(), target.toLowerCase());
-    if (d < bestDist) { bestDist = d; best = key; }
-  }
-  return bestDist <= maxDist ? best : null;
-}
 
 /**
  * Stage 10: repair common JSON breakage (comments, trailing commas).
