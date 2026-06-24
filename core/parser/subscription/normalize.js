@@ -6,9 +6,10 @@
  * UNMNode by REUSING the URL parser (parse -> normalize, with recover() on
  * failure) — the decode/extract logic is not re-implemented here.
  *
- * `normalizeFirst` exists only to satisfy the single-node BaseParser contract
- * (12 §2): it returns the first node. Consumers that want every node call
- * `normalizeSubscription` / `parseSubscription` instead.
+ * The single-node BaseParser `normalize` MUST NOT be used here: returning one
+ * node would silently drop the rest (Data Loss = Critical Failure, ANTI_CHAOS
+ * Rule 9). Instead this parser sets `producesMany = true` and exposes
+ * `normalizeMany` (ADR-008); its `normalize` throws loudly.
  *
  * @typedef {import("../../types/parser").RawExtraction} RawExtraction
  * @typedef {import("../../types/unm").UNMNode} UNMNode
@@ -67,15 +68,26 @@ export function normalizeSubscription(extraction) {
 }
 
 /**
- * Single-node BaseParser compliance — returns the first node only.
+ * Multi-node expansion for the BaseParser contract (ADR-008). This is the
+ * method callers reach when `producesMany` is true.
  * @param {RawExtraction} extraction
- * @returns {Readonly<UNMNode>}
- * @throws {Error} if the subscription produced no nodes.
+ * @returns {Readonly<UNMNode>[]}
  */
-export function normalizeFirst(extraction) {
-  const { nodes } = normalizeSubscription(extraction);
-  if (nodes.length === 0) {
-    throw new Error("Subscription normalize: no nodes produced (PARSE_EMPTY_SUBSCRIPTION)");
-  }
-  return nodes[0];
+export function normalizeMany(extraction) {
+  return normalizeSubscription(extraction).nodes;
+}
+
+/**
+ * Single-node `normalize` is invalid for a multi-node parser: it would silently
+ * drop every node after the first (Data Loss = Critical Failure, ANTI_CHAOS
+ * Rule 9). It throws loudly instead, directing callers to the right method.
+ * @param {RawExtraction} _extraction
+ * @returns {never}
+ */
+export function normalizeRefuse(_extraction) {
+  throw new Error(
+    "SubscriptionParser.normalize() is not valid: a subscription expands to many " +
+    "nodes. Check parser.producesMany and call normalizeMany() / parseSubscription() — " +
+    "using normalize() would silently drop nodes (ANTI_CHAOS Rule 9). See ADR-008.",
+  );
 }

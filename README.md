@@ -32,8 +32,9 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
 - **Subscription Parser** (`core/parser/subscription/`، سند 04 Stage 08) — ورودی Base64/TXT/Mixed،
   با Auto Decode/Split/Deduplicate/Validate/Normalize. **بازاستفاده‌ی صریح از URL Parser** برای هر خط
   (نه بازنویسی). Subscription Validation (تشخیص Empty/Broken-Base64/Duplicate) **قبل از** Split/Merge
-  اجرا می‌شود (سند 03 §2.1). خروجی N نود؛ API اصلی `parseSubscription`/`normalizeAll` است و
-  `normalize` قراردادی فقط نود اول را برمی‌گرداند.
+  اجرا می‌شود (سند 03 §2.1). خروجی N نود: با `producesMany=true` و `normalizeMany` (ADR-008)؛
+  `normalize` تک‌نودی عمداً **خطای بلند** می‌دهد تا Silent Data Loss رخ ندهد (قانون ۹ ANTI_CHAOS).
+  مصرف‌کننده‌ها از `normalizeAll(parser, extraction)` فکتوری استفاده می‌کنند.
 - **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
   `levenshtein/fuzzyKey/fuzzyMatch`، و `buildWireguardExtensions` (ADR-007)؛ جدول نگاشت از
   `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.

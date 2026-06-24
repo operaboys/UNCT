@@ -9,12 +9,34 @@
  * @typedef {import("../types/parser").BaseParser} BaseParser
  * @typedef {import("../types/parser").RawExtraction} RawExtraction
  * @typedef {import("../types/parser").ParseError} ParseError
+ * @typedef {import("../types/unm").UNMNode} UNMNode
  */
 
 import { assertImplementsBaseParser } from "./base/contract.js";
 
 /** Stage 02: Confidence < 50% -> "Unknown Format". */
 export const UNKNOWN_FORMAT_THRESHOLD = 50;
+
+/**
+ * Expand an extraction into ALL its nodes, dispatching on `producesMany`
+ * (ADR-008) so callers never have to know whether a parser is single- or
+ * multi-node. Single-node parsers yield a one-element array; multi-node
+ * parsers (Subscription) yield every node. This is the safe path that prevents
+ * the "call normalize(), silently lose the rest" footgun (ANTI_CHAOS Rule 9).
+ *
+ * @param {BaseParser} parser
+ * @param {RawExtraction} extraction
+ * @returns {Readonly<UNMNode>[]}
+ */
+export function normalizeAll(parser, extraction) {
+  if (parser.producesMany) {
+    if (typeof parser.normalizeMany !== "function") {
+      throw new Error("normalizeAll: parser.producesMany is true but normalizeMany() is missing (PARSE_CONTRACT_VIOLATION)");
+    }
+    return parser.normalizeMany(extraction);
+  }
+  return [parser.normalize(extraction)];
+}
 
 /**
  * @typedef {{ name: string, confidence: number }} Candidate

@@ -59,7 +59,17 @@ export interface BaseParser {
    */
   validateStructure(extraction: RawExtraction): ValidationObject;
 
-  /** Produce the final UNMNode (Stage 14, 05-UNIVERSAL_NODE_MODEL). */
+  /**
+   * Produce the final UNMNode (Stage 14, 05-UNIVERSAL_NODE_MODEL).
+   *
+   * Single-node parsers return one node. A parser that expands one input into
+   * MANY nodes (e.g. Subscription) sets `producesMany = true` and implements
+   * `normalizeMany`; for such a parser `normalize` MUST throw rather than return
+   * one node, because silently returning a single node would drop the rest —
+   * Data Loss = Critical Failure (ANTI_CHAOS Rule 9). Callers select the method
+   * via the `producesMany` flag, exactly as they select `parse`/`parseAsync`
+   * via `isAsync` (see ADR-008).
+   */
   normalize(extraction: RawExtraction): UNMNode;
 
   /**
@@ -69,9 +79,19 @@ export interface BaseParser {
    * (absolute rule, 04-PARSER_ENGINE Stage 11).
    *
    * `error` is the failure from a preceding `parse()` when the factory drives
-   * recovery; it is optional so recovery can also be invoked directly.
+   * recovery; it is optional so recovery can also be invoked directly (ADR-008).
    */
   recover(input: string, error?: ParseError): RawExtraction | null;
+
+  // ===== Multi-node parsers (ADR-008) =====
+  /**
+   * Set true by a parser that expands one input into many nodes (Subscription).
+   * Parallels `isAsync`: callers check this flag and call `normalizeMany`
+   * instead of `normalize`. When true, `normalize` throws (no silent loss).
+   */
+  producesMany?: boolean;
+  /** Required when `producesMany` is true: expand the extraction into all nodes. */
+  normalizeMany?(extraction: RawExtraction): UNMNode[];
 
   // ===== Reserved for future async Plugin Parsers (Phase 11) =====
   /** Default false. Current (non-Plugin) parsers must not set this. */

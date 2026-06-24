@@ -8,5 +8,5 @@ export {
 export { detectSubscription } from "./detect.js";
 export { decodeSubscription, isUrlLine } from "./decode.js";
 export { extractSubscription, splitAndDedupe } from "./extract.js";
-export { normalizeSubscription, normalizeFirst } from "./normalize.js";
+export { normalizeSubscription, normalizeMany, normalizeRefuse } from "./normalize.js";
 export { recoverSubscription } from "./recover.js";

@@ -32,4 +32,12 @@ export function assertImplementsBaseParser(parser, name) {
   if (parser.isAsync === true && typeof parser.parseAsync !== "function") {
     throw new Error(`BaseParser contract violation: "${name}" sets isAsync=true but does not implement parseAsync() (PARSE_CONTRACT_VIOLATION)`);
   }
+  // Multi-node parsers (ADR-008): producesMany must be paired with normalizeMany,
+  // mirroring the isAsync/parseAsync rule above.
+  if (parser.producesMany !== undefined && typeof parser.producesMany !== "boolean") {
+    throw new Error(`BaseParser contract violation: "${name}".producesMany must be a boolean if present (PARSE_CONTRACT_VIOLATION)`);
+  }
+  if (parser.producesMany === true && typeof parser.normalizeMany !== "function") {
+    throw new Error(`BaseParser contract violation: "${name}" sets producesMany=true but does not implement normalizeMany() (PARSE_CONTRACT_VIOLATION)`);
+  }
 }

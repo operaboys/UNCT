@@ -4,7 +4,7 @@ import {
   detectSubscription, decodeSubscription, extractSubscription,
   normalizeSubscription, recoverSubscription, splitAndDedupe,
 } from "../../core/parser/subscription/index.js";
-import { createParserFactory } from "../../core/parser/factory.js";
+import { createParserFactory, normalizeAll } from "../../core/parser/factory.js";
 import { registerUrlParser } from "../../core/parser/url/index.js";
 import { registerXrayParser } from "../../core/parser/xray/index.js";
 import { applyValidation } from "../../core/validator/apply-validation.js";
@@ -122,10 +122,10 @@ describe("SubscriptionParser — recovery (Stage 10/11)", () => {
   });
 });
 
-describe("SubscriptionParser.normalize — single-node contract compliance", () => {
-  it("returns the first node for the contract method", () => {
-    const node = subscriptionParser.normalize(extractSubscription(PLAIN_MIXED));
-    expect(node.protocol).toBe("vless");
+describe("SubscriptionParser.normalize — refuses to lose data (ADR-008, Rule 9)", () => {
+  it("throws loudly instead of silently returning only the first node", () => {
+    expect(() => subscriptionParser.normalize(extractSubscription(PLAIN_MIXED)))
+      .toThrow(/normalizeMany|ANTI_CHAOS Rule 9|ADR-008/);
   });
   it("validateStructure passes when lines exist, fails when empty", () => {
     expect(subscriptionParser.validateStructure(extractSubscription(PLAIN_MIXED)).overallValid).toBe(true);
@@ -133,13 +133,14 @@ describe("SubscriptionParser.normalize — single-node contract compliance", () 
   });
 });
 
-describe("SubscriptionParser — advisory hints + normalizeAll alias", () => {
+describe("SubscriptionParser — advisory hints + normalizeMany (ADR-008)", () => {
   it("exposes advisory-only hints (12 §2.1)", () => {
     expect(subscriptionParser.formatVersion?.()).toBe("subscription");
     expect(subscriptionParser.metadataHint?.()).toEqual({ parser: "SubscriptionParser" });
   });
-  it("normalizeAll is the multi-node API on the parser object", () => {
-    const { nodes } = subscriptionParser.normalizeAll(extractSubscription(PLAIN_MIXED));
+  it("declares producesMany and exposes normalizeMany as the multi-node API", () => {
+    expect(subscriptionParser.producesMany).toBe(true);
+    const nodes = subscriptionParser.normalizeMany?.(extractSubscription(PLAIN_MIXED));
     expect(nodes).toHaveLength(4);
   });
 });
@@ -156,5 +157,21 @@ describe("SubscriptionParser — end-to-end through ParserFactory", () => {
     // a single URL still goes to the URL parser
     expect(factory.selectParser(LINE_VLESS)?.name).toBe("url");
     expect(factory.list().sort()).toEqual(["subscription", "url", "xray"]);
+  });
+
+  it("normalizeAll() safely expands either parser kind to UNMNode[] (ADR-008)", () => {
+    const factory = createParserFactory();
+    registerUrlParser(factory);
+    registerSubscriptionParser(factory);
+
+    // multi-node: subscription -> every node
+    const sub = factory.selectParser(PLAIN_MIXED);
+    if (!sub) throw new Error("expected subscription parser");
+    expect(normalizeAll(sub.parser, sub.parser.parse(PLAIN_MIXED))).toHaveLength(4);
+
+    // single-node: url -> a one-element array (no special-casing by the caller)
+    const url = factory.selectParser(LINE_VLESS);
+    if (!url) throw new Error("expected url parser");
+    expect(normalizeAll(url.parser, url.parser.parse(LINE_VLESS))).toHaveLength(1);
   });
 });

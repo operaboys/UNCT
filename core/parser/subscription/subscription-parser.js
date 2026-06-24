@@ -4,10 +4,12 @@
  * — no existing parser touched). It REUSES the URL parser to turn each
  * subscription line into a node.
  *
- * Contract note: a subscription expands to MANY nodes, which does not fit the
- * single-node BaseParser shape. The canonical API is `parseSubscription()` /
- * `normalizeAll` (-> { nodes, report }); the contract `normalize` returns the
- * first node only, for type compatibility.
+ * Contract note (ADR-008): a subscription expands to MANY nodes. Rather than
+ * have `normalize` silently return one node (which would drop the rest — Data
+ * Loss = Critical Failure, ANTI_CHAOS Rule 9), this parser sets
+ * `producesMany = true` and implements `normalizeMany`. Its `normalize` throws.
+ * Callers select the method via `producesMany`, exactly as `isAsync` selects
+ * `parse`/`parseAsync`.
  *
  * @typedef {import("../../types/parser").BaseParser} BaseParser
  * @typedef {import("../../types/parser").RawExtraction} RawExtraction
@@ -16,7 +18,7 @@
 
 import { detectSubscription } from "./detect.js";
 import { extractSubscription } from "./extract.js";
-import { normalizeFirst, normalizeSubscription } from "./normalize.js";
+import { normalizeRefuse, normalizeMany, normalizeSubscription } from "./normalize.js";
 import { recoverSubscription } from "./recover.js";
 
 /**
@@ -41,15 +43,16 @@ function validateStructure(extraction) {
   };
 }
 
-/** @type {BaseParser & { normalizeAll: typeof normalizeSubscription }} */
+/** @type {BaseParser} */
 export const subscriptionParser = {
   detect: detectSubscription,
   parse: extractSubscription,
   validateStructure,
-  normalize: normalizeFirst,
+  // Multi-node parser (ADR-008): normalize() refuses; normalizeMany() expands.
+  producesMany: true,
+  normalize: normalizeRefuse,
+  normalizeMany,
   recover: recoverSubscription,
-  // Beyond the single-node contract: expand the whole subscription to N nodes.
-  normalizeAll: normalizeSubscription,
   formatVersion: () => "subscription",
   metadataHint: () => ({ parser: "SubscriptionParser" }),
 };

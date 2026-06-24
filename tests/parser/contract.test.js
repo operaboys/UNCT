@@ -39,4 +39,19 @@ describe("assertImplementsBaseParser — runtime BaseParser Contract (12 §2)", 
     const ok = makeMockParser({ isAsync: true, parseAsync: async () => ({ fields: {} }) });
     expect(() => assertImplementsBaseParser(ok, "ok")).not.toThrow();
   });
+
+  it("rejects a non-boolean producesMany (ADR-008)", () => {
+    const broken = makeMockParser({ producesMany: /** @type {any} */ ("yes") });
+    expect(() => assertImplementsBaseParser(broken, "broken")).toThrow(/producesMany.*boolean/);
+  });
+
+  it("rejects producesMany=true without normalizeMany (ADR-008)", () => {
+    const broken = makeMockParser({ producesMany: true });
+    expect(() => assertImplementsBaseParser(broken, "broken")).toThrow(/normalizeMany/);
+  });
+
+  it("accepts producesMany=true paired with normalizeMany (ADR-008)", () => {
+    const ok = makeMockParser({ producesMany: true, normalizeMany: () => [] });
+    expect(() => assertImplementsBaseParser(ok, "ok")).not.toThrow();
+  });
 });
