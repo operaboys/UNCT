@@ -29,8 +29,14 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   Preprocessing** (`preprocess.js`؛ Escape/Normalize/Validate، با محافظت از Username/Password/UUID/
   Path/Query)، رمزگشایی Base64 (vmess JSON، ss SIP002/legacy)، و Recovery مرحله‌ی 10/11 (Fuzzy Scheme
   + پاک‌سازی Base64). کلیدهای WireGuard در `extensions` می‌نشینند (UNM Freeze دست‌نخورده).
-- **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain) و
-  `levenshtein/fuzzyKey/fuzzyMatch`؛ جدول نگاشت از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
+- **Subscription Parser** (`core/parser/subscription/`، سند 04 Stage 08) — ورودی Base64/TXT/Mixed،
+  با Auto Decode/Split/Deduplicate/Validate/Normalize. **بازاستفاده‌ی صریح از URL Parser** برای هر خط
+  (نه بازنویسی). Subscription Validation (تشخیص Empty/Broken-Base64/Duplicate) **قبل از** Split/Merge
+  اجرا می‌شود (سند 03 §2.1). خروجی N نود؛ API اصلی `parseSubscription`/`normalizeAll` است و
+  `normalize` قراردادی فقط نود اول را برمی‌گرداند.
+- **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
+  `levenshtein/fuzzyKey/fuzzyMatch`، و `buildWireguardExtensions` (ADR-007)؛ جدول نگاشت از
+  `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
 > بدون تغییر معتبر است.
@@ -64,7 +70,7 @@ npm run test:coverage
 
 ## گام بعدی
 
-**Subscription Parser** (سند 04 Stage 08) — Auto Decode/Split/Dedupe روی فهرست URLها، با
-بازاستفاده از URL Parser برای هر خط. سپس Sing-box/Clash، و در نهایت دیتاست خام ۱۰۰تایی و گیت کامل
-Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط با Extend کردن
-`BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
+Parserهای Phase 4 (**Sing-box**، **Clash/Clash-Meta**) که به بخش‌های WireGuard هم برخورد می‌کنند و
+از قرارداد `extensions.wireguard` (ADR-007) و helperهای اشتراکی استفاده خواهند کرد. سپس دیتاست خام
+۱۰۰تایی و گیت کامل Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط
+با Extend کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).

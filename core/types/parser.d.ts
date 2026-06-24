@@ -67,8 +67,11 @@ export interface BaseParser {
    * `null` if nothing could be recovered. Structure/Syntax only — recovery
    * must NEVER invent uuid, password, pbk, sid, or any other security field
    * (absolute rule, 04-PARSER_ENGINE Stage 11).
+   *
+   * `error` is the failure from a preceding `parse()` when the factory drives
+   * recovery; it is optional so recovery can also be invoked directly.
    */
-  recover(input: string, error: ParseError): RawExtraction | null;
+  recover(input: string, error?: ParseError): RawExtraction | null;
 
   // ===== Reserved for future async Plugin Parsers (Phase 11) =====
   /** Default false. Current (non-Plugin) parsers must not set this. */

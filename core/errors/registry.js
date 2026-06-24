@@ -33,6 +33,11 @@ export const ERROR_CODES = Object.freeze({
   PARSE_UNMAPPED_VALUE:   { code: "PARSE_UNMAPPED_VALUE",   layer: "PARSE", severity: "warning",  message: "A value was not found in the normalization map; protocol default applied." },
   PARSE_DNS_AS_ADDRESS:   { code: "PARSE_DNS_AS_ADDRESS",   layer: "PARSE", severity: "warning",  message: "A DNS address was about to be used as a node address; ignored." },
 
+  // ----- Subscription (Stage 08, validated before Merge/Split — 03 §2.1) -----
+  PARSE_EMPTY_SUBSCRIPTION: { code: "PARSE_EMPTY_SUBSCRIPTION", layer: "PARSE", severity: "error",   message: "Subscription contains no config lines after decoding." },
+  PARSE_DUPLICATE_PAYLOAD:  { code: "PARSE_DUPLICATE_PAYLOAD",  layer: "PARSE", severity: "info",    message: "Duplicate subscription line(s) were removed." },
+  PARSE_LINE_FAILED:        { code: "PARSE_LINE_FAILED",        layer: "PARSE", severity: "warning", message: "A subscription line could not be parsed and was skipped." },
+
   // ----- Recovery (Stages 10-11) -----
   REC_STRUCTURE_REPAIRED: { code: "REC_STRUCTURE_REPAIRED", layer: "REC",   severity: "info",     message: "Broken structure was recovered." },
   REC_KEY_FUZZY_MATCHED:  { code: "REC_KEY_FUZZY_MATCHED",  layer: "REC",   severity: "info",     message: "A misspelled key was fuzzy-matched to a known field." },
