@@ -17,6 +17,7 @@ import {
 } from "../../unm/mapper/normalization-map.js";
 import { DEFAULT_NETWORK, DEFAULT_SECURITY } from "../../unm/schema/defaults.js";
 import { resolvePriority } from "../shared/priority.js";
+import { buildWireguardExtensions } from "../shared/wireguard.js";
 
 export const PARSER_NAME = "URLParser";
 
@@ -137,15 +138,12 @@ export function normalizeUrl(extraction) {
   const alpn = parseAlpn(fields.alpn);
   if (alpn !== undefined) input.alpn = alpn;
 
-  // WireGuard keys are not part of the frozen UNM core — keep them in the
-  // sanctioned plugin/extension namespace (05 §2 extensions), never on the node.
+  // WireGuard keys are not part of the frozen UNM core — they go under the
+  // fixed extensions.wireguard namespace (ADR-007), built via the shared helper
+  // so every parser writes the same shape. Never placed on the node itself.
   if (protocol === "wireguard") {
-    /** @type {Record<string, unknown>} */
-    const wg = {};
-    if (typeof fields.privateKey === "string") wg.privateKey = fields.privateKey;
-    if (typeof fields.publicKey === "string") wg.publicKey = fields.publicKey;
-    if (typeof fields.presharedKey === "string") wg.presharedKey = fields.presharedKey;
-    if (Object.keys(wg).length) input.extensions = { wireguard: wg };
+    const ext = buildWireguardExtensions(fields);
+    if (ext) input.extensions = ext;
   }
 
   return createNode(/** @type {any} */ (input));

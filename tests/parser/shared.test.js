@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { resolvePriority, levenshtein, fuzzyKey, fuzzyMatch } from "../../core/parser/shared/index.js";
+import {
+  resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
+  buildWireguardExtensions, WIREGUARD_EXTENSION_NS,
+} from "../../core/parser/shared/index.js";
 
 describe("shared/priority — resolvePriority (05 §2)", () => {
   it("returns the highest-priority present synonym and records all present ones", () => {
@@ -59,5 +62,31 @@ describe("shared/fuzzy — fuzzyMatch", () => {
   });
   it("returns null when no candidate is close enough", () => {
     expect(fuzzyMatch("xyzzy", ["vless", "vmess"], 2)).toBeNull();
+  });
+});
+
+describe("shared/wireguard — buildWireguardExtensions (ADR-007)", () => {
+  it("uses the fixed namespace key", () => {
+    expect(WIREGUARD_EXTENSION_NS).toBe("wireguard");
+  });
+  it("includes only present keys and coerces list/int types", () => {
+    const ext = buildWireguardExtensions({
+      privateKey: "pk", publicKey: "pub", allowedIPs: "0.0.0.0/0, ::/0",
+      dns: ["1.1.1.1"], mtu: "1420", persistentKeepalive: 25, endpoint: "h:51820",
+    });
+    expect(ext).toEqual({
+      wireguard: {
+        privateKey: "pk", publicKey: "pub", endpoint: "h:51820",
+        allowedIPs: ["0.0.0.0/0", "::/0"], dns: ["1.1.1.1"],
+        mtu: 1420, persistentKeepalive: 25,
+      },
+    });
+  });
+  it("returns null when no WireGuard key is present", () => {
+    expect(buildWireguardExtensions({ foo: "bar" })).toBeNull();
+  });
+  it("drops non-integer mtu/keepalive rather than storing garbage", () => {
+    const ext = buildWireguardExtensions({ privateKey: "pk", mtu: "not-a-number" });
+    expect(ext).toEqual({ wireguard: { privateKey: "pk" } });
   });
 });

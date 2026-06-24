@@ -199,6 +199,17 @@ function extractStandard(scheme, url) {
   if (q.headertype != null) fields.headerType = dec(q.headertype);
   if (q.publickey != null) fields.publicKey = dec(q.publickey);
   if (q.presharedkey != null) fields.presharedKey = dec(q.presharedkey);
+
+  // WireGuard-specific query params (mapped into extensions.wireguard later,
+  // per ADR-007 — never onto the frozen UNM core).
+  if (scheme === "wireguard") {
+    if (q.allowedips != null) fields.allowedIPs = dec(q.allowedips);
+    if (q.dns != null) fields.dns = dec(q.dns);
+    if (q.mtu != null) fields.mtu = dec(q.mtu);
+    if (q.keepalive != null) fields.persistentKeepalive = dec(q.keepalive);
+    if (q.persistentkeepalive != null) fields.persistentKeepalive = dec(q.persistentkeepalive);
+    if (q.reserved != null) fields.reserved = dec(q.reserved);
+  }
   return fields;
 }
 

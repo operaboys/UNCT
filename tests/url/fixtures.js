@@ -45,9 +45,10 @@ export const TUIC =
 export const HY2 =
   "hy2://hy2-pass@hy.example.com:8443?sni=hy.example.com#hy2-node";
 
-/** WireGuard — keys go to extensions, never onto the frozen UNM core. */
+/** WireGuard — keys go to extensions.wireguard (ADR-007), never onto UNM core. */
 export const WIREGUARD =
-  "wireguard://privkeyAAA@wg.example.com:51820?publickey=pubkeyBBB&presharedkey=pskCCC#wg-node";
+  "wireguard://privkeyAAA@wg.example.com:51820?publickey=pubkeyBBB&presharedkey=pskCCC" +
+  "&allowedips=0.0.0.0/0,%3A%3A/0&dns=1.1.1.1&mtu=1420&keepalive=25#wg-node";
 
 /** Misspelled scheme — Stage 11 fuzzy recovery target (vmes -> vmess). */
 export const MISSPELLED_SCHEME = "vmes://" + btoa(JSON.stringify(VMESS_OBJ));

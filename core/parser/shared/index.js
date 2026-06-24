@@ -4,3 +4,4 @@
  */
 export { resolvePriority } from "./priority.js";
 export { levenshtein, fuzzyKey, fuzzyMatch } from "./fuzzy.js";
+export { WIREGUARD_EXTENSION_NS, buildWireguardExtensions } from "./wireguard.js";
