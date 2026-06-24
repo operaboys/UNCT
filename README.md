@@ -4,16 +4,24 @@
 
 ## وضعیت پروژه
 
-✅ **Architecture Baseline** — تمام ۱۹ بلوپرینت معماری در `docs/blueprints/` نوشته و دو دور بازبینی شده‌اند.
-🚧 **Phase 1 (Foundation Layer)** — در حال انجام. لایه‌های زیر ساخته و تست شده‌اند:
-- **UNM** (`core/types/`, `core/unm/`) — Schema، Enumها، Factory با Immutability/Invariants (طبق سند 05 و ADR-002).
-- **Validation Engine** (`core/validator/`) — اعتبارسنجی Node-by-Node با Cross-Field (طبق Stage 13). پوشش تست > ۹۵٪.
-- **Error Code Registry** (`core/errors/`) — رجیستری مرکزی کدهای خطا با سطوح INFO/WARNING/ERROR/CRITICAL.
-- **Normalization Mapping Table** (`core/unm/mapper/`) — نگاشت مقدار خام به Enum استاندارد (Stage 13.1).
-- **Testing Infrastructure** — Vitest (dev-only، طبق ADR-005)، `tsc --noEmit` برای Type-Check.
-- **Foundation Acceptance Gate** (`tests/baseline-dataset/`) — در سطح UNM/Validation فعال است.
+✅ **Phase 1 (Foundation Layer)** — کامل. UNM (`core/types/`, `core/unm/`) با Immutability/Invariants
+(سند 05، ADR-002)، Validation Engine Node-by-Node با Cross-Field (`core/validator/`, Stage 13، پوشش
+تست > ۹۵٪)، Error Code Registry (`core/errors/`)، Normalization Mapping Table (`core/unm/mapper/`،
+Stage 13.1)، Testing Infrastructure (Vitest dev-only طبق ADR-005، `tsc --noEmit`)، و Foundation
+Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامنه‌ی دقیق در
+`docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`). نسخه‌ی Schema جداگانه از نسخه‌ی سند است: `UNM_SCHEMA_VERSION`
+در `core/unm/registry/schema-registry.js`.
 
-> تصمیم Build-Path (Zero-Build در برابر Build-Step) دوباره بررسی و **Zero-Build موکول‌مانده** تأیید شد — ADR-005 بدون تغییر معتبر است. Parserها و دیتاست خام ۱۰۰تایی به Phase 2/3 موکول‌اند — دلیل و دامنه‌ی دقیق در `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` ثبت شده (جزئیات اجرایی در `tests/baseline-dataset/README.md`).
+🚧 **Phase 2 (Parser Infrastructure)** — در حال انجام. تا اینجا:
+- **BaseParser Contract** (`core/types/parser.d.ts` + اجرای Runtime در `core/parser/base/`) — پنج متد
+  الزامی (`detect`/`parse`/`validateStructure`/`normalize`/`recover`) و دو فیلد رزروشده
+  (`isAsync?`/`parseAsync?` برای Plugin Parsers آینده، Phase 11)، طبق سند 12 §2.
+- **ParserFactory** (`core/parser/factory.js`) — ثبت Parser، Confidence Scoring (Highest Confidence
+  Wins، آستانه‌ی Unknown Format = ۵۰٪)، و زنجیره‌ی Fallback (Primary → Secondary → ...) طبق سند 12
+  §4/§5. هنوز هیچ Parser واقعی (Xray و غیره) ثبت نشده — این Checkpoint فقط Contract + Factory است.
+
+> تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
+> بدون تغییر معتبر است.
 
 ### دستورها (dev-only)
 
@@ -44,4 +52,7 @@ npm run test:coverage
 
 ## گام بعدی
 
-تکمیل Foundation Acceptance Gate در سطح خام (نیازمند Parserها) و سپس Phase 2 (Parser Infrastructure / Factory) طبق `09-DEVELOPMENT_ROADMAP.md`. دیتاست خام ۱۰۰تایی و تست Recovery همراه با Parserها اضافه می‌شوند.
+اولین Parser واقعی: **Xray Parser** (Priority: Highest، سند 04 Stage 04) به‌همراه Stage 10/11
+(Error Recovery + Fuzzy Recovery — هرگز uuid/password/pbk/sid را Invent نکن) و تکمیل Normalization
+Mapping Table برای فیلدهای بیشتر. بعد از اولین Parser، دیتاست خام ۱۰۰تایی و گیت کامل
+Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` اضافه می‌شود.
