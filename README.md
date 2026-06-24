@@ -18,7 +18,12 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   (`isAsync?`/`parseAsync?` برای Plugin Parsers آینده، Phase 11)، طبق سند 12 §2.
 - **ParserFactory** (`core/parser/factory.js`) — ثبت Parser، Confidence Scoring (Highest Confidence
   Wins، آستانه‌ی Unknown Format = ۵۰٪)، و زنجیره‌ی Fallback (Primary → Secondary → ...) طبق سند 12
-  §4/§5. هنوز هیچ Parser واقعی (Xray و غیره) ثبت نشده — این Checkpoint فقط Contract + Factory است.
+  §4/§5.
+- **Xray Parser** (`core/parser/xray/`، Priority: Highest، سند 04 Stage 04) — تشخیص Xray JSON،
+  استخراج ساختاری از `outbounds[].settings.vnext/servers` (تفکیک DNS از Server Address)، نگاشت مقدار
+  (Stage 13.1) و نگاشت نام با Priority Chain (مثل `publicKey`→`pbk`، ثبت در `originalMappings`)، و
+  Recovery مرحله‌ی 10/11 (ترمیم JSON خراب + Fuzzy Key با Levenshtein) — با قانون مطلق «هرگز
+  uuid/password/pbk/sid را Invent نکن». VLESS/VMESS/Trojan/Shadowsocks با TLS/Reality/WS/gRPC.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
 > بدون تغییر معتبر است.
@@ -52,7 +57,6 @@ npm run test:coverage
 
 ## گام بعدی
 
-اولین Parser واقعی: **Xray Parser** (Priority: Highest، سند 04 Stage 04) به‌همراه Stage 10/11
-(Error Recovery + Fuzzy Recovery — هرگز uuid/password/pbk/sid را Invent نکن) و تکمیل Normalization
-Mapping Table برای فیلدهای بیشتر. بعد از اولین Parser، دیتاست خام ۱۰۰تایی و گیت کامل
-Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` اضافه می‌شود.
+Parserهای بعدی (URL، Sing-box، Clash، Subscription، WireGuard) — هرکدام فقط با Extend کردن
+`BaseParser` و ثبت در `ParserFactory`، بدون تغییر Parserهای موجود (سند 12 §6). سپس دیتاست خام ۱۰۰تایی
+و گیت کامل Parse→Validation طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` اضافه می‌شود.

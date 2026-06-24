@@ -1,0 +1,9 @@
+/**
+ * XrayParser — public entry point (04-PARSER_ENGINE Stage 04).
+ * @module core/parser/xray
+ */
+export { xrayParser, registerXrayParser } from "./xray-parser.js";
+export { detectXray } from "./detect.js";
+export { parseXray, selectOutbound, extractOutbound, PROXY_PROTOCOLS } from "./extract.js";
+export { normalizeXray, resolvePriority, PRIORITY_CHAINS, PARSER_NAME } from "./normalize.js";
+export { recoverXray, repairJson, fuzzyKey, levenshtein } from "./recover.js";

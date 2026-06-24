@@ -26,6 +26,8 @@ export interface RawExtraction {
   originalMappings?: Record<string, string>;
   /** Non-fatal notes produced while extracting (Stage 01/10 style warnings). */
   warnings?: string[];
+  /** Structural repairs applied during recovery (Stage 10/11) — never security data. */
+  recoveryActions?: string[];
   /** Original input (or the relevant slice of it), kept for recovery/debugging. */
   raw?: string;
 }
