@@ -4,12 +4,10 @@ Physical home of the Baseline Test Dataset (15-TESTING_FRAMEWORK §5, **MANDATOR
 
 ## Two layers — and why they land in different phases
 
-The full dataset in 15-TESTING_FRAMEWORK §5 (100 raw configs: 50 valid / 30
-partially-broken / 20 invalid, plus a 20-config immutable Golden subset) exercises
-the **Parsers** — `Raw config text → Parser → UNM`. Parsers are built in Phase 2/3
-(09-DEVELOPMENT_ROADMAP). Those raw-text fixtures and the parser pass-rate gate are
-therefore seeded **when the parsers exist**, not before — writing them now would
-mean asserting a pass rate against code that does not exist yet.
+The Foundation Acceptance Gate is scoped in two stages across phases; the
+rationale and the formal decision are recorded in
+[`docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`](../../docs/adr/ADR-006-PHASE1-GATE-SCOPE.md).
+This file documents only the day-to-day mechanics — see the ADR for *why*.
 
 What Phase 1 *can* and *does* gate is everything below the parser:
 

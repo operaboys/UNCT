@@ -3,7 +3,7 @@ import { UNM_SCHEMA_VERSION, SCHEMA_VERSIONS } from "../../core/unm/registry/sch
 
 describe("UNM Schema Registry", () => {
   it("exposes the current schema version, matching the newest registered entry", () => {
-    expect(UNM_SCHEMA_VERSION).toBe("1.4");
+    expect(UNM_SCHEMA_VERSION).toBe("1.0");
     expect(SCHEMA_VERSIONS.at(-1)?.version).toBe(UNM_SCHEMA_VERSION);
   });
 

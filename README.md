@@ -13,7 +13,7 @@
 - **Testing Infrastructure** — Vitest (dev-only، طبق ADR-005)، `tsc --noEmit` برای Type-Check.
 - **Foundation Acceptance Gate** (`tests/baseline-dataset/`) — در سطح UNM/Validation فعال است.
 
-> تصمیم Build-Path (Zero-Build در برابر Build-Step) دوباره بررسی و **Zero-Build موکول‌مانده** تأیید شد — ADR-005 بدون تغییر معتبر است. Parserها و دیتاست خام ۱۰۰تایی به Phase 2/3 موکول‌اند (توضیح در `tests/baseline-dataset/README.md`).
+> تصمیم Build-Path (Zero-Build در برابر Build-Step) دوباره بررسی و **Zero-Build موکول‌مانده** تأیید شد — ADR-005 بدون تغییر معتبر است. Parserها و دیتاست خام ۱۰۰تایی به Phase 2/3 موکول‌اند — دلیل و دامنه‌ی دقیق در `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` ثبت شده (جزئیات اجرایی در `tests/baseline-dataset/README.md`).
 
 ### دستورها (dev-only)
 
