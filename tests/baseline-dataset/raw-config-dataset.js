@@ -338,15 +338,14 @@ PersistentKeepalive = 15
 // ===========================================================================
 // PARTIALLY BROKEN (30) — recoverable, must yield ≥1 VALID node
 //
-// IMPORTANT (honest scoping): every sample here is one the ParserFactory can
-// DETECT (confidence ≥ threshold) so the pipeline routes it to parse()/recover().
-// Two real recover() features are intentionally NOT exercised here because they
-// are unreachable through the factory by design — a misspelled URL scheme
-// (vmes://) and a corrupted-alphabet Base64 subscription both fail DETECTION, so
-// no parser is ever selected to recover them. Those paths are covered by the
-// per-parser unit tests that call recover() directly. The factory-reachable
-// recovery surface (corrupt vmess payload, broken JSON, tab YAML, misspelled WG
-// section, junk subscription lines) is what a real pipeline can actually salvage.
+// every sample here is one the ParserFactory can DETECT (confidence ≥
+// threshold) so the pipeline routes it to parse()/recover(). A misspelled URL
+// scheme (vmes://) and a lightly-polluted Base64 subscription used to fail
+// DETECTION outright (no parser selected, recover() unreachable) — ADR-009
+// closed that gap with bounded fuzzy tolerance in detectUrl/detectSubscription;
+// both cases are exercised end-to-end via dedicated tests in tests/url/ and
+// tests/subscriptions/ rather than added to this dataset, since they test the
+// Detection layer specifically, not general parser recovery.
 // ===========================================================================
 
 /** @type {Sample[]} */

@@ -32,6 +32,17 @@ describe("SubscriptionParser.detect (Stage 02)", () => {
   });
 });
 
+describe("SubscriptionParser.detect — lightly-polluted Base64 tolerance (ADR-009)", () => {
+  it("scores a Base64 blob with a few stray injected characters at mid confidence", () => {
+    const score = detectSubscription(BASE64_DIRTY);
+    expect(score).toBeGreaterThanOrEqual(50);
+    expect(score).toBeLessThan(90);
+  });
+  it("rejects Base64 that decodes to no URLs even after sanitizing (no false positive)", () => {
+    expect(detectSubscription(BROKEN_BASE64)).toBe(0);
+  });
+});
+
 describe("Subscription decode (Stage 08 Auto Decode)", () => {
   it("decodes a Base64 blob to text", () => {
     const r = decodeSubscription(BASE64_MIXED);
@@ -157,6 +168,21 @@ describe("SubscriptionParser — end-to-end through ParserFactory", () => {
     // a single URL still goes to the URL parser
     expect(factory.selectParser(LINE_VLESS)?.name).toBe("url");
     expect(factory.list().sort()).toEqual(["subscription", "url", "xray"]);
+  });
+
+  it("recovers a lightly-polluted Base64 subscription end-to-end through the factory fallback chain (ADR-009)", () => {
+    // detect() must score BASE64_DIRTY >= UNKNOWN_FORMAT_THRESHOLD so the
+    // subscription parser is even offered as a candidate; parse() then throws
+    // on the broken Base64, and recover() sanitizes it (already covered by the
+    // direct recoverSubscription() unit test above) — this proves the chain.
+    const factory = createParserFactory();
+    registerSubscriptionParser(factory);
+    const { name, extraction, recovered } = factory.parseWithFallback(BASE64_DIRTY);
+    expect(name).toBe("subscription");
+    expect(recovered).toBe(true);
+    const nodes = normalizeAll(factory.get(name), extraction).map(applyValidation);
+    expect(nodes.length).toBeGreaterThanOrEqual(3);
+    expect(nodes.every((n) => n.validation.overallValid)).toBe(true);
   });
 
   it("normalizeAll() safely expands either parser kind to UNMNode[] (ADR-008)", () => {

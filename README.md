@@ -96,6 +96,15 @@ npm run test:coverage
 طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`): دیتاست خام ۱۰۰تایی (۵۰ Valid / ۳۰ Partially-Broken /
 ۲۰ Invalid، پوشش هر ۷ پروتکل و هر ۶ فرمت) از مسیر کامل `Raw → ParserFactory (selectParser + زنجیره‌ی
 Fallback §5) → normalizeMany/normalize → applyValidation` عبور داده شد؛ Pass Rate **۱۰۰٪** (Valid
-۵۰/۵۰، Broken ۳۰/۳۰ با Recovery، Invalid ۲۰/۲۰ بدون False-Positive). گام بعدی فازهای بعدی Roadmap
-(Analyzer/Converter/Worker/UI) است. هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
-`ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
+۵۰/۵۰، Broken ۳۰/۳۰ با Recovery، Invalid ۲۰/۲۰ بدون False-Positive).
+
+**شکاف Detection Threshold رفع شد** (`docs/adr/ADR-009-DETECTION-FUZZY-TOLERANCE.md`): اسکیم
+URL تایپوشده (`vmes://`) و Base64 ساب‌اسکریپشن کمی‌آلوده هر دو قبلاً در همان مرحله‌ی Detection
+رد می‌شدند و `recover()`‌شان هرگز اجرا نمی‌شد. حالا `detectUrl`/`detectSubscription` با تحمل
+محدود (`fuzzyMatch` با `maxDist=2` روی نام اسکیم؛ نسبت آلودگی ≤۱۵٪ روی Base64) امتیاز میانی
+(۵۵) می‌دهند — بالای آستانه‌ی ۵۰ ولی پایین‌تر از تطبیق دقیق — تا `recover()`‌های موجود
+(بدون تغییر در Extract/Normalize) قابل‌دسترس شوند؛ با تست end-to-end از طریق
+`parseWithFallback`.
+
+گام بعدی فازهای بعدی Roadmap (Analyzer/Converter/Worker/UI) است. هر Parser جدید فقط با Extend
+کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).

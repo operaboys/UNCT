@@ -45,11 +45,16 @@ criteria, broken down by protocol and by category:
   real `recover()`), and
 - **invalid** must never yield a valid node (false-positive rate <2%).
 
-The test prints a full `[GATE]` breakdown to the test output. Honest scoping
-note: two `recover()` features (misspelled URL scheme, corrupted-alphabet Base64
-subscription) are unreachable through the factory because they fail *detection*
-before any parser is selected; those paths stay covered by the per-parser unit
-tests that call `recover()` directly, and are documented in the dataset header.
+The test prints a full `[GATE]` breakdown to the test output.
+
+Two `recover()` features (misspelled URL scheme, lightly-polluted Base64
+subscription) were previously unreachable through the factory because they
+failed *detection* before any parser was selected. `ADR-009` closed this gap
+with bounded fuzzy tolerance in `detectUrl`/`detectSubscription` (mid
+confidence score, well below a clean match, so it never outranks a real
+config); both paths are now reachable end-to-end via `parseWithFallback` and
+covered by dedicated tests in `tests/url/` and `tests/subscriptions/`, in
+addition to the existing per-parser unit tests that call `recover()` directly.
 
 The Golden subset (the `unm-fixtures.js` valid set) stays the immutable UNM-level
 reference (never modified, never removed — 15 §5).
