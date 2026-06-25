@@ -14,6 +14,21 @@
  * + track) is documented and reasoned through in ADR-010 — see that ADR for
  * *why* this shape, this file is the implementation.
  *
+ * On SharedArrayBuffer (doc 10 §3): doc 10 mandates SAB *feature detection
+ * with a MessageChannel fallback* — but only as a guard for the case where
+ * SAB is actually used to move large raw buffers across the thread boundary.
+ * This engine never reaches that case: doc 10 §3's companion rule "Flatten
+ * Before PostMessage" + the §"Minimal Result" policy mean a worker returns a
+ * small, already-projected flat object (see `parser.worker.js#flattenNode`),
+ * not a large raw payload. With nothing large to transfer, structured-clone
+ * `postMessage` is correct and SAB's zero-copy win (which only pays off for
+ * big ArrayBuffers, and additionally demands COOP/COEP cross-origin isolation
+ * this zero-build static-file app can't assume) does not apply. So there is
+ * deliberately no SAB code path here to feature-detect — the detection rule is
+ * satisfied vacuously. If a future worker ever needs to ship a large raw
+ * buffer, THAT is where the §3 `typeof SharedArrayBuffer !== "undefined"`
+ * check + MessageChannel fallback must be added.
+ *
  * @typedef {{ postMessage(data: unknown): void, addEventListener(type: "message"|"error", cb: (evt: { data?: unknown, message?: string }) => void): void, terminate?: () => void }} WorkerLike
  * @typedef {{ jobId: string, generationId: number, track: string, ok: boolean, result?: unknown, error?: { message?: string } }} WorkerResponseMessage
  * @typedef {{ worker: WorkerLike, busy: boolean, currentJobId: string|null }} PoolSlot
