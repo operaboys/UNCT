@@ -32,56 +32,40 @@ function toOutbounds(config) {
 }
 
 /**
- * Pick the first outbound that carries a proxy node.
+ * Pick the first outbound that carries a proxy node. Used by detect.js to know
+ * whether a config contains any proxy outbound at all.
  * @param {any} config
  * @returns {any | null}
  */
 export function selectOutbound(config) {
-  const outbounds = toOutbounds(config);
-  for (const ob of outbounds) {
-    if (ob && typeof ob === "object" &&
-        PROXY_PROTOCOLS.includes(String(ob.protocol).toLowerCase())) {
-      return ob;
-    }
-  }
-  return null;
+  return collectOutbounds(config)[0] ?? null;
 }
 
 /**
- * Extract raw fields from a single outbound. Returns a flat record keyed by
- * the field's RAW Xray name (e.g. `serverName`, `publicKey`, `shortId`) — the
- * mapping to canonical UNM names is normalize.js's job.
+ * All outbounds that carry a proxy node — Multi-Outbound support (04 Stage 04).
+ * @param {any} config
+ * @returns {any[]}
+ */
+export function collectOutbounds(config) {
+  return toOutbounds(config).filter(
+    (ob) => ob && typeof ob === "object" &&
+      PROXY_PROTOCOLS.includes(String(ob.protocol).toLowerCase()),
+  );
+}
+
+/**
+ * Extract the per-outbound SHARED fields: protocol/tag plus everything under
+ * streamSettings (network/security/TLS/Reality/transport). Per-endpoint and
+ * per-user fields (address/port/id/...) are layered on later, so these are the
+ * fields common to every node produced from this outbound.
  * @param {any} ob
  * @returns {Record<string, unknown>}
  */
-export function extractOutbound(ob) {
+function extractStreamFields(ob) {
   /** @type {Record<string, unknown>} */
   const fields = {};
-  if (!ob || typeof ob !== "object") return fields;
-
   fields.protocol = ob.protocol;
   if (ob.tag != null) fields.tag = ob.tag;
-
-  const settings = (ob.settings && typeof ob.settings === "object") ? ob.settings : {};
-  const server =
-    (Array.isArray(settings.vnext) && settings.vnext[0]) ||
-    (Array.isArray(settings.servers) && settings.servers[0]) ||
-    null;
-
-  if (server && typeof server === "object") {
-    if (server.address != null) fields.address = server.address;
-    if (server.port != null) fields.port = server.port;
-    // SS keeps password/method on the server; VLESS/VMESS on users[0].
-    const user = (Array.isArray(server.users) && server.users[0]) || server;
-    if (user && typeof user === "object") {
-      if (user.id != null) fields.id = user.id;
-      if (user.flow != null) fields.flow = user.flow;
-      if (user.encryption != null) fields.encryption = user.encryption;
-    }
-    if (server.password != null) fields.password = server.password;
-    else if (user && user.password != null) fields.password = user.password;
-    if (server.method != null) fields.method = server.method;
-  }
 
   const ss = (ob.streamSettings && typeof ob.streamSettings === "object") ? ob.streamSettings : {};
   if (ss.network != null) fields.network = ss.network;
@@ -116,10 +100,72 @@ export function extractOutbound(ob) {
   return fields;
 }
 
+/** Layer a single user's credential fields onto an item (never overwrites a set value).
+ * @param {Record<string, unknown>} item @param {any} user */
+function applyUserFields(item, user) {
+  if (!user || typeof user !== "object") return;
+  if (user.id != null) item.id = user.id;
+  if (user.flow != null) item.flow = user.flow;
+  if (user.encryption != null) item.encryption = user.encryption;
+  if (item.password == null && user.password != null) item.password = user.password;
+}
+
 /**
- * parse() — the Stage 04 happy path: strict JSON, structured extraction.
- * Throws on malformed JSON or no usable outbound so the ParserFactory can route
- * to recover() / the fallback chain (12 §5).
+ * Expand ONE outbound into one raw-field record PER node it represents
+ * (04 Stage 04 Multi-Outbound · Multi-User): one node per `settings.vnext` /
+ * `settings.servers` endpoint, multiplied by each entry in that endpoint's
+ * `users[]`. Collapsing these to a single node would be silent Data Loss
+ * (ANTI_CHAOS Rule 9).
+ * @param {any} ob
+ * @returns {Record<string, unknown>[]}
+ */
+export function extractItemsFromOutbound(ob) {
+  if (!ob || typeof ob !== "object") return [];
+  const stream = extractStreamFields(ob);
+  const settings = (ob.settings && typeof ob.settings === "object") ? ob.settings : {};
+  const vnext = Array.isArray(settings.vnext) ? settings.vnext : [];
+  const servers = Array.isArray(settings.servers) ? settings.servers : [];
+
+  /** @type {Record<string, unknown>[]} */
+  const items = [];
+  for (const ep of [...vnext, ...servers]) {
+    if (!ep || typeof ep !== "object") continue;
+    /** @type {Record<string, unknown>} */
+    const base = { ...stream };
+    if (ep.address != null) base.address = ep.address;
+    if (ep.port != null) base.port = ep.port;
+    if (ep.password != null) base.password = ep.password; // trojan/ss server-level
+    if (ep.method != null) base.method = ep.method;       // ss
+    const users = Array.isArray(ep.users) ? ep.users : [];
+    if (users.length > 0) {
+      for (const user of users) {
+        const item = { ...base };
+        applyUserFields(item, user);
+        items.push(item);
+      }
+    } else {
+      items.push(base);
+    }
+  }
+  // An outbound with no vnext/servers still yields one item (its stream fields);
+  // it will fail normalize on the missing address and simply produce no node.
+  if (items.length === 0) items.push({ ...stream });
+  return items;
+}
+
+/**
+ * Back-compat helper: the first item of an outbound (single record).
+ * @param {any} ob
+ * @returns {Record<string, unknown>}
+ */
+export function extractOutbound(ob) {
+  return extractItemsFromOutbound(ob)[0] ?? {};
+}
+
+/**
+ * parse() — the Stage 04 happy path: strict JSON, structured extraction of ALL
+ * proxy outbounds (Multi-Outbound · Multi-User). Throws on malformed JSON or no
+ * usable outbound so the ParserFactory can route to recover() / fallback (12 §5).
  * @param {string} input
  * @returns {RawExtraction}
  */
@@ -134,9 +180,10 @@ export function parseXray(input) {
   } catch (err) {
     throw new Error(`XrayParser.parse: input is not valid JSON (PARSE_MISSING_REQUIRED): ${err instanceof Error ? err.message : String(err)}`);
   }
-  const ob = selectOutbound(config);
-  if (!ob) {
+  const outbounds = collectOutbounds(config);
+  if (outbounds.length === 0) {
     throw new Error("XrayParser.parse: no proxy outbound found (PARSE_MISSING_REQUIRED)");
   }
-  return { protocol: String(ob.protocol), fields: extractOutbound(ob), raw: input };
+  const items = outbounds.flatMap(extractItemsFromOutbound);
+  return { protocol: "xray", fields: { items }, raw: input };
 }

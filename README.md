@@ -20,10 +20,11 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   Wins، آستانه‌ی Unknown Format = ۵۰٪)، و زنجیره‌ی Fallback (Primary → Secondary → ...) طبق سند 12
   §4/§5.
 - **Xray Parser** (`core/parser/xray/`، Priority: Highest، سند 04 Stage 04) — تشخیص Xray JSON،
-  استخراج ساختاری از `outbounds[].settings.vnext/servers` (تفکیک DNS از Server Address)، نگاشت مقدار
-  (Stage 13.1) و نگاشت نام با Priority Chain (مثل `publicKey`→`pbk`، ثبت در `originalMappings`)، و
-  Recovery مرحله‌ی 10/11 (ترمیم JSON خراب + Fuzzy Key با Levenshtein) — با قانون مطلق «هرگز
-  uuid/password/pbk/sid را Invent نکن». VLESS/VMESS/Trojan/Shadowsocks با TLS/Reality/WS/gRPC.
+  استخراج ساختاری از `outbounds[].settings.vnext/servers` (تفکیک DNS از Server Address). **چندنودی**
+  (`producesMany`/`normalizeMany`، ADR-008): هم **Multi-Outbound** هم **Multi-User** (هر User در
+  `vnext[].users[]` یک نود جدا) — جلوگیری از Data Loss (قانون ۹). نگاشت مقدار (Stage 13.1) و نام با
+  Priority Chain (مثل `publicKey`→`pbk`، ثبت در `originalMappings`)؛ Recovery مرحله‌ی 10/11 (ترمیم JSON
+  خراب + Fuzzy Key با Levenshtein) — با قانون مطلق «هرگز uuid/password/pbk/sid را Invent نکن».
 - **URL Parser** (`core/parser/url/`، سند 04 Stage 07) — اسکیم‌های
   `vless/vmess/trojan/ss/hysteria2(hy2)/tuic/wireguard`. شامل لایه‌ی مجزای **Stage 12 — URL
   Preprocessing** (`preprocess.js`؛ Escape/Normalize/Validate، با محافظت از Username/Password/UUID/

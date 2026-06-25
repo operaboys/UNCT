@@ -11,7 +11,7 @@
  * @typedef {import("../../types/parser").ParseError} ParseError
  */
 
-import { selectOutbound, extractOutbound, PROXY_PROTOCOLS } from "./extract.js";
+import { collectOutbounds, extractItemsFromOutbound, PROXY_PROTOCOLS } from "./extract.js";
 import { levenshtein, fuzzyKey } from "../shared/fuzzy.js";
 import { repairJson } from "../shared/json.js";
 
@@ -68,33 +68,35 @@ export function recoverXray(input, _error) {
   /** @type {string[]} */
   const recoveryActions = [...actions];
 
-  let ob = selectOutbound(config);
-  if (!ob) {
-    // No outbound recognized as-is — try fuzzy-correcting a single misspelled outbound.
+  let outbounds = collectOutbounds(config);
+  if (outbounds.length === 0) {
+    // No outbound recognized as-is — try fuzzy-correcting misspelled outbounds.
     const candidates =
       Array.isArray(config?.outbounds) ? config.outbounds
         : (config?.outbound ? [config.outbound]
           : (config?.protocol ? [config] : []));
+    /** @type {any[]} */
+    const corrected = [];
     for (const cand of candidates) {
       if (!cand || typeof cand !== "object") continue;
       const { outbound, actions: fa } = fuzzyCorrectOutbound(cand);
       if (PROXY_PROTOCOLS.includes(String(outbound.protocol).toLowerCase())) {
-        ob = outbound;
+        corrected.push(outbound);
         recoveryActions.push(...fa);
-        break;
       }
     }
+    outbounds = corrected;
   }
-  if (!ob) return null;
+  if (outbounds.length === 0) return null;
 
-  const fields = extractOutbound(ob);
-  // Require at least a protocol + address to call it a recovery (no fabrication).
-  if (fields.protocol == null || fields.address == null) return null;
+  const items = outbounds.flatMap(extractItemsFromOutbound);
+  // Require at least one item with protocol + address (no fabrication).
+  if (!items.some((f) => f.protocol != null && f.address != null)) return null;
 
   return {
-    protocol: String(ob.protocol),
-    fields,
-    warnings: ["REC_PARTIAL_CONFIG: node recovered from malformed Xray JSON."],
+    protocol: "xray",
+    fields: { items },
+    warnings: ["REC_PARTIAL_CONFIG: node(s) recovered from malformed Xray JSON."],
     recoveryActions,
     raw: input,
   };

@@ -4,10 +4,14 @@
  * composing the per-concern modules in this folder. Pure & Sync — directly
  * unit-testable, no Worker (MASTER_FILE_STRUCTURE: logic in core/, not workers).
  *
+ * Multi-node (ADR-008): an Xray config's outbounds expand to many nodes
+ * (Multi-Outbound · Multi-User, 04 Stage 04), so `producesMany = true` and
+ * `normalizeMany` is the real entry point; `normalize` throws (no silent loss,
+ * ANTI_CHAOS Rule 9).
+ *
  * `validateStructure` here is intentionally minimal: it checks only that the
- * EXTRACTION has the structural essentials (address/port present) — it is NOT
- * the central Validation Engine (Stage 13, core/validator/), which judges value
- * validity on the finished node. The two are deliberately separate (12 §2).
+ * EXTRACTION carries at least one item — it is NOT the central Validation
+ * Engine (Stage 13), which judges value validity on each finished node (12 §2).
  *
  * @typedef {import("../../types/parser").BaseParser} BaseParser
  * @typedef {import("../../types/parser").RawExtraction} RawExtraction
@@ -16,7 +20,7 @@
 
 import { detectXray } from "./detect.js";
 import { parseXray } from "./extract.js";
-import { normalizeXray, PARSER_NAME } from "./normalize.js";
+import { normalizeManyXray, normalizeRefuse, PARSER_NAME } from "./normalize.js";
 import { recoverXray } from "./recover.js";
 
 /**
@@ -24,20 +28,18 @@ import { recoverXray } from "./recover.js";
  * @returns {ValidationObject}
  */
 function validateStructure(extraction) {
-  const fields = extraction?.fields || {};
-  const addressValid = typeof fields.address === "string" && fields.address.length > 0;
-  const port = typeof fields.port === "string" ? Number(fields.port) : fields.port;
-  const portValid = typeof port === "number" && Number.isInteger(port);
+  const items = extraction?.fields?.items;
+  const ok = Array.isArray(items) && items.length > 0;
   return {
-    addressValid,
-    portValid,
+    addressValid: ok,
+    portValid: ok,
     uuidValid: null,
     realityValid: null,
     tlsValid: null,
     alpnValid: null,
     pathValid: null,
     hostValid: null,
-    overallValid: addressValid && portValid,
+    overallValid: ok,
   };
 }
 
@@ -46,7 +48,9 @@ export const xrayParser = {
   detect: detectXray,
   parse: parseXray,
   validateStructure,
-  normalize: normalizeXray,
+  producesMany: true,
+  normalize: normalizeRefuse,
+  normalizeMany: normalizeManyXray,
   recover: recoverXray,
   // Advisory only (12 §2.1) — never influences selection/validation/normalization.
   formatVersion: () => "xray-json",
