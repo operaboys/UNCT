@@ -48,9 +48,15 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   با Priority Chain خودش نگاشت می‌شوند؛ `security` از `tls`/`reality-opts` و TLS-native بودن پروتکل
   استنتاج می‌شود؛ `sourceType` بین `clash-yaml`/`clash-meta-yaml` تفکیک می‌شود. چون YAML است (نه JSON
   معتبر)، Confidence با Xray/Sing-box تصادم نمی‌کند.
+- **WireGuard Parser** (`core/parser/wireguard/`، سند 04 Stage 09) — فرمت متنی wg-quick
+  (`[Interface]`/`[Peer]`). چندنودی (ADR-008): یک کانفیگ می‌تواند چند `[Peer]` داشته باشد → چند نود،
+  با فیلدهای مشترک `[Interface]` روی همه. استخراج PrivateKey/PublicKey/Endpoint/AllowedIPs/DNS/MTU/
+  PersistentKeepalive؛ Endpoint به address/port هسته تبدیل و بقیه در `extensions.wireguard` با **همان
+  helper مشترک `buildWireguardExtensions` (ADR-007)** که Sing-box/Clash/URL استفاده می‌کنند — کلیدها
+  عیناً یکسان. Recovery: تصحیح Fuzzy نام سکشن‌ها (هرگز کلید Invent نمی‌شود).
 - **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
-  `levenshtein/fuzzyKey/fuzzyMatch`، `buildWireguardExtensions` (ADR-007)، و `repairJson`؛ جدول نگاشت
-  از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
+  `levenshtein/fuzzyKey/fuzzyMatch`، `buildWireguardExtensions` (ADR-007)، `repairJson`، و
+  `splitHostPort`؛ جدول نگاشت از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
 > بدون تغییر معتبر است. **`js-yaml`** اولین وابستگی Runtime پروژه است (تأییدشده در سند 14 §5، حجم ~۴۴KB
@@ -85,7 +91,8 @@ npm run test:coverage
 
 ## گام بعدی
 
-پنج Parser اصلی (Xray, URL, Subscription, Sing-box, Clash) کامل‌اند. گام بعدی: دیتاست خام ۱۰۰تایی و
-گیت کامل `parse → applyValidation` در سطح Raw-config طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` (که
-حالا با وجود Parserها قابل پیاده‌سازی است). هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
-`ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
+هر شش Parser (Xray, URL, Subscription, Sing-box, Clash, WireGuard) کامل‌اند — Phase 4 تمام شد. گام
+بعدی: دیتاست خام ۱۰۰تایی و گیت کامل `Raw → ParserFactory → normalizeMany → applyValidation` در سطح
+Raw-config طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` (که حالا با وجود همه‌ی Parserها قابل اجراست).
+هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر
+Parserهای موجود (سند 12 §6).

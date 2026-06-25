@@ -11,7 +11,8 @@ export {
 } from "./subscription/index.js";
 export { singboxParser, registerSingBoxParser } from "./singbox/index.js";
 export { clashParser, registerClashParser } from "./clash/index.js";
+export { wireguardParser, registerWireguardParser } from "./wireguard/index.js";
 export {
   resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
-  WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson,
+  WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson, splitHostPort,
 } from "./shared/index.js";
