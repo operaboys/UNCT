@@ -8,6 +8,8 @@
  * added here without an ADR (they are not in the UNM Freeze zone).
  */
 
+import type { Protocol } from "../types/unm";
+
 /**
  * Output of the Data Completeness Analyzer (§1.0). Reports which
  * Protocol/Security-relevant OPTIONAL fields are present vs absent — a pure
@@ -23,4 +25,21 @@ export interface CompletenessResult {
   presentOptionalFields: string[];
   /** 0-100: percentage of relevant optional fields that are filled in. */
   completenessScore: number;
+}
+
+/**
+ * Output of the Protocol Analyzer (§1.1). Confirms the protocol identified on
+ * an already-parsed `UNMNode` — never a raw-file/Format detection (that is
+ * the Format Detector's job, 04-PARSER_ENGINE). `node.protocol` is already a
+ * required field `createNode` enforces against the `PROTOCOLS` enum, so for
+ * any node built through the normal Parser pipeline `recognized` is always
+ * true; this module is still the independent boundary check Network/TLS/
+ * Reality/Security Analyzers (§1.2-§1.5) build on instead of re-trusting
+ * `node.protocol` blindly.
+ */
+export interface ProtocolAnalysis {
+  /** The protocol found on the node (echoed from `node.protocol`). */
+  protocol: Protocol;
+  /** True iff `protocol` is one of the known/supported UNM protocols. */
+  recognized: boolean;
 }
