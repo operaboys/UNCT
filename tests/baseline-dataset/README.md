@@ -11,13 +11,13 @@ This file documents only the day-to-day mechanics — see the ADR for *why*.
 
 What Phase 1 *can* and *does* gate is everything below the parser:
 
-| Layer | Phase 1 status | Gate file |
+| Layer | Status | Gate file |
 |---|---|---|
 | UNM construction invariants (05) | ✅ covered | `foundation-gate.test.js` |
 | Validation Engine (Stage 13) | ✅ covered | `foundation-gate.test.js` |
 | Error Code Registry | ✅ covered | `../errors/registry.test.js` |
-| Raw-config Parser pass rate ≥95% | ⏳ Phase 2/3 | (added with parsers) |
-| Recovery on broken samples | ⏳ Phase 2/3 | (added with parsers) |
+| Raw-config Parser pass rate ≥95% | ✅ covered | `raw-config-gate.test.js` |
+| Recovery on broken samples | ✅ covered | `raw-config-gate.test.js` |
 
 ## Phase 1 Foundation Acceptance Gate
 
@@ -30,6 +30,26 @@ What Phase 1 *can* and *does* gate is everything below the parser:
   the Validation Engine's False-Positive Rate (15 §7, < 2%).
 - **No Critical Failure** — no fixture throws unexpectedly.
 
-When parsers arrive, the raw-config dataset is added alongside this file and the
-gate is extended to chain `parse → applyValidation`; the Golden subset here stays
-the immutable UNM-level reference (never modified, never removed — 15 §5).
+## Phase 2/3 Foundation Acceptance Gate (raw-config level)
+
+`raw-config-dataset.js` holds the 100 **raw** config texts mandated by 15 §5
+(50 valid / 30 partially-broken / 20 invalid), covering all 7 protocols across
+all 6 input formats (url, subscription, xray, singbox, clash, wireguard).
+`raw-config-gate.test.js` runs every sample through the real production pipeline
+— `ParserFactory.selectParser` + the §5 `parseWithFallback` recovery chain →
+`normalizeMany`/`normalize` → `applyValidation` — and asserts the 15 §6/§7
+criteria, broken down by protocol and by category:
+
+- **valid** must parse (no recovery) into all-valid nodes at ≥95%,
+- **partially-broken** must be salvaged into ≥1 valid node at ≥90% (the bulk via
+  real `recover()`), and
+- **invalid** must never yield a valid node (false-positive rate <2%).
+
+The test prints a full `[GATE]` breakdown to the test output. Honest scoping
+note: two `recover()` features (misspelled URL scheme, corrupted-alphabet Base64
+subscription) are unreachable through the factory because they fail *detection*
+before any parser is selected; those paths stay covered by the per-parser unit
+tests that call `recover()` directly, and are documented in the dataset header.
+
+The Golden subset (the `unm-fixtures.js` valid set) stays the immutable UNM-level
+reference (never modified, never removed — 15 §5).

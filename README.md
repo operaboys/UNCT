@@ -91,8 +91,11 @@ npm run test:coverage
 
 ## گام بعدی
 
-هر شش Parser (Xray, URL, Subscription, Sing-box, Clash, WireGuard) کامل‌اند — Phase 4 تمام شد. گام
-بعدی: دیتاست خام ۱۰۰تایی و گیت کامل `Raw → ParserFactory → normalizeMany → applyValidation` در سطح
-Raw-config طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` (که حالا با وجود همه‌ی Parserها قابل اجراست).
-هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر
-Parserهای موجود (سند 12 §6).
+هر شش Parser (Xray, URL, Subscription, Sing-box, Clash, WireGuard) کامل‌اند — Phase 4 تمام شد.
+**Foundation Acceptance Gate در سطح Raw-config هم عبور کرد** (`tests/baseline-dataset/raw-config-gate.test.js`،
+طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`): دیتاست خام ۱۰۰تایی (۵۰ Valid / ۳۰ Partially-Broken /
+۲۰ Invalid، پوشش هر ۷ پروتکل و هر ۶ فرمت) از مسیر کامل `Raw → ParserFactory (selectParser + زنجیره‌ی
+Fallback §5) → normalizeMany/normalize → applyValidation` عبور داده شد؛ Pass Rate **۱۰۰٪** (Valid
+۵۰/۵۰، Broken ۳۰/۳۰ با Recovery، Invalid ۲۰/۲۰ بدون False-Positive). گام بعدی فازهای بعدی Roadmap
+(Analyzer/Converter/Worker/UI) است. هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
+`ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
