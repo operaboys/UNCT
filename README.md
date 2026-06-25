@@ -42,12 +42,19 @@ Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامن
   Priority Chain خودش به فیلدهای Canonical نگاشت می‌شوند؛ `security` از `tls.enabled`/`reality.enabled`
   استنتاج می‌شود؛ WireGuard در `extensions.wireguard` (ADR-007). از Xray با نام فیلدها تفکیک می‌شود
   (`type` در برابر `protocol`) تا Confidence تصادم نکند.
+- **Clash / Clash.Meta Parser** (`core/parser/clash/`، سند 04 Stage 06) — کانفیگ YAML با آرایه‌ی
+  `proxies`؛ چندنودی (ADR-008). از `js-yaml` برای Decode استفاده می‌کند (سند 14 §5: بدون Parser
+  سفارشی YAML). نام‌های kebab-case کلش (`client-fingerprint`، `reality-opts.public-key`، `ws-opts`، …)
+  با Priority Chain خودش نگاشت می‌شوند؛ `security` از `tls`/`reality-opts` و TLS-native بودن پروتکل
+  استنتاج می‌شود؛ `sourceType` بین `clash-yaml`/`clash-meta-yaml` تفکیک می‌شود. چون YAML است (نه JSON
+  معتبر)، Confidence با Xray/Sing-box تصادم نمی‌کند.
 - **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
   `levenshtein/fuzzyKey/fuzzyMatch`، `buildWireguardExtensions` (ADR-007)، و `repairJson`؛ جدول نگاشت
   از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
 
 > تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
-> بدون تغییر معتبر است.
+> بدون تغییر معتبر است. **`js-yaml`** اولین وابستگی Runtime پروژه است (تأییدشده در سند 14 §5، حجم ~۴۴KB
+> minified — زیر سقف ۱۵۰KB سند 14 §2.1)؛ نحوه‌ی تحویل ESM/مرورگری آن بخشی از همان ADR بسته‌بندیِ موکول است.
 
 ### دستورها (dev-only)
 
@@ -78,8 +85,7 @@ npm run test:coverage
 
 ## گام بعدی
 
-**Clash / Clash-Meta Parser** (Phase 4، سند 04 Stage 06) — YAML است و به یک تصمیم وابستگی نیاز
-دارد (افزودن کتابخانه‌ی YAML در برابر نوشتن Parser زیرمجموعه‌ی YAML) طبق سیاست وابستگی سند 14؛ این
-تصمیم سر Checkpoint بعدی گرفته می‌شود. سپس دیتاست خام ۱۰۰تایی و گیت کامل Parse→Validation طبق
-`docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`. هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
+پنج Parser اصلی (Xray, URL, Subscription, Sing-box, Clash) کامل‌اند. گام بعدی: دیتاست خام ۱۰۰تایی و
+گیت کامل `parse → applyValidation` در سطح Raw-config طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md` (که
+حالا با وجود Parserها قابل پیاده‌سازی است). هر Parser جدید فقط با Extend کردن `BaseParser` و ثبت در
 `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).

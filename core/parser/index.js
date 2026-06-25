@@ -10,6 +10,7 @@ export {
   subscriptionParser, registerSubscriptionParser, parseSubscription,
 } from "./subscription/index.js";
 export { singboxParser, registerSingBoxParser } from "./singbox/index.js";
+export { clashParser, registerClashParser } from "./clash/index.js";
 export {
   resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
   WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson,
