@@ -10,6 +10,7 @@
  */
 
 import { preprocessUrl } from "./preprocess.js";
+import { splitHostPort } from "../shared/endpoint.js";
 
 /** Scheme -> canonical protocol token (mapped again through PROTOCOL_MAP later). */
 const SCHEME_PROTOCOL = Object.freeze({
@@ -137,21 +138,16 @@ function extractShadowsocks(body) {
 }
 
 /**
- * Split a `host:port` (IPv6-aware) onto fields.
+ * Split a `host:port` (IPv6-aware) onto fields. Thin wrapper over the shared
+ * `splitHostPort` (single source of truth, also used by WireGuard).
  * @param {Record<string, unknown>} fields
  * @param {string} hostPort
  */
 function assignHostPort(fields, hostPort) {
-  if (!hostPort) return;
-  const v6 = /^\[([^\]]+)\]:(\d+)$/.exec(hostPort);
-  if (v6) { fields.address = v6[1]; fields.port = Number(v6[2]); return; }
-  const idx = hostPort.lastIndexOf(":");
-  if (idx >= 0) {
-    fields.address = hostPort.slice(0, idx);
-    fields.port = Number(hostPort.slice(idx + 1));
-  } else {
-    fields.address = hostPort;
-  }
+  const hp = splitHostPort(hostPort);
+  if (!hp) return;
+  fields.address = hp.host;
+  if (hp.port !== undefined) fields.port = hp.port;
 }
 
 /**

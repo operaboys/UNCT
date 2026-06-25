@@ -6,6 +6,7 @@
  */
 
 import { URL_SCHEMES } from "./preprocess.js";
+import { trimOrReject } from "../shared/detect-guards.js";
 
 const SCHEME_RE = new RegExp(`^(${URL_SCHEMES.join("|")})://`, "i");
 
@@ -14,9 +15,8 @@ const SCHEME_RE = new RegExp(`^(${URL_SCHEMES.join("|")})://`, "i");
  * @returns {number} confidence 0-100
  */
 export function detectUrl(input) {
-  if (typeof input !== "string") return 0;
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return 0;
+  const trimmed = trimOrReject(input);
+  if (trimmed === null) return 0;
 
   if (!SCHEME_RE.test(trimmed)) return 0;
 

@@ -14,5 +14,7 @@ export { clashParser, registerClashParser } from "./clash/index.js";
 export { wireguardParser, registerWireguardParser } from "./wireguard/index.js";
 export {
   resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
-  WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson, splitHostPort,
+  WIREGUARD_EXTENSION_NS, buildWireguardExtensions, repairJson, repairAndParseJson,
+  splitHostPort, trimOrReject, isUrlScheme, looksLikeJson, validateItemsStructure,
+  parseAlpnArray,
 } from "./shared/index.js";

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   resolvePriority, levenshtein, fuzzyKey, fuzzyMatch,
   buildWireguardExtensions, WIREGUARD_EXTENSION_NS,
+  trimOrReject, isUrlScheme, looksLikeJson, validateItemsStructure,
+  parseAlpnArray, repairAndParseJson,
 } from "../../core/parser/shared/index.js";
 
 describe("shared/priority — resolvePriority (05 §2)", () => {
@@ -88,5 +90,70 @@ describe("shared/wireguard — buildWireguardExtensions (ADR-007)", () => {
   it("drops non-integer mtu/keepalive rather than storing garbage", () => {
     const ext = buildWireguardExtensions({ privateKey: "pk", mtu: "not-a-number" });
     expect(ext).toEqual({ wireguard: { privateKey: "pk" } });
+  });
+});
+
+describe("shared/detect-guards — trimOrReject/isUrlScheme/looksLikeJson", () => {
+  it("trimOrReject rejects non-strings and empty/whitespace-only input", () => {
+    expect(trimOrReject(/** @type {any} */ (undefined))).toBeNull();
+    expect(trimOrReject(/** @type {any} */ (123))).toBeNull();
+    expect(trimOrReject("")).toBeNull();
+    expect(trimOrReject("   ")).toBeNull();
+  });
+  it("trimOrReject returns the trimmed string otherwise", () => {
+    expect(trimOrReject("  hi  ")).toBe("hi");
+  });
+  it("isUrlScheme detects a scheme:// prefix only", () => {
+    expect(isUrlScheme("vless://abc")).toBe(true);
+    expect(isUrlScheme("{\"a\":1}")).toBe(false);
+  });
+  it("looksLikeJson checks the opening character only", () => {
+    expect(looksLikeJson("{\"a\":1}")).toBe(true);
+    expect(looksLikeJson("[1,2]")).toBe(true);
+    expect(looksLikeJson("proxies:\n  - a")).toBe(false);
+  });
+});
+
+describe("shared/validate-structure — validateItemsStructure", () => {
+  it("is overallValid when a non-empty array is present under the default key", () => {
+    const v = validateItemsStructure({ fields: { items: [{}] } });
+    expect(v.overallValid).toBe(true);
+    expect(v.addressValid).toBe(true);
+    expect(v.portValid).toBe(true);
+    expect(v.uuidValid).toBeNull();
+  });
+  it("is invalid when the array is empty or missing", () => {
+    expect(validateItemsStructure({ fields: { items: [] } }).overallValid).toBe(false);
+    expect(validateItemsStructure({ fields: {} }).overallValid).toBe(false);
+  });
+  it("reads a custom key (Subscription uses 'lines')", () => {
+    expect(validateItemsStructure({ fields: { lines: ["x"] } }, "lines").overallValid).toBe(true);
+    expect(validateItemsStructure({ fields: { lines: [] } }, "lines").overallValid).toBe(false);
+  });
+});
+
+describe("shared/alpn — parseAlpnArray", () => {
+  it("keeps only string entries of an array", () => {
+    expect(parseAlpnArray(["h2", "http/1.1", 5, null])).toEqual(["h2", "http/1.1"]);
+  });
+  it("returns undefined for an empty/non-array input", () => {
+    expect(parseAlpnArray([])).toBeUndefined();
+    expect(parseAlpnArray("h2,http/1.1")).toBeUndefined();
+    expect(parseAlpnArray(undefined)).toBeUndefined();
+  });
+});
+
+describe("shared/json — repairAndParseJson", () => {
+  it("repairs and parses in one step", () => {
+    const result = repairAndParseJson('{"a":1,}');
+    expect(result?.config).toEqual({ a: 1 });
+    expect(result?.actions).toEqual(["REC_STRUCTURE_REPAIRED: removed trailing commas"]);
+  });
+  it("returns null for empty/non-string input", () => {
+    expect(repairAndParseJson("")).toBeNull();
+    expect(repairAndParseJson(/** @type {any} */ (undefined))).toBeNull();
+  });
+  it("returns null when the input cannot be repaired into valid JSON", () => {
+    expect(repairAndParseJson("not json at all")).toBeNull();
   });
 });

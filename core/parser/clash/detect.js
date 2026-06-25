@@ -8,16 +8,16 @@
 
 import { loadClashYaml } from "./decode.js";
 import { collectProxies } from "./extract.js";
+import { trimOrReject, isUrlScheme } from "../shared/detect-guards.js";
 
 /**
  * @param {string} input
  * @returns {number} confidence 0-100
  */
 export function detectClash(input) {
-  if (typeof input !== "string") return 0;
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return 0;
-  if (/^[a-z0-9]+:\/\//i.test(trimmed)) return 0; // URL scheme -> other parser
+  const trimmed = trimOrReject(input);
+  if (trimmed === null) return 0;
+  if (isUrlScheme(trimmed)) return 0; // URL scheme -> other parser
 
   /** @type {any} */
   let doc;

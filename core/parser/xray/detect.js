@@ -6,6 +6,7 @@
  */
 
 import { selectOutbound } from "./extract.js";
+import { trimOrReject, isUrlScheme, looksLikeJson } from "../shared/detect-guards.js";
 
 /** Tokens that strongly imply an Xray config even in malformed text. */
 const XRAY_TOKENS = /"(outbounds|streamSettings|vnext|realitySettings)"\s*:/;
@@ -15,13 +16,12 @@ const XRAY_TOKENS = /"(outbounds|streamSettings|vnext|realitySettings)"\s*:/;
  * @returns {number} confidence 0-100
  */
 export function detectXray(input) {
-  if (typeof input !== "string") return 0;
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return 0;
+  const trimmed = trimOrReject(input);
+  if (trimmed === null) return 0;
 
   // URL-scheme configs and YAML are other parsers' job — hard reject.
-  if (/^[a-z0-9]+:\/\//i.test(trimmed)) return 0;
-  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return 0;
+  if (isUrlScheme(trimmed)) return 0;
+  if (!looksLikeJson(trimmed)) return 0;
 
   /** @type {any} */
   let config;

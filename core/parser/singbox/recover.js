@@ -10,7 +10,7 @@
  * @typedef {import("../../types/parser").ParseError} ParseError
  */
 
-import { repairJson } from "../shared/json.js";
+import { repairAndParseJson } from "../shared/json.js";
 import { collectItems, extractItem } from "./extract.js";
 
 /**
@@ -19,16 +19,9 @@ import { collectItems, extractItem } from "./extract.js";
  * @returns {RawExtraction | null}
  */
 export function recoverSingBox(input, _error) {
-  if (typeof input !== "string" || input.trim().length === 0) return null;
-
-  const { text, actions } = repairJson(input);
-  /** @type {any} */
-  let config;
-  try {
-    config = JSON.parse(text);
-  } catch {
-    return null; // could not repair into valid JSON
-  }
+  const repaired = repairAndParseJson(input);
+  if (!repaired) return null; // not a non-empty string, or could not repair into valid JSON
+  const { config, actions } = repaired;
 
   const items = collectItems(config).map(extractItem);
   if (items.length === 0) return null;

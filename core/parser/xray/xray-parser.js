@@ -22,32 +22,13 @@ import { detectXray } from "./detect.js";
 import { parseXray } from "./extract.js";
 import { normalizeManyXray, normalizeRefuse, PARSER_NAME } from "./normalize.js";
 import { recoverXray } from "./recover.js";
-
-/**
- * @param {RawExtraction} extraction
- * @returns {ValidationObject}
- */
-function validateStructure(extraction) {
-  const items = extraction?.fields?.items;
-  const ok = Array.isArray(items) && items.length > 0;
-  return {
-    addressValid: ok,
-    portValid: ok,
-    uuidValid: null,
-    realityValid: null,
-    tlsValid: null,
-    alpnValid: null,
-    pathValid: null,
-    hostValid: null,
-    overallValid: ok,
-  };
-}
+import { validateItemsStructure } from "../shared/validate-structure.js";
 
 /** @type {BaseParser} */
 export const xrayParser = {
   detect: detectXray,
   parse: parseXray,
-  validateStructure,
+  validateStructure: validateItemsStructure,
   producesMany: true,
   normalize: normalizeRefuse,
   normalizeMany: normalizeManyXray,

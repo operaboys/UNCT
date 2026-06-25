@@ -13,7 +13,7 @@
 
 import { collectOutbounds, extractItemsFromOutbound, PROXY_PROTOCOLS } from "./extract.js";
 import { levenshtein, fuzzyKey } from "../shared/fuzzy.js";
-import { repairJson } from "../shared/json.js";
+import { repairJson, repairAndParseJson } from "../shared/json.js";
 
 // Re-exported so the public surface (xray/index.js) is unchanged after moving
 // these to the shared helper modules — same functions, single source of truth.
@@ -54,16 +54,9 @@ function fuzzyCorrectOutbound(ob) {
  * @returns {RawExtraction | null}
  */
 export function recoverXray(input, _error) {
-  if (typeof input !== "string" || input.trim().length === 0) return null;
-
-  const { text, actions } = repairJson(input);
-  /** @type {any} */
-  let config;
-  try {
-    config = JSON.parse(text);
-  } catch {
-    return null; // could not even repair into valid JSON
-  }
+  const repaired = repairAndParseJson(input);
+  if (!repaired) return null; // not a non-empty string, or could not even repair into valid JSON
+  const { config, actions } = repaired;
 
   /** @type {string[]} */
   const recoveryActions = [...actions];

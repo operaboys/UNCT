@@ -8,15 +8,15 @@
 
 import { decodeBase64 } from "../url/index.js";
 import { isUrlLine } from "./decode.js";
+import { trimOrReject } from "../shared/detect-guards.js";
 
 /**
  * @param {string} input
  * @returns {number} confidence 0-100
  */
 export function detectSubscription(input) {
-  if (typeof input !== "string") return 0;
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return 0;
+  const trimmed = trimOrReject(input);
+  if (trimmed === null) return 0;
 
   const multiLine = /\r?\n/.test(trimmed);
   const urlLines = trimmed.split(/\r?\n/).filter(isUrlLine);

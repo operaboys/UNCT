@@ -9,6 +9,7 @@
  */
 
 import { collectItems } from "./extract.js";
+import { trimOrReject, isUrlScheme, looksLikeJson } from "../shared/detect-guards.js";
 
 /** Tokens that imply a sing-box config even in broken JSON (Xray lacks these). */
 const SINGBOX_TOKENS = /"server_port"\s*:|"type"\s*:\s*"(vless|vmess|trojan|shadowsocks|hysteria2|tuic|wireguard)"/;
@@ -18,12 +19,11 @@ const SINGBOX_TOKENS = /"server_port"\s*:|"type"\s*:\s*"(vless|vmess|trojan|shad
  * @returns {number} confidence 0-100
  */
 export function detectSingBox(input) {
-  if (typeof input !== "string") return 0;
-  const trimmed = input.trim();
-  if (trimmed.length === 0) return 0;
+  const trimmed = trimOrReject(input);
+  if (trimmed === null) return 0;
 
-  if (/^[a-z0-9]+:\/\//i.test(trimmed)) return 0; // URL scheme -> other parser
-  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return 0;
+  if (isUrlScheme(trimmed)) return 0; // URL scheme -> other parser
+  if (!looksLikeJson(trimmed)) return 0;
 
   /** @type {any} */
   let config;

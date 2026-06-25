@@ -17,6 +17,7 @@ import {
 import { DEFAULT_NETWORK, DEFAULT_SECURITY } from "../../unm/schema/defaults.js";
 import { resolvePriority } from "../shared/priority.js";
 import { buildWireguardExtensions } from "../shared/wireguard.js";
+import { parseAlpnArray } from "../shared/alpn.js";
 
 export const PARSER_NAME = "SingBoxParser";
 
@@ -27,15 +28,6 @@ export const PRIORITY_CHAINS = Object.freeze({
   sni: ["server_name", "sni"],
   fingerprint: ["fingerprint"],
 });
-
-/** Keep only string entries of an ALPN array. @param {unknown} raw @returns {string[] | undefined} */
-function parseAlpn(raw) {
-  if (Array.isArray(raw)) {
-    const a = raw.filter((x) => typeof x === "string");
-    return a.length ? a : undefined;
-  }
-  return undefined;
-}
 
 /**
  * Build one UNMNode from a single extracted sing-box item.
@@ -111,7 +103,7 @@ export function normalizeItem(item) {
   if (pbk !== undefined) input.pbk = pbk;
   if (sid !== undefined) input.sid = sid;
   if (fingerprint !== undefined) input.fingerprint = fingerprint;
-  const alpn = parseAlpn(item.alpn);
+  const alpn = parseAlpnArray(item.alpn);
   if (alpn !== undefined) input.alpn = alpn;
 
   if (protocol === "wireguard") {

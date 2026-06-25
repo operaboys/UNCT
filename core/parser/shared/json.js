@@ -3,8 +3,7 @@
  *
  * Structure/syntax only — repairs that never touch values: strips comments and
  * trailing commas, the two breakages real-world exported JSON configs carry.
- * Used by JSON-based parsers (Sing-box now; Xray has its own equivalent copy
- * predating this module — a future dedup may route Xray here too).
+ * Used by every JSON-based parser's recover() (Xray, Sing-box).
  */
 
 /**
@@ -26,4 +25,23 @@ export function repairJson(text) {
   if (noTrailing !== s) { actions.push("REC_STRUCTURE_REPAIRED: removed trailing commas"); s = noTrailing; }
 
   return { text: s, actions };
+}
+
+/**
+ * Repair (above) then parse. The repair+parse+give-up-on-failure sequence is
+ * identical across every JSON-based parser's recover(); this is the one
+ * shared entry point instead of each recover.js re-implementing the
+ * try/catch around `JSON.parse`.
+ * @param {unknown} input
+ * @returns {{ config: any, actions: string[] } | null} null if input is not a
+ *   non-empty string, or could not be repaired into valid JSON.
+ */
+export function repairAndParseJson(input) {
+  if (typeof input !== "string" || input.trim().length === 0) return null;
+  const { text, actions } = repairJson(input);
+  try {
+    return { config: JSON.parse(text), actions };
+  } catch {
+    return null;
+  }
 }

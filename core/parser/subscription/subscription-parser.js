@@ -20,27 +20,17 @@ import { detectSubscription } from "./detect.js";
 import { extractSubscription } from "./extract.js";
 import { normalizeRefuse, normalizeMany, normalizeSubscription } from "./normalize.js";
 import { recoverSubscription } from "./recover.js";
+import { validateItemsStructure } from "../shared/validate-structure.js";
 
 /**
  * Structure-only check: does the extraction carry at least one config line?
- * (Not the central Validation Engine; that runs per produced node.)
+ * (Not the central Validation Engine; that runs per produced node.) Lines, not
+ * items, is this format's list key.
  * @param {RawExtraction} extraction
  * @returns {ValidationObject}
  */
 function validateStructure(extraction) {
-  const lines = extraction?.fields?.lines;
-  const ok = Array.isArray(lines) && lines.length > 0;
-  return {
-    addressValid: ok,
-    portValid: ok,
-    uuidValid: null,
-    realityValid: null,
-    tlsValid: null,
-    alpnValid: null,
-    pathValid: null,
-    hostValid: null,
-    overallValid: ok,
-  };
+  return validateItemsStructure(extraction, "lines");
 }
 
 /** @type {BaseParser} */
