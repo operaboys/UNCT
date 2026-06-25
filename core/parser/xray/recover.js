@@ -13,36 +13,14 @@
 
 import { selectOutbound, extractOutbound, PROXY_PROTOCOLS } from "./extract.js";
 import { levenshtein, fuzzyKey } from "../shared/fuzzy.js";
+import { repairJson } from "../shared/json.js";
 
 // Re-exported so the public surface (xray/index.js) is unchanged after moving
-// these to the shared helper module — same functions, single source of truth.
-export { levenshtein, fuzzyKey };
+// these to the shared helper modules — same functions, single source of truth.
+export { levenshtein, fuzzyKey, repairJson };
 
 /** Canonical outbound-level keys we will fuzzy-match misspellings against. */
 const OUTBOUND_KEYS = Object.freeze(["protocol", "settings", "streamSettings", "tag"]);
-
-/**
- * Stage 10: repair common JSON breakage (comments, trailing commas).
- * Structure only — never touches values.
- * @param {string} text
- * @returns {{ text: string, actions: string[] }}
- */
-export function repairJson(text) {
-  /** @type {string[]} */
-  const actions = [];
-  let s = text;
-
-  const noBlock = s.replace(/\/\*[\s\S]*?\*\//g, "");
-  if (noBlock !== s) { actions.push("REC_STRUCTURE_REPAIRED: removed block comments"); s = noBlock; }
-
-  const noLine = s.replace(/(^|[^:"])\/\/[^\n\r]*/g, "$1");
-  if (noLine !== s) { actions.push("REC_STRUCTURE_REPAIRED: removed line comments"); s = noLine; }
-
-  const noTrailing = s.replace(/,(\s*[}\]])/g, "$1");
-  if (noTrailing !== s) { actions.push("REC_STRUCTURE_REPAIRED: removed trailing commas"); s = noTrailing; }
-
-  return { text: s, actions };
-}
 
 /**
  * Re-key a misspelled outbound's keys back to canonical names so extraction can
