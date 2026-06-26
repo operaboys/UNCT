@@ -63,5 +63,9 @@ rationale ADR-004 used for `core/exporter/`.
   `core/storage/`'s adapter interface — the Storage Abstraction Layer's public API
   (`createNodeStore()`'s returned methods) does not change either way.
 - Phase 8's "Backup System" deliverable (Project Files Import/Export/Migration, per the Storage
-  Responsibility Matrix) is **not** part of this ADR's scope — it overlaps with Phase 9's Export
-  Engine (`core/exporter/`, ADR-004) and is deferred to a later step.
+  Responsibility Matrix) is **not** part of this ADR's scope. **Ruling (2026-06-26, Mehdi):**
+  it is formally deferred to Phase 9, bundled together WITH the Export Engine
+  (`core/exporter/`, ADR-004) as a single piece of work — not as an independent Phase 8/9 task.
+  The Storage Responsibility Matrix treats Project-Files Backup/Import/Export/Migration and
+  Export as ONE capability, not two separate deliverables, so they are scheduled and built
+  together when Phase 9 starts.
