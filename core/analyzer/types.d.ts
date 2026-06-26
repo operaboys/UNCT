@@ -8,7 +8,7 @@
  * added here without an ADR (they are not in the UNM Freeze zone).
  */
 
-import type { Protocol, NetworkType } from "../types/unm";
+import type { Protocol, NetworkType, SecurityType } from "../types/unm";
 
 /**
  * Output of the Data Completeness Analyzer (§1.0). Reports which
@@ -64,4 +64,31 @@ export interface NetworkAnalysis {
   compatible: boolean;
   /** The transports this protocol can run over — the compatibility set. */
   supportedNetworks: NetworkType[];
+}
+
+/**
+ * Output of the TLS Analyzer (§1.3). Judges whether the TLS *handshake*
+ * settings (SNI / ALPN / Fingerprint) are coherent with the node's security
+ * type — a correctness-of-configuration question, NOT field validity (is the
+ * value well-formed? — Validation Engine, spec 04) nor a quality score
+ * (§1.2/§1.5). It deliberately covers only the TLS-handshake fields; the
+ * Reality-specific credentials PBK/SID belong to the Reality Analyzer (§1.5),
+ * even though Reality also runs a TLS handshake. Presence of sni/alpn/
+ * fingerprint is read from the Data Completeness Analyzer's `missingFields`
+ * (§1.0 consumption rule), not re-derived here.
+ */
+export interface TlsAnalysis {
+  /** The security type judged against (echoed from `node.security`). */
+  securityType: SecurityType;
+  /** True iff a TLS layer exists (security is "tls" or "reality"). */
+  applicable: boolean;
+  /** True iff the TLS settings make sense for this security type (no issues). */
+  coherent: boolean;
+  /**
+   * Is `fingerprint` a recognized uTLS profile? `null` when no fingerprint is
+   * set, or when TLS does not apply (security "none").
+   */
+  knownFingerprint: boolean | null;
+  /** Human-readable coherence problems, empty when fully coherent. */
+  issues: string[];
 }
