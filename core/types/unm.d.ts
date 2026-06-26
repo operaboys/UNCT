@@ -70,15 +70,14 @@ export interface ValidationObject {
   overallValid: boolean;         // logical AND of the above (null = neutral)
 }
 
-/** Conversion Object — spec 05 §6. Filled by the Converter Engine (optional). */
+/** Conversion Object — spec 05 §6 / ADR-012. Which output FORMATS this node
+ *  can be exported as (not protocol-to-protocol transcoding). Filled by the
+ *  Converter Engine; each flag = node.protocol is in that serializer's scope. */
 export interface ConversionObject {
-  canConvertToVLESS: boolean;
-  canConvertToVMESS: boolean;
-  canConvertToTrojan: boolean;
-  canConvertToSS: boolean;
-  canConvertToTUIC: boolean;
-  canConvertToHysteria2: boolean;
-  canConvertToWireGuard: boolean;
+  canExportAsUrl: boolean;          // to-url.js        — all 7 protocols
+  canExportAsXrayJson: boolean;     // to-xray.js       — vless/vmess/trojan/ss only
+  canExportAsSingboxJson: boolean;  // to-singbox.js    — all 7 protocols
+  canExportAsClashYaml: boolean;    // to-clash.js      — all 7 protocols
 }
 
 // ===== The Node (spec 05 §2) =====

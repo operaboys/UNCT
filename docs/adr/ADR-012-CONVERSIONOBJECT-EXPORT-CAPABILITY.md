@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-06-26 |
 | **Deciders** | Mehdi (Architecture Review) |
 | **Related** | `05-UNIVERSAL_NODE_MODEL` §6 (`ConversionObject`, the frozen field being reshaped) and §2 (`UNMNode.conversion?`); `02-SYSTEM_ARCHITECTURE` §7 (Converter Engine — its stated outputs are *formats*, not protocols); `core/converter/to-url.js`, `to-xray.js`, `to-singbox.js`, `to-clash.js` (the four real serializers, Phase 7 Items 1–4); `core/types/unm.d.ts` (the `interface ConversionObject` to edit); `09-DEVELOPMENT_ROADMAP` Phase 7 Item 5 |

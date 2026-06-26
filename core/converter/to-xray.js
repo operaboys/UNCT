@@ -27,8 +27,9 @@
 
 import { DEFAULT_NETWORK, DEFAULT_SECURITY } from "../unm/schema/defaults.js";
 
-/** Protocols the Xray Parser's normalize.js fully builds (credentials + stream). */
-const SUPPORTED_PROTOCOLS = Object.freeze(["vless", "vmess", "trojan", "shadowsocks"]);
+/** Protocols the Xray Parser's normalize.js fully builds (credentials + stream).
+ *  Exported as ADR-012's ConversionObject source of truth for `canExportAsXrayJson`. */
+export const XRAY_SUPPORTED_PROTOCOLS = Object.freeze(["vless", "vmess", "trojan", "shadowsocks"]);
 
 /**
  * Build `settings.vnext`/`settings.servers` — inverse of extract.js's
@@ -114,7 +115,7 @@ function buildStreamSettings(node) {
  * @throws {Error} if the protocol has no Xray JSON shape in this codebase.
  */
 export function toXray(node) {
-  if (!SUPPORTED_PROTOCOLS.includes(node.protocol)) {
+  if (!XRAY_SUPPORTED_PROTOCOLS.includes(node.protocol)) {
     throw new Error(`toXray: protocol "${node.protocol}" has no Xray JSON shape (CONVERT_UNSUPPORTED)`);
   }
 

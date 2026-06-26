@@ -39,8 +39,9 @@
 import yaml from "js-yaml";
 import { DEFAULT_NETWORK, DEFAULT_SECURITY } from "../unm/schema/defaults.js";
 
-/** Every protocol the Clash Parser's normalize.js builds a full node for. */
-const SUPPORTED_PROTOCOLS = Object.freeze([
+/** Every protocol the Clash Parser's normalize.js builds a full node for.
+ *  Exported as ADR-012's ConversionObject source of truth for `canExportAsClashYaml`. */
+export const CLASH_SUPPORTED_PROTOCOLS = Object.freeze([
   "vless", "vmess", "trojan", "shadowsocks", "hysteria2", "tuic", "wireguard",
 ]);
 
@@ -118,7 +119,7 @@ function buildTransport(proxy, node) {
  * @throws {Error} if the protocol is outside the UNM Protocol enum.
  */
 export function toClash(node) {
-  if (!SUPPORTED_PROTOCOLS.includes(node.protocol)) {
+  if (!CLASH_SUPPORTED_PROTOCOLS.includes(node.protocol)) {
     throw new Error(`toClash: protocol "${node.protocol}" has no Clash YAML shape (CONVERT_UNSUPPORTED)`);
   }
 

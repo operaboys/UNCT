@@ -31,6 +31,9 @@ const PROTOCOL_SCHEME = Object.freeze({
   hysteria2: "hysteria2", tuic: "tuic", wireguard: "wireguard",
 });
 
+/** Every protocol toUrl() can serialize (ADR-012 ConversionObject source of truth). */
+export const URL_SUPPORTED_PROTOCOLS = Object.freeze(Object.keys(PROTOCOL_SCHEME));
+
 /**
  * Base64-encode a UTF-8 string with `btoa` (browser-pure, symmetric to the
  * parser's `atob`-based `decodeBase64`). No Node Buffer dependency.

@@ -31,8 +31,9 @@
 
 import { DEFAULT_NETWORK, DEFAULT_SECURITY } from "../unm/schema/defaults.js";
 
-/** Every protocol the Sing-box Parser's normalize.js builds a full node for. */
-const SUPPORTED_PROTOCOLS = Object.freeze([
+/** Every protocol the Sing-box Parser's normalize.js builds a full node for.
+ *  Exported as ADR-012's ConversionObject source of truth for `canExportAsSingboxJson`. */
+export const SINGBOX_SUPPORTED_PROTOCOLS = Object.freeze([
   "vless", "vmess", "trojan", "shadowsocks", "hysteria2", "tuic", "wireguard",
 ]);
 
@@ -96,7 +97,7 @@ function buildTransport(node) {
  * @throws {Error} if the protocol is outside the UNM Protocol enum.
  */
 export function toSingBox(node) {
-  if (!SUPPORTED_PROTOCOLS.includes(node.protocol)) {
+  if (!SINGBOX_SUPPORTED_PROTOCOLS.includes(node.protocol)) {
     throw new Error(`toSingBox: protocol "${node.protocol}" has no Sing-box JSON shape (CONVERT_UNSUPPORTED)`);
   }
 
