@@ -72,8 +72,14 @@ export function normalizeItem(item) {
   else if (item.tls === true) security = "tls";
   else if (TLS_NATIVE.includes(protocol)) security = "tls";
 
-  const pbk = resolvePriority(item, PRIORITY_CHAINS.pbk, "pbk", originalMappings);
-  const sid = resolvePriority(item, PRIORITY_CHAINS.sid, "sid", originalMappings);
+  // pbk/sid are Reality-only UNM core fields. WireGuard's own public key
+  // (`public_key`/`publicKey`, synonyms in the pbk chain) belongs solely under
+  // extensions.wireguard (ADR-007), never on the node — so skip the pbk/sid
+  // chains for wireguard to avoid both a bogus node.pbk and a bogus
+  // publicKey->pbk entry in originalMappings.
+  const isWireguard = protocol === "wireguard";
+  const pbk = isWireguard ? undefined : resolvePriority(item, PRIORITY_CHAINS.pbk, "pbk", originalMappings);
+  const sid = isWireguard ? undefined : resolvePriority(item, PRIORITY_CHAINS.sid, "sid", originalMappings);
   const sni = resolvePriority(item, PRIORITY_CHAINS.sni, "sni", originalMappings);
   const fingerprint = resolvePriority(item, PRIORITY_CHAINS.fingerprint, "fingerprint", originalMappings);
 

@@ -99,10 +99,16 @@ export function normalizeUrl(extraction) {
   }
 
   // ----- name normalization via shared Priority Chains -----
+  // pbk/sid are Reality-only UNM core fields. WireGuard has its OWN `publicKey`
+  // (a synonym in the pbk chain) that belongs solely under extensions.wireguard
+  // (ADR-007) — it is NOT a Reality public key, so for wireguard the pbk/sid
+  // chains are skipped entirely: resolving them would both wrongly populate
+  // node.pbk and pollute originalMappings with a bogus publicKey->pbk mapping.
+  const isWireguard = protocol === "wireguard";
   const fingerprint = resolvePriority(fields, PRIORITY_CHAINS.fingerprint, "fingerprint", originalMappings);
   const sni = resolvePriority(fields, PRIORITY_CHAINS.sni, "sni", originalMappings);
-  const pbk = resolvePriority(fields, PRIORITY_CHAINS.pbk, "pbk", originalMappings);
-  const sid = resolvePriority(fields, PRIORITY_CHAINS.sid, "sid", originalMappings);
+  const pbk = isWireguard ? undefined : resolvePriority(fields, PRIORITY_CHAINS.pbk, "pbk", originalMappings);
+  const sid = isWireguard ? undefined : resolvePriority(fields, PRIORITY_CHAINS.sid, "sid", originalMappings);
 
   /** @type {Record<string, unknown>} */
   const input = {
