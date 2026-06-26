@@ -123,3 +123,26 @@ export interface RealityAnalysis {
   /** Human-readable compatibility problems, empty when fully compatible. */
   issues: string[];
 }
+
+/**
+ * Output of the Security Analyzer (§1.2) — the last of the six Spec-قطعی
+ * modules. A Weighted-Penalty score (ADR-011): starts at 100, subtracts
+ * weighted deductions for each quality problem found, floors at 0. Reads
+ * `CompletenessResult`/`TlsAnalysis`/`RealityAnalysis` rather than
+ * re-deriving per-field checks (§1.0 consumption rule) — its own and only
+ * new judgment is whether a transport security layer was chosen at all
+ * (`security` itself, which no earlier module evaluates as a verdict).
+ *
+ * Deliberately independent of `compatibilityScore` (§1.5's warning, ADR-011
+ * principle 2): this module reads Reality Analyzer's `issues.length` — a
+ * continuous count — never `compatible`, the boolean a future
+ * `compatibilityScore` will be built from. `securityScore` lands in
+ * `AnalysisObject` (spec 05 §4) as-is; banding it into Excellent/Good/.../
+ * Critical (06 §3) is a presentation-layer concern, not this module's.
+ */
+export interface SecurityAnalysis {
+  /** 0-100, ADR-011 Weighted-Penalty model. High = good (inverse of risk). */
+  securityScore: number;
+  /** Human-readable quality problems the score was deducted for. */
+  issues: string[];
+}
