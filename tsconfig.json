@@ -1,5 +1,5 @@
 {
-  "//": "Type-CHECK only (tsc --noEmit). The app ships as plain JS with no build step (ADR-005). This config never emits output.",
+  "//": "Type-CHECK only (tsc --noEmit), never emits. core/ stays plain JS+JSDoc, zero build (ADR-005); ui/ is real TS/TSX, bundled only at final assembly (ADR-014).",
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
@@ -12,8 +12,10 @@
     "exactOptionalPropertyTypes": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "types": []
   },
-  "include": ["core/**/*.js", "core/**/*.d.ts", "tests/**/*.js"],
+  "include": ["core/**/*.js", "core/**/*.d.ts", "tests/**/*.js", "ui/**/*.ts", "ui/**/*.tsx"],
   "exclude": ["node_modules", "dist", "build"]
 }

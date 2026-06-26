@@ -85,9 +85,9 @@ npm run test:coverage
 
 بقیه‌ی اسناد هم برای Context کلی موجودند.
 
-## یک تصمیم باز (مهم)
+## تصمیم Build Step (حل‌شده)
 
-تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه هنوز حل نشده (در `IMPLEMENTATION_BLUEPRINT.md` مستند شده). **قبل از تنظیم هرگونه Bundler یا ساختار Build، از مهدی بپرس**، خودسرانه تصمیم نگیر. برای توسعه‌ی فعلی، فرض بر Native ES Modules بدون Bundler است.
+تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild) فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند (ADR-005). `npm run build` خروجی را در `assets/js/app.js` می‌سازد (Gitignored، هرگز دستی ویرایش نشود).
 
 ## گام بعدی
 
