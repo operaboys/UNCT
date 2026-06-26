@@ -11,7 +11,20 @@
  * @typedef {import("../../types/parser").RawExtraction} RawExtraction
  */
 
-/** Outbound protocols that carry a real proxy node (skip freedom/blackhole/dns). */
+/**
+ * Outbound protocols that carry a real proxy node (skip freedom/blackhole/dns).
+ * This is a STRUCTURAL filter only — "is this outbound a proxy, not routing
+ * infra" — not a claim that normalize.js fully builds every one of these.
+ * Today normalize.js's credential extraction (settings.vnext/servers + users[])
+ * only yields a complete node for vless/vmess/trojan/shadowsocks; hysteria2/
+ * tuic/wireguard have no matching Xray JSON shape here yet (no WireGuard
+ * extensions namespace, no uuid:password convention), so an outbound of one of
+ * those types currently passes this filter but fails normalizeItem on the
+ * missing address (Xray-core's own shapes for them differ from vnext/servers)
+ * and is silently skipped by normalizeManyXray's per-item try/catch — never
+ * fabricated, simply not yet supported. core/converter/to-xray.js mirrors this
+ * boundary explicitly (CONVERT_UNSUPPORTED for the same three).
+ */
 export const PROXY_PROTOCOLS = Object.freeze([
   "vless", "vmess", "trojan", "shadowsocks", "ss",
   "hysteria2", "tuic", "wireguard",
