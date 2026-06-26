@@ -92,3 +92,34 @@ export interface TlsAnalysis {
   /** Human-readable coherence problems, empty when fully coherent. */
   issues: string[];
 }
+
+/**
+ * Output of the Reality Analyzer (§1.5). Judges **Reality Compatibility** —
+ * whether this node's Reality setup has everything a real client needs to
+ * establish a Reality connection — deliberately kept separate from
+ * `securityScore` (§1.5's explicit warning: a node can be Secure but not
+ * Compatible with a specific client, or vice versa; these land in
+ * `AnalysisObject`'s distinct `securityScore`/`compatibilityScore` fields,
+ * spec 05 §4). PBK/SID structural plausibility is this module's own
+ * contribution (no other module checks their format); SNI/Fingerprint
+ * handshake coherence is consumed from the TLS Analyzer (§1.3) rather than
+ * re-derived, per the §1.0 consumption rule.
+ */
+export interface RealityAnalysis {
+  /** True iff Reality is in play (security === "reality"). */
+  applicable: boolean;
+  /** Aggregate verdict: would a real client be able to use this Reality setup? */
+  compatible: boolean;
+  /**
+   * Is `pbk` a plausible X25519 public key (43-char base64url)? `null` when
+   * `pbk` is absent or Reality is not applicable.
+   */
+  pbkPlausible: boolean | null;
+  /**
+   * Is `sid` a plausible Reality short ID (even-length hex, <=16 chars)?
+   * `null` when `sid` is absent (it is optional) or Reality is not applicable.
+   */
+  sidPlausible: boolean | null;
+  /** Human-readable compatibility problems, empty when fully compatible. */
+  issues: string[];
+}

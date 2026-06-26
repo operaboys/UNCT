@@ -39,11 +39,13 @@ const KNOWN_FINGERPRINTS = Object.freeze([
 ]);
 
 /**
- * Is a string field actually filled in (non-empty after trim)?
+ * Is a string field actually filled in (non-empty after trim)? Exported so
+ * the Reality Analyzer (§1.5), which composes with this module, doesn't
+ * redefine the same check.
  * @param {unknown} value
  * @returns {value is string}
  */
-function isNonEmptyString(value) {
+export function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
