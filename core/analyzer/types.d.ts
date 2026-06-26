@@ -8,7 +8,7 @@
  * added here without an ADR (they are not in the UNM Freeze zone).
  */
 
-import type { Protocol } from "../types/unm";
+import type { Protocol, NetworkType } from "../types/unm";
 
 /**
  * Output of the Data Completeness Analyzer (§1.0). Reports which
@@ -42,4 +42,26 @@ export interface ProtocolAnalysis {
   protocol: Protocol;
   /** True iff `protocol` is one of the known/supported UNM protocols. */
   recognized: boolean;
+}
+
+/**
+ * Output of the Network Analyzer (§1.4). Reports whether the node's transport
+ * `network` is one the selected `protocol` can actually run over. This is a
+ * compatibility question (is this transport meaningful for this protocol?),
+ * NOT a validity question (is the transport value well-formed? — Validation
+ * Engine, spec 04) nor a quality score (Security/Reality Analyzer). The
+ * self-transporting protocols (hysteria2/tuic/wireguard) carry no
+ * streamSettings transport, so their only compatible network is the neutral
+ * default `tcp`. `supportedNetworks` is exposed so later analyzers read the
+ * compatibility set from one place instead of re-deriving it.
+ */
+export interface NetworkAnalysis {
+  /** The transport found on the node (echoed from `node.network`). */
+  network: NetworkType;
+  /** The protocol the network is judged against (echoed from `node.protocol`). */
+  protocol: Protocol;
+  /** True iff `network` is in `supportedNetworks` for this protocol. */
+  compatible: boolean;
+  /** The transports this protocol can run over — the compatibility set. */
+  supportedNetworks: NetworkType[];
 }
