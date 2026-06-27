@@ -6,13 +6,14 @@
  *
  * Flow: Input Panel -> Parser Preview -> Normalized Object -> Output Panel
  * (doc 07 §4.2's diagram). Parsing/conversion are NOT duplicated here —
- * `handleParse` calls `core/parser/parse-and-validate.js#parseAndValidate`
- * (the same parse -> normalize -> applyValidation chain the Foundation Gate
- * and `parser.worker.js` already drive) and writes the result into
- * `parserStore`; everything this component renders is read back out through
- * `useParserState()` + Selectors (`core/store/selectors.js`) — Rule 11's
- * boundary: this file sorts/displays/aggregates values Core already
- * computed, it never scores or validates anything itself.
+ * `handleParse` calls `ui/store/parser-worker-client.js#parseRawConfig`
+ * (real-Worker-by-default, file://-only fallback to the same
+ * parse -> normalize -> applyValidation chain the Foundation Gate already
+ * drives — see ADR-016) and writes the result into `parserStore`; everything
+ * this component renders is read back out through `useParserState()` +
+ * Selectors (`core/store/selectors.js`) — Rule 11's boundary: this file
+ * sorts/displays/aggregates values Core already computed, it never scores
+ * or validates anything itself.
  *
  * Deliberately deferred past this first pass (doc 07 §4.2 lists them, none
  * block the Parser -> Validation -> Converter chain this screen exists to
@@ -23,7 +24,6 @@
  * structure and data flow only.
  */
 import { useMemo, useState } from "preact/hooks";
-import { parseAndValidate } from "../../core/parser/parse-and-validate.js";
 import { convertBatch } from "../../core/converter/conversion.js";
 import {
   selectProtocolCounts,
@@ -32,6 +32,8 @@ import {
   selectAggregatedRecoveryActions,
 } from "../../core/store/selectors.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
+import { parseRawConfig, CancelledError } from "../store/parser-worker-client.js";
+import { formatProtocolCounts, formatDiagnosticList, formatSkippedProtocols } from "./format.js";
 
 type ExportFormat = "url" | "xrayJson" | "singboxJson" | "clashYaml";
 
@@ -53,23 +55,32 @@ export function ConverterScreen() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [lastParse, setLastParse] = useState<LastParse | null>(null);
   const [format, setFormat] = useState<ExportFormat>("url");
+  const [isParsing, setIsParsing] = useState(false);
 
   const protocolCounts = useMemo(() => selectProtocolCounts({ nodes }), [nodes]);
   const warnings = useMemo(() => selectAggregatedWarnings({ nodes }), [nodes]);
   const errors = useMemo(() => selectAggregatedErrors({ nodes }), [nodes]);
   const recoveryActions = useMemo(() => selectAggregatedRecoveryActions({ nodes }), [nodes]);
   const { converted, skipped } = useMemo(() => convertBatch(nodes, format), [nodes, format]);
+  const skippedMessage = formatSkippedProtocols(skipped);
 
-  function handleParse() {
+  async function handleParse() {
+    setIsParsing(true);
     try {
-      const result = parseAndValidate(raw);
+      const result = await parseRawConfig(raw);
       parserStore.setNodes(result.nodes);
       setLastParse({ parserName: result.parserName, recovered: result.recovered });
       setParseError(null);
     } catch (err) {
+      // A superseded job (this track's own next Parse, or a Clear) resolves
+      // itself instead — never surface a stale cancellation as a user error
+      // (10-PERFORMANCE_ENGINE §6.1 "Stale Jobs must never update State").
+      if (err instanceof CancelledError) return;
       parserStore.clearNodes();
       setLastParse(null);
       setParseError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsParsing(false);
     }
   }
 
@@ -99,8 +110,8 @@ export function ConverterScreen() {
           placeholder="vless://... or a multi-line subscription, etc."
         />
         <div class="actions">
-          <button type="button" onClick={handleParse} disabled={raw.trim().length === 0}>
-            Parse
+          <button type="button" onClick={handleParse} disabled={raw.trim().length === 0 || isParsing}>
+            {isParsing ? "Parsing…" : "Parse"}
           </button>
           <button type="button" onClick={handleClear}>Clear</button>
         </div>
@@ -116,15 +127,11 @@ export function ConverterScreen() {
             <dt>Recovered</dt>
             <dd>{String(lastParse.recovered)}</dd>
             <dt>Protocol Count</dt>
-            <dd>
-              {Object.keys(protocolCounts).length === 0
-                ? "—"
-                : Object.entries(protocolCounts).map(([p, c]) => `${p}: ${c}`).join(", ")}
-            </dd>
+            <dd>{formatProtocolCounts(protocolCounts)}</dd>
             <dt>Errors</dt>
-            <dd>{errors.length === 0 ? "none" : errors.join("; ")}</dd>
+            <dd>{formatDiagnosticList(errors)}</dd>
             <dt>Warnings</dt>
-            <dd>{warnings.length === 0 ? "none" : warnings.join("; ")}</dd>
+            <dd>{formatDiagnosticList(warnings)}</dd>
           </dl>
         ) : (
           <p class="hint">Parse an input above to see its preview.</p>
@@ -192,12 +199,7 @@ export function ConverterScreen() {
         ) : (
           <>
             <textarea readOnly rows={10} cols={80} value={converted.map((c) => c.output).join("\n")} />
-            {skipped.length > 0 && (
-              <p class="hint">
-                Skipped ({skipped.length}, protocol not supported by this format):{" "}
-                {skipped.map((s) => s.protocol).join(", ")}
-              </p>
-            )}
+            {skippedMessage && <p class="hint">{skippedMessage}</p>}
           </>
         )}
       </section>
