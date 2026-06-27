@@ -18,6 +18,11 @@ import {
   selectAnalysisByNodeId,
   selectNodesSortedByCreatedAt,
   selectAverageSecurityScore,
+  selectNodesMatchingSearch,
+  selectNodesFilteredByProtocol,
+  selectNodesFilteredByValidity,
+  selectNodesSortedByField,
+  selectNodesGroupedByProtocol,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -202,5 +207,104 @@ describe("selectAverageSecurityScore", () => {
 
   it("returns null when no node has been analyzed yet, never a fabricated 0 (Rule 9)", () => {
     expect(selectAverageSecurityScore({ analysisByNodeId: {} })).toBeNull();
+  });
+});
+
+describe("selectNodesMatchingSearch", () => {
+  it("matches case-insensitively across protocol/address/port (Subscription Center Search, doc 07 §4.4)", () => {
+    const a = node({ protocol: "vless", address: "example.com", port: 443 });
+    const b = node({ protocol: "trojan", address: "other.net", port: 8443 });
+    const state = { nodes: [a, b] };
+
+    expect(selectNodesMatchingSearch(state, "EXAMPLE")).toEqual([a]);
+    expect(selectNodesMatchingSearch(state, "trojan")).toEqual([b]);
+    expect(selectNodesMatchingSearch(state, "8443")).toEqual([b]);
+  });
+
+  it("returns every node for a blank query, not none", () => {
+    const state = { nodes: [node(), node()] };
+
+    expect(selectNodesMatchingSearch(state, "")).toEqual(state.nodes);
+    expect(selectNodesMatchingSearch(state, "   ")).toEqual(state.nodes);
+  });
+
+  it("returns an empty array when nothing matches", () => {
+    const state = { nodes: [node({ protocol: "vless" })] };
+
+    expect(selectNodesMatchingSearch(state, "nomatch")).toEqual([]);
+  });
+});
+
+describe("selectNodesFilteredByProtocol", () => {
+  it("narrows to one protocol (Subscription Center Filter, doc 07 §4.4)", () => {
+    const a = node({ protocol: "vless" });
+    const b = node({ protocol: "trojan" });
+    const state = { nodes: [a, b] };
+
+    expect(selectNodesFilteredByProtocol(state, "vless")).toEqual([a]);
+  });
+
+  it("\"all\" is the no-op case, returning every node", () => {
+    const state = { nodes: [node({ protocol: "vless" }), node({ protocol: "trojan" })] };
+
+    expect(selectNodesFilteredByProtocol(state, "all")).toEqual(state.nodes);
+  });
+});
+
+describe("selectNodesFilteredByValidity", () => {
+  it("narrows by validation.overallValid (Subscription Center Filter, doc 07 §4.4)", () => {
+    const base = node();
+    const valid = withValidation(base, { ...base.validation, overallValid: true });
+    const invalid = node(); // emptyValidation() -> overallValid: false
+    const state = { nodes: [valid, invalid] };
+
+    expect(selectNodesFilteredByValidity(state, "valid")).toEqual([valid]);
+    expect(selectNodesFilteredByValidity(state, "invalid")).toEqual([invalid]);
+  });
+
+  it("\"all\" is the no-op case, returning every node", () => {
+    const state = { nodes: [node(), node()] };
+
+    expect(selectNodesFilteredByValidity(state, "all")).toEqual(state.nodes);
+  });
+});
+
+describe("selectNodesSortedByField", () => {
+  it("sorts ascending or descending by protocol/address/port/createdAt (Subscription Center Sort, doc 07 §4.4)", () => {
+    const a = node({ protocol: "trojan", address: "b.example.com", port: 100 });
+    const b = node({ protocol: "vless", address: "a.example.com", port: 200 });
+    const state = { nodes: [a, b] };
+
+    expect(selectNodesSortedByField(state, "protocol", "asc").map((n) => n.nodeId)).toEqual([a.nodeId, b.nodeId]);
+    expect(selectNodesSortedByField(state, "protocol", "desc").map((n) => n.nodeId)).toEqual([b.nodeId, a.nodeId]);
+    expect(selectNodesSortedByField(state, "address", "asc").map((n) => n.nodeId)).toEqual([b.nodeId, a.nodeId]);
+    expect(selectNodesSortedByField(state, "port", "asc").map((n) => n.nodeId)).toEqual([a.nodeId, b.nodeId]);
+  });
+
+  it("does not mutate the original nodes array", () => {
+    const nodes = [node({ port: 200 }), node({ port: 100 })];
+    const state = { nodes };
+
+    selectNodesSortedByField(state, "port", "asc");
+
+    expect(state.nodes).toBe(nodes);
+  });
+});
+
+describe("selectNodesGroupedByProtocol", () => {
+  it("groups full node lists by protocol (Subscription Center Group, doc 07 §4.4)", () => {
+    const a = node({ protocol: "vless" });
+    const b = node({ protocol: "vless" });
+    const c = node({ protocol: "trojan" });
+    const state = { nodes: [a, b, c] };
+
+    expect(selectNodesGroupedByProtocol(state)).toEqual({
+      vless: [a, b],
+      trojan: [c],
+    });
+  });
+
+  it("returns an empty object for an empty collection", () => {
+    expect(selectNodesGroupedByProtocol({ nodes: [] })).toEqual({});
   });
 });

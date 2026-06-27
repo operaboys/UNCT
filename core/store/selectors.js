@@ -12,6 +12,7 @@
  * functions stay plain and framework-agnostic.
  *
  * @typedef {import("../types/unm").UNMNode} UNMNode
+ * @typedef {import("../types/unm").Protocol} Protocol
  * @typedef {import("./parser-state").ParserState} ParserState
  * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
@@ -145,4 +146,90 @@ export function selectAverageSecurityScore(state) {
   const scores = Object.values(state.analysisByNodeId).map((a) => a.security.securityScore);
   if (scores.length === 0) return null;
   return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+}
+
+/**
+ * Full-text search across the identity fields every node always has
+ * (Subscription Center's "Search Nodes", doc 07 §4.4 / doc 03 §2.1).
+ * `remark`/`group`/`tags` (spec 05 §2) are real UNMNode fields but no parser
+ * populates them yet, so searching them today would always miss — scoped to
+ * `protocol`/`address`/`port` instead. Case-insensitive substring match; a
+ * blank query returns every node, not none.
+ * @param {ParserState} state
+ * @param {string} query
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesMatchingSearch(state, query) {
+  const q = query.trim().toLowerCase();
+  if (q === "") return state.nodes;
+  return state.nodes.filter(
+    (n) =>
+      n.protocol.toLowerCase().includes(q) ||
+      n.address.toLowerCase().includes(q) ||
+      String(n.port).includes(q),
+  );
+}
+
+/**
+ * Narrow to one protocol (Subscription Center's "Filter", doc 07 §4.4).
+ * `"all"` is the no-op case, returning every node.
+ * @param {ParserState} state
+ * @param {Protocol | "all"} protocol
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesFilteredByProtocol(state, protocol) {
+  if (protocol === "all") return state.nodes;
+  return state.nodes.filter((n) => n.protocol === protocol);
+}
+
+/**
+ * Narrow by the Validation Engine's `overallValid` verdict (Subscription
+ * Center's "Filter", doc 07 §4.4). `"all"` is the no-op case.
+ * @param {ParserState} state
+ * @param {"valid" | "invalid" | "all"} validity
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesFilteredByValidity(state, validity) {
+  if (validity === "all") return state.nodes;
+  const wantValid = validity === "valid";
+  return state.nodes.filter((n) => n.validation.overallValid === wantValid);
+}
+
+/**
+ * Generic ascending/descending sort over one of the few fields every node
+ * always has (Subscription Center's "Sort", doc 07 §4.4) — the same
+ * reorder-only boundary as `selectNodesSortedByCreatedAt`/
+ * `selectNodesSortedBySecurity` above, just parameterized over field and
+ * direction instead of one fixed field.
+ * @param {ParserState} state
+ * @param {"protocol" | "address" | "port" | "createdAt"} field
+ * @param {"asc" | "desc"} direction
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesSortedByField(state, field, direction) {
+  const sign = direction === "asc" ? 1 : -1;
+  return [...state.nodes].sort((a, b) => {
+    const va = a[field];
+    const vb = b[field];
+    if (va < vb) return -1 * sign;
+    if (va > vb) return 1 * sign;
+    return 0;
+  });
+}
+
+/**
+ * Group nodes by `protocol` (Subscription Center's "Group", doc 07 §4.4) —
+ * the only grouping field every node reliably has today; `group` (spec 05
+ * §2) exists on UNMNode but no parser populates it yet, so grouping by it
+ * would always collapse to a single bucket.
+ * @param {ParserState} state
+ * @returns {Readonly<Record<string, readonly UNMNode[]>>}
+ */
+export function selectNodesGroupedByProtocol(state) {
+  /** @type {Record<string, UNMNode[]>} */
+  const groups = {};
+  for (const n of state.nodes) {
+    (groups[n.protocol] ??= []).push(n);
+  }
+  return groups;
 }

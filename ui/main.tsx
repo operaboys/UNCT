@@ -11,8 +11,9 @@ import { useState } from "preact/hooks";
 import { DashboardScreen } from "./dashboard/dashboard-screen.js";
 import { ConverterScreen } from "./converter/converter-screen.js";
 import { AnalyzerScreen } from "./analyzer/analyzer-screen.js";
+import { SubscriptionScreen } from "./subscription/subscription-screen.js";
 
-type Screen = "dashboard" | "converter" | "analyzer";
+type Screen = "dashboard" | "converter" | "analyzer" | "subscription";
 
 function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
@@ -29,8 +30,19 @@ function App() {
         <button type="button" onClick={() => setScreen("analyzer")} disabled={screen === "analyzer"}>
           Analyzer
         </button>
+        <button type="button" onClick={() => setScreen("subscription")} disabled={screen === "subscription"}>
+          Subscription Center
+        </button>
       </nav>
-      {screen === "dashboard" ? <DashboardScreen /> : screen === "converter" ? <ConverterScreen /> : <AnalyzerScreen />}
+      {screen === "dashboard" ? (
+        <DashboardScreen />
+      ) : screen === "converter" ? (
+        <ConverterScreen />
+      ) : screen === "analyzer" ? (
+        <AnalyzerScreen />
+      ) : (
+        <SubscriptionScreen />
+      )}
     </div>
   );
 }
