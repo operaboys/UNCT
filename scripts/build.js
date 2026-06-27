@@ -26,6 +26,17 @@
  *
  * Not a dev-loop step — `npm test`/`npm run typecheck` never invoke this.
  * Run it only when packaging a release.
+ *
+ * `minify: true` on both outputs (2026-06-27, per Mehdi's review of the
+ * Export Center checkpoint): esbuild already does this for free — no new
+ * dependency, no architecture change — and brings `app.js` back under
+ * 14-DEPENDENCY_POLICY §2.1's 50KB-gzip UI-Layer budget (was ~59.4KB
+ * unminified, now ~43.6KB). `sourcemap: true` is kept on both so minified
+ * output stays debuggable. The deeper question — whether §2.1's "UI Layer"
+ * budget should be redefined now that ui/ and core/ are bundled together
+ * into one artifact (Rule 11: screens call core/ directly) — is deferred;
+ * minification alone closes the immediate overage without forcing that
+ * decision yet.
  */
 import { build } from "esbuild";
 import { mkdir } from "node:fs/promises";
@@ -47,6 +58,7 @@ await build({
   jsx: "automatic",
   jsxImportSource: "preact",
   sourcemap: true,
+  minify: true,
   logLevel: "info",
 });
 console.log(`Built ${path.relative(root, appOutfile)}`);
@@ -60,6 +72,7 @@ await build({
   platform: "browser",
   target: "es2023",
   sourcemap: true,
+  minify: true,
   logLevel: "info",
 });
 console.log(`Built ${path.relative(root, workerOutfile)}`);
