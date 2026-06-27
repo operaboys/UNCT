@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-27 |
 | **Deciders** | Mehdi (Architecture Review) |
-| **Related** | `10-PERFORMANCE_ENGINE` §1 (Rule 01/02), §3 (SharedArrayBuffer Feature Detection — the precedent pattern this ADR reuses); `ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` Decision point 6 (the open question this ADR closes); `ADR-003-WORKER-ARCHITECTURE.md`, `ADR-010-WORKER-RESULT-VERSIONING.md`; `core/worker/worker-manager.js`, `core/worker/parser.worker.js`, `ui/store/parser-worker-client.ts`, `scripts/build.js` |
+| **Related** | `10-PERFORMANCE_ENGINE` §1 (Rule 01/02), §3 (SharedArrayBuffer Feature Detection — the precedent pattern this ADR reuses); `14-DEPENDENCY_POLICY` §2.1 (Bundle Size Budget — see Consequences); `ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` Decision point 6 (the open question this ADR closes); `ADR-003-WORKER-ARCHITECTURE.md`, `ADR-010-WORKER-RESULT-VERSIONING.md`; `core/worker/worker-manager.js`, `core/worker/parser.worker.js`, `ui/store/parser-worker-client.ts`, `scripts/build.js` |
 | **Anti-Chaos Rule** | None triggered — doc 10 §3 already establishes feature-detection-with-fallback as the sanctioned pattern for an unconditional-sounding Worker rule meeting a real browser capability gap (SharedArrayBuffer/COOP+COEP). This ADR applies that same pattern to Rule 01/02, it does not relax it. |
 | **Tier** | Lightweight — additive decision, closes an explicitly-deferred open flag (ADR-014 point 6), no change to doc 10's Worker Pool architecture, Message-Based-only communication rule, or the Versioning mechanism (ADR-010). |
 
@@ -127,6 +127,22 @@ above shows happens in exactly one case: a `file://` page origin.
 
 ## Consequences
 
+- **`assets/js/app.js` now exceeds `14-DEPENDENCY_POLICY` §2.1's "UI Layer" sub-budget (≤50KB gzip)
+  by ~1KB — measured, not estimated**: real gzip of the built `app.js` is ~51.0KB (52206 bytes).
+  Root cause, confirmed via an esbuild metafile: `js-yaml` (~92KB of pre-minify source, the single
+  largest dependency in the bundle by far) is pulled into `app.js` by
+  `core/converter/conversion.js` → `to-clash.js`, since the Converter Screen's "Clash YAML" export
+  option calls `convertBatch` directly on the main thread, separately from the Parse-side `js-yaml`
+  usage this ADR already isolated into `assets/js/parser-worker.js` (~38KB gzip) via
+  `registerClashParser`. §2.1's own risk note named exactly this dependency ("YAML Parser") as a
+  likely contributor to gradual bundle growth — this is that prediction materializing, not a new
+  risk. The combined fetch weight across both artifacts (~51KB + ~38KB ≈ 89KB gzip) stays
+  comfortably under §2.1's overall external-dependency ceiling (≤150KB gzip). Per Mehdi's review
+  (2026-06-27): no immediate fix required; flagged here so the ~1KB overage on the UI-Layer
+  sub-budget specifically is a recorded, approved fact rather than a future surprise. A real fix, if
+  ever needed, would split `to-clash.js`'s `js-yaml`-dependent serialization into the existing
+  (currently unwired) `core/worker/converter.worker.js` rather than touching this ADR's Parse-side
+  Worker routing.
 - **`file://` (Deployment Mode 1) is the only deployment mode where Rule 02 cannot be fully met**,
   and it cannot be met in *any* form there — there is no origin to grant a Worker script access to,
   regardless of approach (a 0-byte input would still fail). Falling back is the only available
