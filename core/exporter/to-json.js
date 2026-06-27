@@ -21,32 +21,34 @@
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  */
 import { convertBatch } from "../converter/conversion.js";
+import { withSkipReason } from "./skip-reason.js";
 
 /**
  * @param {readonly UNMNode[]} nodes
  * @param {"xrayJson" | "singboxJson"} format
- * @returns {{ content: string, skipped: {nodeId: string, protocol: string}[] }}
+ * @param {string} formatLabel
+ * @returns {{ content: string, skipped: {nodeId: string, protocol: string, reason: string}[] }}
  */
-function exportOutboundsJson(nodes, format) {
+function exportOutboundsJson(nodes, format, formatLabel) {
   const { converted, skipped } = convertBatch(nodes, format);
   const outbounds = converted.flatMap((c) => JSON.parse(c.output).outbounds);
-  return { content: JSON.stringify({ outbounds }), skipped };
+  return { content: JSON.stringify({ outbounds }), skipped: withSkipReason(skipped, formatLabel) };
 }
 
 /**
  * @param {readonly UNMNode[]} nodes
- * @returns {{ content: string, skipped: {nodeId: string, protocol: string}[] }}
+ * @returns {{ content: string, skipped: {nodeId: string, protocol: string, reason: string}[] }}
  */
 export function exportXrayJson(nodes) {
-  return exportOutboundsJson(nodes, "xrayJson");
+  return exportOutboundsJson(nodes, "xrayJson", "Xray JSON");
 }
 
 /**
  * @param {readonly UNMNode[]} nodes
- * @returns {{ content: string, skipped: {nodeId: string, protocol: string}[] }}
+ * @returns {{ content: string, skipped: {nodeId: string, protocol: string, reason: string}[] }}
  */
 export function exportSingboxJson(nodes) {
-  return exportOutboundsJson(nodes, "singboxJson");
+  return exportOutboundsJson(nodes, "singboxJson", "Sing-box JSON");
 }
 
 /**

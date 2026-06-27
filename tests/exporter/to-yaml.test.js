@@ -38,7 +38,7 @@ describe("exportClashYaml", () => {
     const fake = /** @type {any} */ ({ nodeId: "fake-id", protocol: "made-up" });
     const { content, skipped } = exportClashYaml([vless, fake]);
     expect(loadProxies(content)).toHaveLength(1);
-    expect(skipped).toEqual([{ nodeId: "fake-id", protocol: "made-up" }]);
+    expect(skipped).toEqual([{ nodeId: "fake-id", protocol: "made-up", reason: 'protocol "made-up" is not supported by Clash YAML export' }]);
   });
 });
 

@@ -13,8 +13,9 @@ import { ConverterScreen } from "./converter/converter-screen.js";
 import { AnalyzerScreen } from "./analyzer/analyzer-screen.js";
 import { SubscriptionScreen } from "./subscription/subscription-screen.js";
 import { ExtractorScreen } from "./extractor/extractor-screen.js";
+import { ExportScreen } from "./export/export-screen.js";
 
-type Screen = "dashboard" | "converter" | "analyzer" | "subscription" | "extractor";
+type Screen = "dashboard" | "converter" | "analyzer" | "subscription" | "extractor" | "export";
 
 function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
@@ -37,6 +38,9 @@ function App() {
         <button type="button" onClick={() => setScreen("extractor")} disabled={screen === "extractor"}>
           Extractor
         </button>
+        <button type="button" onClick={() => setScreen("export")} disabled={screen === "export"}>
+          Export Center
+        </button>
       </nav>
       {screen === "dashboard" ? (
         <DashboardScreen />
@@ -46,8 +50,10 @@ function App() {
         <AnalyzerScreen />
       ) : screen === "subscription" ? (
         <SubscriptionScreen />
-      ) : (
+      ) : screen === "extractor" ? (
         <ExtractorScreen />
+      ) : (
+        <ExportScreen />
       )}
     </div>
   );

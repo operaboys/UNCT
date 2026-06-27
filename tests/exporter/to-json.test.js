@@ -35,7 +35,9 @@ describe("exportXrayJson", () => {
   it("skips (never throws on) a node outside to-xray's 4-protocol scope, e.g. wireguard", () => {
     const { content, skipped } = exportXrayJson([vless, wireguard]);
     expect(JSON.parse(content).outbounds).toHaveLength(1);
-    expect(skipped).toEqual([{ nodeId: wireguard.nodeId, protocol: "wireguard" }]);
+    expect(skipped).toEqual([
+      { nodeId: wireguard.nodeId, protocol: "wireguard", reason: 'protocol "wireguard" is not supported by Xray JSON export' },
+    ]);
   });
 });
 

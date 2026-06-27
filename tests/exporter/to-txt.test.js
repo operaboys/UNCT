@@ -33,6 +33,6 @@ describe("exportTxt", () => {
     const fake = /** @type {any} */ ({ nodeId: "fake-id", protocol: "made-up" });
     const { content, skipped } = exportTxt([vless, fake]);
     expect(content).toBe(toUrl(vless));
-    expect(skipped).toEqual([{ nodeId: "fake-id", protocol: "made-up" }]);
+    expect(skipped).toEqual([{ nodeId: "fake-id", protocol: "made-up", reason: 'protocol "made-up" is not supported by TXT export' }]);
   });
 });

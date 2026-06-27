@@ -15,12 +15,13 @@
  * @typedef {import("../types/unm").UNMNode} UNMNode
  */
 import { convertBatch } from "../converter/conversion.js";
+import { withSkipReason } from "./skip-reason.js";
 
 /**
  * @param {readonly UNMNode[]} nodes
- * @returns {{ content: string, skipped: {nodeId: string, protocol: string}[] }}
+ * @returns {{ content: string, skipped: {nodeId: string, protocol: string, reason: string}[] }}
  */
 export function exportTxt(nodes) {
   const { converted, skipped } = convertBatch(nodes, "url");
-  return { content: converted.map((c) => c.output).join("\n"), skipped };
+  return { content: converted.map((c) => c.output).join("\n"), skipped: withSkipReason(skipped, "TXT") };
 }

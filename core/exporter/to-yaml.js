@@ -17,13 +17,14 @@
  */
 import yaml from "js-yaml";
 import { convertBatch } from "../converter/conversion.js";
+import { withSkipReason } from "./skip-reason.js";
 
 /**
  * @param {readonly UNMNode[]} nodes
- * @returns {{ content: string, skipped: {nodeId: string, protocol: string}[] }}
+ * @returns {{ content: string, skipped: {nodeId: string, protocol: string, reason: string}[] }}
  */
 export function exportClashYaml(nodes) {
   const { converted, skipped } = convertBatch(nodes, "clashYaml");
   const proxies = converted.flatMap((c) => /** @type {{proxies: unknown[]}} */ (yaml.load(c.output)).proxies);
-  return { content: yaml.dump({ proxies }), skipped };
+  return { content: yaml.dump({ proxies }), skipped: withSkipReason(skipped, "Clash YAML") };
 }
