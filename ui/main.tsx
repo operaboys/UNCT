@@ -8,17 +8,21 @@
  */
 import { render } from "preact";
 import { useState } from "preact/hooks";
+import { DashboardScreen } from "./dashboard/dashboard-screen.js";
 import { ConverterScreen } from "./converter/converter-screen.js";
 import { AnalyzerScreen } from "./analyzer/analyzer-screen.js";
 
-type Screen = "converter" | "analyzer";
+type Screen = "dashboard" | "converter" | "analyzer";
 
 function App() {
-  const [screen, setScreen] = useState<Screen>("converter");
+  const [screen, setScreen] = useState<Screen>("dashboard");
 
   return (
     <div>
       <nav aria-label="Screen Switcher">
+        <button type="button" onClick={() => setScreen("dashboard")} disabled={screen === "dashboard"}>
+          Dashboard
+        </button>
         <button type="button" onClick={() => setScreen("converter")} disabled={screen === "converter"}>
           Converter
         </button>
@@ -26,7 +30,7 @@ function App() {
           Analyzer
         </button>
       </nav>
-      {screen === "converter" ? <ConverterScreen /> : <AnalyzerScreen />}
+      {screen === "dashboard" ? <DashboardScreen /> : screen === "converter" ? <ConverterScreen /> : <AnalyzerScreen />}
     </div>
   );
 }

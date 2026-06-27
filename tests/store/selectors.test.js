@@ -16,6 +16,8 @@ import {
   selectAggregatedErrors,
   selectAggregatedRecoveryActions,
   selectAnalysisByNodeId,
+  selectNodesSortedByCreatedAt,
+  selectAverageSecurityScore,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -137,20 +139,68 @@ describe("selectAggregatedWarnings / selectAggregatedErrors / selectAggregatedRe
   });
 });
 
+/**
+ * @typedef {import("../../core/analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
+ */
+
+/**
+ * Build a type-correct AnalysisBundle fixture (06-ANALYZER_ENGINE), mirroring
+ * tests/store/analyzer-state.test.js's identical helper.
+ * @param {number} securityScore
+ * @returns {AnalysisBundle}
+ */
+function bundle(securityScore) {
+  return {
+    completeness: { missingFields: [], presentOptionalFields: [], completenessScore: 100 },
+    protocol: { protocol: "vless", recognized: true },
+    network: { network: "tcp", protocol: "vless", compatible: true, supportedNetworks: ["tcp"] },
+    tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
+    reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
+    security: { securityScore, issues: [] },
+  };
+}
+
 describe("selectAnalysisByNodeId", () => {
   it("looks up a node's Analyzer verdict bundle from AnalyzerState by nodeId", () => {
-    /** @type {import("../../core/analyzer/analyze-node.js").AnalysisBundle} */
-    const analysis = {
-      completeness: { missingFields: [], presentOptionalFields: [], completenessScore: 100 },
-      protocol: { protocol: "vless", recognized: true },
-      network: { network: "tcp", protocol: "vless", compatible: true, supportedNetworks: ["tcp"] },
-      tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
-      reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
-      security: { securityScore: 87, issues: [] },
-    };
+    const analysis = bundle(87);
     const state = { analysisByNodeId: { a: analysis } };
 
     expect(selectAnalysisByNodeId(state, "a")).toBe(analysis);
     expect(selectAnalysisByNodeId(state, "not-a-real-id")).toBeUndefined();
+  });
+});
+
+describe("selectNodesSortedByCreatedAt", () => {
+  it("sorts nodes by createdAt, most recent first (Dashboard's Recent Imports, doc 07 §4.1)", () => {
+    const older = { ...node(), createdAt: "2024-01-01T00:00:00.000Z" };
+    const newer = { ...node(), createdAt: "2024-06-01T00:00:00.000Z" };
+    const state = { nodes: [older, newer] };
+
+    expect(selectNodesSortedByCreatedAt(state)).toEqual([newer, older]);
+  });
+
+  it("does not mutate the original nodes array", () => {
+    const nodes = [{ ...node(), createdAt: "2024-01-01T00:00:00.000Z" }];
+    const state = { nodes };
+
+    selectNodesSortedByCreatedAt(state);
+
+    expect(state.nodes).toBe(nodes);
+  });
+
+  it("returns an empty array for an empty node list", () => {
+    expect(selectNodesSortedByCreatedAt({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectAverageSecurityScore", () => {
+  it("averages security.securityScore across every analyzed node (Dashboard's Health Overview, doc 07 §4.1)", () => {
+    const state = { analysisByNodeId: { a: bundle(80), b: bundle(40) } };
+
+    expect(selectAverageSecurityScore(state)).toBe(60);
+  });
+
+  it("returns null when no node has been analyzed yet, never a fabricated 0 (Rule 9)", () => {
+    expect(selectAverageSecurityScore({ analysisByNodeId: {} })).toBeNull();
   });
 });
