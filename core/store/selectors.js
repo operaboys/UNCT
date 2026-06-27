@@ -17,6 +17,7 @@
  * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  */
+import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
 
 /**
  * @param {ParserState} state
@@ -232,4 +233,58 @@ export function selectNodesGroupedByProtocol(state) {
     (groups[n.protocol] ??= []).push(n);
   }
   return groups;
+}
+
+/**
+ * Nodes carrying a `uuid` (Extractor Screen's "UUID Extractor", doc 07 §4.5 /
+ * doc 03 §3 "Extract UUID") — `uuid` is only meaningful for vless/vmess
+ * (`UUID_PROTOCOLS`, core/unm/schema/enums.js), but this selector just
+ * surfaces whatever the field already holds, it does not judge plausibility
+ * (that is the Validation Engine's `uuidValid`, already a separate field).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithUuid(state) {
+  return state.nodes.filter((n) => Boolean(n.uuid));
+}
+
+/**
+ * Nodes whose `address` is a literal IP (v4 or v6) — Extractor Screen's "IP
+ * Extractor" (doc 07 §4.5 / doc 03 §3 "Extract IPs"). Reuses the Validation
+ * Engine's own `isValidIPv4`/`isValidIPv6` (core/validator/validators.js)
+ * rather than re-deriving IP-shape detection — this is a classification of
+ * an already-set field's shape, not a new validity judgment.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithIpAddress(state) {
+  return state.nodes.filter((n) => isValidIPv4(n.address) || isValidIPv6(n.address));
+}
+
+/**
+ * Nodes whose `address` is NOT a literal IP — Extractor Screen's "Domain
+ * Extractor" (doc 07 §4.5 / doc 03 §3 "Extract Domains"), the complement of
+ * {@link selectNodesWithIpAddress}.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithDomainAddress(state) {
+  return state.nodes.filter((n) => !isValidIPv4(n.address) && !isValidIPv6(n.address));
+}
+
+/**
+ * Nodes using Reality (`security === "reality"`) — Extractor Screen's
+ * "Reality Extractor" (doc 07 §4.5), surfacing the raw `pbk`/`sid` UNM
+ * fields every such node already carries. This is narrower than doc 03
+ * §3's "Extract Reality Keys" (listed there under "Advanced Extraction —
+ * نیمه‌قطعی", i.e. Phase 10-dependent) — it does not attempt that deeper,
+ * not-yet-built feature, only this already-real field lookup. The Reality
+ * Analyzer's plausibility verdict (`pbkPlausible`/`sidPlausible`, Phase 6,
+ * frozen) is a separate `AnalyzerState` lookup the UI composes alongside
+ * this, the same way the Analyzer Screen's Reality Analysis section does.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithReality(state) {
+  return state.nodes.filter((n) => n.security === "reality");
 }

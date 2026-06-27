@@ -23,6 +23,10 @@ import {
   selectNodesFilteredByValidity,
   selectNodesSortedByField,
   selectNodesGroupedByProtocol,
+  selectNodesWithUuid,
+  selectNodesWithIpAddress,
+  selectNodesWithDomainAddress,
+  selectNodesWithReality,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -306,5 +310,50 @@ describe("selectNodesGroupedByProtocol", () => {
 
   it("returns an empty object for an empty collection", () => {
     expect(selectNodesGroupedByProtocol({ nodes: [] })).toEqual({});
+  });
+});
+
+describe("selectNodesWithUuid", () => {
+  it("keeps only nodes carrying a uuid (Extractor Screen's UUID Extractor, doc 07 §4.5)", () => {
+    const withUuid = node({ protocol: "vless", uuid: "b831381d-6324-4d53-ad4f-8cda48b30811" });
+    const withoutUuid = node({ protocol: "trojan" });
+    const state = { nodes: [withUuid, withoutUuid] };
+
+    expect(selectNodesWithUuid(state)).toEqual([withUuid]);
+  });
+
+  it("returns an empty array when no node carries a uuid", () => {
+    expect(selectNodesWithUuid({ nodes: [node(), node()] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithIpAddress / selectNodesWithDomainAddress", () => {
+  it("splits nodes by whether address is a literal IP or a domain (Extractor Screen's IP/Domain Extractor, doc 07 §4.5)", () => {
+    const ipv4 = node({ address: "203.0.113.10" });
+    const ipv6 = node({ address: "2001:db8::1" });
+    const domain = node({ address: "example.com" });
+    const state = { nodes: [ipv4, ipv6, domain] };
+
+    expect(selectNodesWithIpAddress(state)).toEqual([ipv4, ipv6]);
+    expect(selectNodesWithDomainAddress(state)).toEqual([domain]);
+  });
+
+  it("returns empty arrays for an empty collection", () => {
+    expect(selectNodesWithIpAddress({ nodes: [] })).toEqual([]);
+    expect(selectNodesWithDomainAddress({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithReality", () => {
+  it("keeps only nodes using Reality (Extractor Screen's Reality Extractor, doc 07 §4.5)", () => {
+    const reality = node({ security: "reality", pbk: "pbk-value", sid: "sid-value" });
+    const plain = node({ security: "none" });
+    const state = { nodes: [reality, plain] };
+
+    expect(selectNodesWithReality(state)).toEqual([reality]);
+  });
+
+  it("returns an empty array when no node uses Reality", () => {
+    expect(selectNodesWithReality({ nodes: [node({ security: "tls" })] })).toEqual([]);
   });
 });
