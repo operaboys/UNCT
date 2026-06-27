@@ -5,6 +5,7 @@
  */
 export { createStore } from "./create-store.js";
 export { createParserStore } from "./parser-state.js";
+export { createSettingsStore } from "./settings-state.js";
 export {
   selectAllNodes,
   selectNodeById,

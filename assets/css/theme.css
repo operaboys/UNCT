@@ -1,0 +1,20 @@
+/* Theme Engine (07-UI_UX_SYSTEM §2). Scoped to exactly the two states the
+   Settings Screen resolves to (`resolvedTheme`, applied as `<html data-theme>`
+   by ui/main.tsx) — not the full Cyber Professional/Glassmorphism visual
+   system §2 also names, which is a separate, not-yet-started design-system
+   effort across every screen, out of scope for the Theme Engine mechanism
+   itself. */
+:root[data-theme="dark"] {
+  --unct-bg: #14161a;
+  --unct-fg: #e8e8e8;
+}
+
+:root[data-theme="light"] {
+  --unct-bg: #ffffff;
+  --unct-fg: #14161a;
+}
+
+body {
+  background-color: var(--unct-bg, #ffffff);
+  color: var(--unct-fg, #14161a);
+}

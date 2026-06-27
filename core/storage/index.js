@@ -6,3 +6,4 @@
  */
 export { createNodeStore } from "./node-store.js";
 export { createIdbAdapter } from "./idb-adapter.js";
+export { createLocalAdapter } from "./local-adapter.js";
