@@ -15,6 +15,7 @@ import {
   selectAggregatedWarnings,
   selectAggregatedErrors,
   selectAggregatedRecoveryActions,
+  selectAnalysisByNodeId,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -133,5 +134,23 @@ describe("selectAggregatedWarnings / selectAggregatedErrors / selectAggregatedRe
     expect(selectAggregatedWarnings(state)).toEqual([]);
     expect(selectAggregatedErrors(state)).toEqual([]);
     expect(selectAggregatedRecoveryActions(state)).toEqual([]);
+  });
+});
+
+describe("selectAnalysisByNodeId", () => {
+  it("looks up a node's Analyzer verdict bundle from AnalyzerState by nodeId", () => {
+    /** @type {import("../../core/analyzer/analyze-node.js").AnalysisBundle} */
+    const analysis = {
+      completeness: { missingFields: [], presentOptionalFields: [], completenessScore: 100 },
+      protocol: { protocol: "vless", recognized: true },
+      network: { network: "tcp", protocol: "vless", compatible: true, supportedNetworks: ["tcp"] },
+      tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
+      reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
+      security: { securityScore: 87, issues: [] },
+    };
+    const state = { analysisByNodeId: { a: analysis } };
+
+    expect(selectAnalysisByNodeId(state, "a")).toBe(analysis);
+    expect(selectAnalysisByNodeId(state, "not-a-real-id")).toBeUndefined();
   });
 });

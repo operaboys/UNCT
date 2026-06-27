@@ -1,9 +1,13 @@
 /**
  * Parser/Validation State — the in-memory working set of `UNMNode`s produced
  * by the current Parse operation (Import screen, Phase 9). Each node already
- * carries its own `validation` (always present) and `analysis` (once the
- * Analyzer has run) inline, per UNM (05-UNIVERSAL_NODE_MODEL) — this store
- * does not duplicate either; it only holds the node collection itself.
+ * carries its own `validation` (always present) inline, per UNM
+ * (05-UNIVERSAL_NODE_MODEL) — this store does not duplicate it; it only
+ * holds the node collection itself. The Analyzer's per-node verdicts live in
+ * the sibling `core/store/analyzer-state.js` instead of inline on
+ * `node.analysis`: that field is frozen to the spec-05 §4 `AnalysisObject`
+ * shape, and today's Analyzer Engine can only fill one of its fields
+ * (`securityScore`) — see `core/analyzer/analyze-node.js`.
  *
  * Distinct from `core/storage/` (ADR-013): that is the durable,
  * cross-session IndexedDB-backed collection. This store is the transient,

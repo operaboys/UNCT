@@ -1,11 +1,34 @@
 /**
- * App entry point (ADR-014's Build Pipeline, now serving a real screen).
- * Renders the Converter Screen (doc 07 §4.2) — the first real Phase 9
- * screen, built on `ui/store/`'s Preact bridge (ADR-015) over
- * `core/store/`'s Parser State. Rule 11 direction only: `ui/` may import
- * `core/`; `core/` never imports `ui/` or Preact.
+ * App entry point (ADR-014's Build Pipeline). Renders Phase 9's real
+ * screens behind a minimal, dependency-free screen switcher — plain Preact
+ * state, not a router library (adding one would be a new 14-DEPENDENCY_
+ * POLICY decision, out of scope for wiring up the second screen). Rule 11
+ * direction only: `ui/` may import `core/`; `core/` never imports `ui/` or
+ * Preact.
  */
 import { render } from "preact";
+import { useState } from "preact/hooks";
 import { ConverterScreen } from "./converter/converter-screen.js";
+import { AnalyzerScreen } from "./analyzer/analyzer-screen.js";
 
-render(<ConverterScreen />, document.getElementById("app")!);
+type Screen = "converter" | "analyzer";
+
+function App() {
+  const [screen, setScreen] = useState<Screen>("converter");
+
+  return (
+    <div>
+      <nav aria-label="Screen Switcher">
+        <button type="button" onClick={() => setScreen("converter")} disabled={screen === "converter"}>
+          Converter
+        </button>
+        <button type="button" onClick={() => setScreen("analyzer")} disabled={screen === "analyzer"}>
+          Analyzer
+        </button>
+      </nav>
+      {screen === "converter" ? <ConverterScreen /> : <AnalyzerScreen />}
+    </div>
+  );
+}
+
+render(<App />, document.getElementById("app")!);

@@ -13,6 +13,8 @@
  *
  * @typedef {import("../types/unm").UNMNode} UNMNode
  * @typedef {import("./parser-state").ParserState} ParserState
+ * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
+ * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  */
 
 /**
@@ -103,4 +105,16 @@ export function selectAggregatedErrors(state) {
  */
 export function selectAggregatedRecoveryActions(state) {
   return state.nodes.flatMap((n) => n.metadata.recoveryActions);
+}
+
+/**
+ * Look up one node's Analyzer verdict bundle (Analyzer Screen, doc 07 §4.3)
+ * from `AnalyzerState` — a separate domain store from `ParserState`, see
+ * `core/store/analyzer-state.js` for why the bundle is not on `node.analysis`.
+ * @param {AnalyzerState} state
+ * @param {string} nodeId
+ * @returns {AnalysisBundle | undefined}
+ */
+export function selectAnalysisByNodeId(state, nodeId) {
+  return state.analysisByNodeId[nodeId];
 }
