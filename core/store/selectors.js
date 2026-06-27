@@ -288,3 +288,64 @@ export function selectNodesWithDomainAddress(state) {
 export function selectNodesWithReality(state) {
   return state.nodes.filter((n) => n.security === "reality");
 }
+
+/**
+ * Parser Logs — Developer Console's "Parser Logs" section (doc 07 §4.7).
+ * A read-only log view over fields the Parser already wrote onto every
+ * node (`metadata.parser`, `sourceType`, `createdAt`) — no new Core logic,
+ * just a per-node projection of already-real data.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, parser: string, sourceType: string, createdAt: string }[]}
+ */
+export function selectParserLog(state) {
+  return state.nodes.map((n) => ({
+    nodeId: n.nodeId,
+    parser: n.metadata.parser,
+    sourceType: n.sourceType,
+    createdAt: n.createdAt,
+  }));
+}
+
+/**
+ * Detection Logs / Detection Metadata Viewer — Developer Console (doc 07
+ * §4.7), surfacing 04-PARSER_ENGINE Stage 02's "Detection Metadata". Only
+ * the Confidence Score (`metadata.confidence`, real and persisted by every
+ * parser's `normalize()`) is exposed here — NOT "Alternative Candidates":
+ * `core/parser/factory.js#parseWithFallback` computes ranked candidates
+ * transiently while choosing a parser, but never returns or persists them
+ * (`core/parser/parse-and-validate.js` only keeps `{ name, extraction,
+ * recovered }`). Per Rule 9 (never fabricate), Alternative Candidates has
+ * no real data source anywhere today, so the UI must render that half as a
+ * disabled placeholder rather than this selector inventing a value.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, parser: string, confidence: number }[]}
+ */
+export function selectDetectionLog(state) {
+  return state.nodes.map((n) => ({
+    nodeId: n.nodeId,
+    parser: n.metadata.parser,
+    confidence: n.metadata.confidence,
+  }));
+}
+
+/**
+ * Validation Logs — Developer Console (doc 07 §4.7). Flattens every node's
+ * `ValidationObject` down to its genuine per-field FAILURES: a `null` flag
+ * means "not applicable to this protocol" (neutral, spec 05 §5), not a
+ * failure, and `overallValid` is itself a derived aggregate of the other
+ * fields rather than a separate field check — both are excluded, leaving
+ * only entries that are actually `=== false`.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, field: string }[]}
+ */
+export function selectValidationFailureLog(state) {
+  /** @type {{ nodeId: string, field: string }[]} */
+  const failures = [];
+  for (const n of state.nodes) {
+    for (const [field, value] of Object.entries(n.validation)) {
+      if (field === "overallValid") continue;
+      if (value === false) failures.push({ nodeId: n.nodeId, field });
+    }
+  }
+  return failures;
+}

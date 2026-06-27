@@ -15,9 +15,12 @@ import { SubscriptionScreen } from "./subscription/subscription-screen.js";
 import { ExtractorScreen } from "./extractor/extractor-screen.js";
 import { ExportScreen } from "./export/export-screen.js";
 import { SettingsScreen } from "./settings/settings-screen.js";
+import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
 import { useSettingsState } from "./store/use-settings-state.js";
 
-type Screen = "dashboard" | "converter" | "analyzer" | "subscription" | "extractor" | "export" | "settings";
+type Screen =
+  | "dashboard" | "converter" | "analyzer" | "subscription" | "extractor"
+  | "export" | "settings" | "devconsole";
 
 function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
@@ -54,6 +57,9 @@ function App() {
         <button type="button" onClick={() => setScreen("settings")} disabled={screen === "settings"}>
           Settings
         </button>
+        <button type="button" onClick={() => setScreen("devconsole")} disabled={screen === "devconsole"}>
+          Developer Console
+        </button>
       </nav>
       {screen === "dashboard" ? (
         <DashboardScreen />
@@ -67,8 +73,10 @@ function App() {
         <ExtractorScreen />
       ) : screen === "export" ? (
         <ExportScreen />
-      ) : (
+      ) : screen === "settings" ? (
         <SettingsScreen />
+      ) : (
+        <DevConsoleScreen />
       )}
     </div>
   );

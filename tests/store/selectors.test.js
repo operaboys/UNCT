@@ -27,6 +27,9 @@ import {
   selectNodesWithIpAddress,
   selectNodesWithDomainAddress,
   selectNodesWithReality,
+  selectParserLog,
+  selectDetectionLog,
+  selectValidationFailureLog,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -355,5 +358,82 @@ describe("selectNodesWithReality", () => {
 
   it("returns an empty array when no node uses Reality", () => {
     expect(selectNodesWithReality({ nodes: [node({ security: "tls" })] })).toEqual([]);
+  });
+});
+
+describe("selectParserLog", () => {
+  it("projects parser, sourceType, and createdAt per node (Developer Console's Parser Logs, doc 07 §4.7)", () => {
+    const a = node({ sourceType: "vless-url", metadata: { parser: "url-parser" } });
+    const b = node({ sourceType: "trojan-url", metadata: { parser: "url-parser" } });
+    const state = { nodes: [a, b] };
+
+    expect(selectParserLog(state)).toEqual([
+      { nodeId: a.nodeId, parser: "url-parser", sourceType: "vless-url", createdAt: a.createdAt },
+      { nodeId: b.nodeId, parser: "url-parser", sourceType: "trojan-url", createdAt: b.createdAt },
+    ]);
+  });
+
+  it("returns an empty array for an empty collection", () => {
+    expect(selectParserLog({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectDetectionLog", () => {
+  it("projects parser and confidence per node (Developer Console's Detection Logs, doc 07 §4.7 / doc 04 Stage 02)", () => {
+    const a = node({ metadata: { parser: "xray-parser", confidence: 95 } });
+    const b = node({ metadata: { parser: "url-parser", confidence: 75 } });
+    const state = { nodes: [a, b] };
+
+    expect(selectDetectionLog(state)).toEqual([
+      { nodeId: a.nodeId, parser: "xray-parser", confidence: 95 },
+      { nodeId: b.nodeId, parser: "url-parser", confidence: 75 },
+    ]);
+  });
+
+  it("returns an empty array for an empty collection", () => {
+    expect(selectDetectionLog({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectValidationFailureLog", () => {
+  it("keeps only fields explicitly false, excluding null (not-applicable) and overallValid", () => {
+    const a = node();
+    const failing = withValidation(a, {
+      addressValid: true,
+      portValid: false,
+      uuidValid: null,
+      realityValid: null,
+      tlsValid: false,
+      alpnValid: null,
+      pathValid: null,
+      hostValid: null,
+      overallValid: false,
+    });
+    const state = { nodes: [failing] };
+
+    expect(selectValidationFailureLog(state)).toEqual([
+      { nodeId: failing.nodeId, field: "portValid" },
+      { nodeId: failing.nodeId, field: "tlsValid" },
+    ]);
+  });
+
+  it("returns an empty array when no node has a real field failure", () => {
+    const valid = withValidation(node(), {
+      addressValid: true,
+      portValid: true,
+      uuidValid: null,
+      realityValid: null,
+      tlsValid: null,
+      alpnValid: null,
+      pathValid: null,
+      hostValid: null,
+      overallValid: true,
+    });
+
+    expect(selectValidationFailureLog({ nodes: [valid] })).toEqual([]);
+  });
+
+  it("returns an empty array for an empty collection", () => {
+    expect(selectValidationFailureLog({ nodes: [] })).toEqual([]);
   });
 });
