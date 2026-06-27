@@ -4,6 +4,7 @@
  */
 export { assertImplementsBaseParser, REQUIRED_METHODS } from "./base/index.js";
 export { createParserFactory, parserFactory, UNKNOWN_FORMAT_THRESHOLD, normalizeAll } from "./factory.js";
+export { parseAndValidate } from "./parse-and-validate.js";
 export { xrayParser, registerXrayParser } from "./xray/index.js";
 export { urlParser, registerUrlParser } from "./url/index.js";
 export {

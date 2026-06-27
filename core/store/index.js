@@ -10,4 +10,8 @@ export {
   selectNodeById,
   selectValidNodeIds,
   selectNodesSortedBySecurity,
+  selectProtocolCounts,
+  selectAggregatedWarnings,
+  selectAggregatedErrors,
+  selectAggregatedRecoveryActions,
 } from "./selectors.js";

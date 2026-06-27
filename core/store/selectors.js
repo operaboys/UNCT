@@ -57,3 +57,50 @@ export function selectNodesSortedBySecurity(state) {
     return scoreB - scoreA;
   });
 }
+
+/**
+ * Count nodes per `protocol` (Converter Screen's Parser Preview "Protocol
+ * Count", doc 07 §4.2) — a tally of an already-set field, not a new
+ * classification.
+ * @param {ParserState} state
+ * @returns {Readonly<Record<string, number>>}
+ */
+export function selectProtocolCounts(state) {
+  /** @type {Record<string, number>} */
+  const counts = {};
+  for (const n of state.nodes) {
+    counts[n.protocol] = (counts[n.protocol] || 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Flatten `metadata.warnings` across every node (Parser Preview "Warnings",
+ * doc 07 §4.2) — concatenation of values the Parser already produced.
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedWarnings(state) {
+  return state.nodes.flatMap((n) => n.metadata.warnings);
+}
+
+/**
+ * Flatten `metadata.errors` across every node (Parser Preview "Errors",
+ * doc 07 §4.2).
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedErrors(state) {
+  return state.nodes.flatMap((n) => n.metadata.errors);
+}
+
+/**
+ * Flatten `metadata.recoveryActions` across every node (Converter Screen's
+ * "Recovery Actions" section, doc 07 §4.2 — "این اطلاعات از قبل در
+ * metadata.recoveryActions وجود دارد؛ این بخش فقط نمایش آن در UI است").
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedRecoveryActions(state) {
+  return state.nodes.flatMap((n) => n.metadata.recoveryActions);
+}

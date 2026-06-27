@@ -11,6 +11,10 @@ import {
   selectNodeById,
   selectValidNodeIds,
   selectNodesSortedBySecurity,
+  selectProtocolCounts,
+  selectAggregatedWarnings,
+  selectAggregatedErrors,
+  selectAggregatedRecoveryActions,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -91,5 +95,43 @@ describe("selectNodesSortedBySecurity", () => {
 
     expect(state.nodes).toBe(nodes);
     expect(state.nodes).toEqual([a, b]);
+  });
+});
+
+describe("selectProtocolCounts", () => {
+  it("tallies nodes by protocol (Converter Screen Parser Preview, doc 07 §4.2)", () => {
+    const state = {
+      nodes: [
+        node({ protocol: "vless" }),
+        node({ protocol: "vless" }),
+        node({ protocol: "trojan" }),
+      ],
+    };
+
+    expect(selectProtocolCounts(state)).toEqual({ vless: 2, trojan: 1 });
+  });
+
+  it("returns an empty object for an empty collection", () => {
+    expect(selectProtocolCounts({ nodes: [] })).toEqual({});
+  });
+});
+
+describe("selectAggregatedWarnings / selectAggregatedErrors / selectAggregatedRecoveryActions", () => {
+  it("flattens metadata arrays across every node, in node order", () => {
+    const a = node({ metadata: { warnings: ["w1"], errors: ["e1"], recoveryActions: ["r1"] } });
+    const b = node({ metadata: { warnings: ["w2", "w3"], errors: [], recoveryActions: ["r2"] } });
+    const state = { nodes: [a, b] };
+
+    expect(selectAggregatedWarnings(state)).toEqual(["w1", "w2", "w3"]);
+    expect(selectAggregatedErrors(state)).toEqual(["e1"]);
+    expect(selectAggregatedRecoveryActions(state)).toEqual(["r1", "r2"]);
+  });
+
+  it("returns empty arrays when no node has any diagnostics", () => {
+    const state = { nodes: [node(), node()] };
+
+    expect(selectAggregatedWarnings(state)).toEqual([]);
+    expect(selectAggregatedErrors(state)).toEqual([]);
+    expect(selectAggregatedRecoveryActions(state)).toEqual([]);
   });
 });
