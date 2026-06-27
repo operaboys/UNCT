@@ -9,11 +9,13 @@
  * boundary: this file only previews/downloads/copies what Core already
  * produced).
  *
- * ZIP, QR, and HTML Report (doc 08 §6-8) each need a new dependency
- * (14-DEPENDENCY_POLICY) or, for HTML Report, the DOMPurify sanitization
- * ADR-004 mandates — none of that exists in core/exporter/ yet, so they are
- * shown as disabled placeholders, the same treatment `extractor-screen.tsx`
- * gives Worker/DNS Extractor.
+ * ZIP Export (doc 08 §7, ADR-017) is now real: `core/exporter/to-zip.js`
+ * bundles every format above plus a manifest.json into one archive via
+ * `fflate`, called directly here the same "no new Core logic in UI" way as
+ * every other format. QR and HTML Report (doc 08 §6, §8) still need their
+ * own dependency decision/DOMPurify sanitization and remain disabled
+ * placeholders, the same treatment `extractor-screen.tsx` gives Worker/DNS
+ * Extractor.
  *
  * Clipboard Quick Copy is doc 07 §4.6's own footnote suggestion ("باید کنار
  * بقیه‌ی Export Profiles در دسترس باشد") — trivial with the existing
@@ -27,6 +29,7 @@
 import { useMemo, useState } from "preact/hooks";
 import {
   exportTxt, exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson, exportClashYaml, exportCsv,
+  exportZip,
 } from "../../core/exporter/index.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
@@ -74,6 +77,12 @@ export function ExportScreen() {
 
   const skippedMessage = formatSkipped(skipped);
 
+  const { content: zipContent, skipped: zipSkipped } = useMemo(
+    () => exportZip(nodes, analysisByNodeId),
+    [nodes, analysisByNodeId],
+  );
+  const zipSkippedMessage = formatSkipped(zipSkipped);
+
   function handleFormatChange(next: Format) {
     setFormat(next);
     setCopyStatus("idle");
@@ -97,6 +106,16 @@ export function ExportScreen() {
     } catch {
       setCopyStatus("error");
     }
+  }
+
+  function handleDownloadZip() {
+    const blob = new Blob([zipContent as BlobPart], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "export.zip";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -137,13 +156,21 @@ export function ExportScreen() {
         </section>
       )}
 
-      <section aria-label="ZIP Export" aria-disabled="true">
+      <section aria-label="ZIP Export">
         <h2>ZIP Export</h2>
-        <p class="hint">
-          Deferred — doc 08 §7's manifest.json-bearing ZIP bundle needs a new dependency
-          (14-DEPENDENCY_POLICY), not yet reviewed; shown as a placeholder until core/exporter/
-          implements it.
-        </p>
+        {nodes.length === 0 ? (
+          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        ) : (
+          <>
+            <p class="hint">
+              Bundles TXT, Xray JSON, Sing-box JSON, Normalized JSON, Clash YAML, and CSV plus a
+              manifest.json (Export Version, Export Date, Node Count, UNM Version) into one
+              archive — doc 08 §7's Full Project Snapshot.
+            </p>
+            <button type="button" onClick={handleDownloadZip}>Download ZIP</button>
+            {zipSkippedMessage && <p class="hint">Skipped: {zipSkippedMessage}</p>}
+          </>
+        )}
       </section>
 
       <section aria-label="QR Export" aria-disabled="true">

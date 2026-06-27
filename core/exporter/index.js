@@ -1,11 +1,12 @@
 /**
  * Export Engine barrel (08-EXPORT_ENGINE, ADR-004). Re-exports every format
- * this Phase 9 checkpoint covers — TXT/JSON/CSV/YAML, all built directly on
- * the existing Converter Engine (core/converter/). ZIP and QR Export (doc 08
- * §6-7) need a new dependency each (14-DEPENDENCY_POLICY) and are deferred to
- * a separate checkpoint, not started here.
+ * built so far — TXT/JSON/CSV/YAML (built directly on the existing Converter
+ * Engine, core/converter/) and ZIP (ADR-017, bundling those same formats plus
+ * a manifest.json via `fflate`). QR and HTML Report Export (doc 08 §6, §8)
+ * are still pending separate checkpoints.
  */
 export { exportTxt } from "./to-txt.js";
 export { exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson } from "./to-json.js";
 export { exportClashYaml } from "./to-yaml.js";
 export { exportCsv } from "./to-csv.js";
+export { exportZip } from "./to-zip.js";
