@@ -87,7 +87,10 @@ npm run test:coverage
 
 ## تصمیم Build Step (حل‌شده)
 
-تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild) فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند (ADR-005). `npm run build` خروجی را در `assets/js/app.js` می‌سازد (Gitignored، هرگز دستی ویرایش نشود).
+تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild) فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند (ADR-005). `npm run build` خروجی را در `assets/js/app.js` می‌سازد (هرگز دستی ویرایش نشود؛ **اصلاح بحرانی
+۲۰۲۶-۰۶-۲۸:** این خروجی دیگر Gitignore نیست — برخلاف نسخه‌ی قبلی این جمله، از این پس Commit
+می‌شود تا Clone/Download مستقیم ریپو بدون اجرای هیچ دستوری کار کند؛ جزئیات کامل در Addendum
+`ADR-014`/`ADR-016`).
 
 ## گام بعدی
 

@@ -179,3 +179,15 @@ above shows happens in exactly one case: a `file://` page origin.
   rather than re-deriving it, since the underlying capability gaps (`file://` origin; bare
   specifiers unresolvable inside a real Worker's module loader) are identical for every Worker kind,
   not specific to parsing.
+
+## Addendum — Build output is committed, not `.gitignore`d (Critical Fix #1)
+
+**Date:** 2026-06-28 | **Decider:** Mehdi
+
+The "`assets/js/parser-worker.js` (+ its `.map`) joins `assets/js/app.js` as a generated,
+`.gitignore`d build artifact ... never hand-edited, never committed" line above is corrected by the
+same decision recorded in `ADR-014`'s own Addendum: Gitignoring the build output meant a plain
+clone/ZIP-download of the repository opened `index.html` to a non-functional page, which directly
+defeats doc 01's Offline-First goal and Deployment Mode 1. `assets/js/parser-worker.js` and
+`assets/js/parser-worker.js.map` are now committed alongside `assets/js/app.js` — still only ever
+written by `npm run build`, never hand-edited, but no longer excluded from the repository.

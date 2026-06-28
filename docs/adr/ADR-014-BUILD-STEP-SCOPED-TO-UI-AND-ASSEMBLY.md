@@ -73,3 +73,23 @@ same time costs nothing extra; it would otherwise be a separate decision with it
 - `docs/architecture/BUILD-STEP-PROPOSAL.md` is kept as the historical record of the options that
   were considered; it is superseded by this ADR for any future reader trying to find the actual
   decision.
+
+## Addendum — Build output is committed, not `.gitignore`d (Critical Fix #1)
+
+**Date:** 2026-06-28 | **Decider:** Mehdi
+
+Point 5 above said `assets/js/app.js` "is `.gitignore`d, the same way `dist/`/`build/` already
+were." That was wrong in practice: it meant anyone who clones the repository or downloads a ZIP
+from GitHub — without separately running `npm install` + `npm run build` — opens `index.html` to a
+non-functional page, directly defeating doc 01's Offline-First goal and Deployment Mode 1 ("open
+the file directly, no command"). Gitignoring the build output and being a single-file,
+no-install, no-server app are in direct tension; this addendum resolves it in favor of the second,
+since that is the actual product goal.
+
+**Revised decision:** `assets/js/app.js`, `assets/js/app.js.map`, `assets/js/parser-worker.js`, and
+`assets/js/parser-worker.js.map` are no longer listed in `.gitignore` — they are committed,
+generated artifacts. They are still never hand-edited; `npm run build` remains the only thing that
+writes them, and a contributor changing `ui/` must re-run `npm run build` and commit the refreshed
+output in the same change (the same discipline a `dist/` commit workflow already requires elsewhere
+in the JS ecosystem). This does not revoke point 5's "generated artifact, not hand-written" rule —
+only the Gitignore consequence of it.
