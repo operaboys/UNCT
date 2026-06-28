@@ -29,10 +29,20 @@ function App() {
   // Theme Engine (07-UI_UX_SYSTEM §2): applied app-wide here, not inside
   // SettingsScreen itself, so it stays in effect (and live-syncs with the OS
   // under "auto") regardless of which screen is currently mounted.
-  const { resolvedTheme } = useSettingsState();
+  const { resolvedTheme, resolvedLanguage } = useSettingsState();
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
   }, [resolvedTheme]);
+
+  // Language (ADR-019-BILINGUAL-I18N-ARCHITECTURE Decision 2/07-UI_UX_SYSTEM
+  // §9): `lang`/`dir` are page-wide attributes, applied here for the same
+  // reason as Theme above — they must stay correct regardless of which
+  // screen is mounted. This phase wires the attribute only; no screen's text
+  // is connected to the Dictionary yet (infrastructure-only scope).
+  useEffect(() => {
+    document.documentElement.lang = resolvedLanguage;
+    document.documentElement.dir = resolvedLanguage === "fa" ? "rtl" : "ltr";
+  }, [resolvedLanguage]);
 
   // Critical Fix #3: every parserStore mutation already write-throughs to
   // core/storage/ in the background — this is the read-side counterpart,

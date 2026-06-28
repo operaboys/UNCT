@@ -13,6 +13,7 @@
  */
 
 import { assertImplementsBaseParser } from "./base/contract.js";
+import { normalizeText } from "../i18n/normalize.js";
 
 /** Stage 02: Confidence < 50% -> "Unknown Format". */
 export const UNKNOWN_FORMAT_THRESHOLD = 50;
@@ -119,13 +120,21 @@ export function createParserFactory() {
    * Secondary Parser (next highest confidence) -> next candidate, in
    * descending confidence order. Each candidate gets one `parse()` attempt
    * and, on failure, one `recover()` attempt before the chain moves on.
+   *
+   * This is also the single, shared Stage 01 (Preprocessor) entry point
+   * (04-PARSER_ENGINE Stage 01): both `parse-and-validate.js` (main thread)
+   * and `parser.worker.js` (Worker thread) call only this function on raw
+   * input, so normalizing digits/letters here — before Stage 02 Format
+   * Detection runs — covers every execution path and every parser type
+   * without duplicating the normalization call anywhere else.
    * @param {string} input
    * @returns {{ name: string, extraction: RawExtraction, recovered: boolean }}
    * @throws {Error} if every candidate (parse + recover) fails, or if no
    *   candidate reaches the confidence threshold ("Unknown Format")
    */
   function parseWithFallback(input) {
-    const candidates = detectCandidates(input)
+    const normalized = normalizeText(input);
+    const candidates = detectCandidates(normalized)
       .filter((c) => c.confidence >= UNKNOWN_FORMAT_THRESHOLD);
     if (candidates.length === 0) {
       throw new Error("ParserFactory.parseWithFallback: Unknown Format — no candidate reached the confidence threshold (PARSE_CONTRACT_VIOLATION)");
@@ -136,7 +145,7 @@ export function createParserFactory() {
     for (const { name } of candidates) {
       const parser = get(name);
       try {
-        return { name, extraction: parser.parse(input), recovered: false };
+        return { name, extraction: parser.parse(normalized), recovered: false };
       } catch (err) {
         lastError = err;
         /** @type {ParseError} */
@@ -145,7 +154,7 @@ export function createParserFactory() {
           stage: "extract",
           cause: err,
         };
-        const recovered = parser.recover(input, parseError);
+        const recovered = parser.recover(normalized, parseError);
         if (recovered) return { name, extraction: recovered, recovered: true };
       }
     }

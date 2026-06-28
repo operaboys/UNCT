@@ -1,0 +1,218 @@
+/**
+ * Persian Dictionary — Skeleton.
+ *
+ * Per ADR-019 Decision 6 ("Infrastructure now; full content translation
+ * and ... later — one scoping decision, not two"), this phase ships the
+ * i18n *infrastructure* only: every key from `dictionaries/en.js` exists
+ * here too, but the values are still the literal English text as a
+ * temporary, explicit placeholder. Real Persian translation of all 8
+ * screens' content is deferred to the final visual-design phase
+ * (`07-UI_UX_SYSTEM` §2 / `09-DEVELOPMENT_ROADMAP`).
+ *
+ * Deliberately NOT written as `{ ...en }` — this object is independently
+ * maintained so the Translation Completeness test (doc 07 §9.9) stays
+ * meaningful: a new English key that is never added here must fail that
+ * test, which a spread would silently hide.
+ */
+export const fa = {
+  // common
+  "common.noNodesYet": "No nodes yet — parse something on the Converter Screen first.",
+  "common.noNodesYetShort": "No nodes yet.",
+  "common.fields.protocol": "Protocol",
+  "common.fields.address": "Address",
+  "common.fields.port": "Port",
+  "common.fields.network": "Network",
+  "common.fields.security": "Security",
+  "common.fields.importedAt": "Imported At",
+  "common.fields.nodeId": "Node ID",
+  "common.fields.valid": "Valid",
+  "common.fields.formatLabel": "Format:",
+  "common.reality.pbkPlausible": "PBK Plausible",
+  "common.reality.sidPlausible": "SID Plausible",
+
+  // dashboard-screen.tsx
+  "dashboard.title": "Dashboard",
+  "dashboard.quickStats.title": "Quick Stats",
+  "dashboard.quickStats.totalNodes": "Total Nodes",
+  "dashboard.quickStats.validNodes": "Valid Nodes",
+  "dashboard.quickStats.invalidNodes": "Invalid Nodes",
+  "dashboard.quickStats.analyzedNodes": "Analyzed Nodes",
+  "dashboard.recentImports.title": "Recent Imports",
+  "dashboard.recentExports.title": "Recent Exports",
+  "dashboard.recentExports.hint":
+    "Deferred — no screen records an export action yet (the Converter Screen's Output Panel only ever shows a live, on-the-fly conversion, doc 07 §4.2), and no Phase 9 screen persists to durable storage (ADR-013). Shown as a placeholder until an Export Center (doc 07 §4.6) or activity log exists to back it.",
+  "dashboard.nodeSummary.title": "Node Summary",
+  "dashboard.nodeSummary.countColumn": "Count",
+  "dashboard.healthOverview.title": "Health Overview",
+  "dashboard.healthOverview.validOverTotal": "Valid / Total",
+  "dashboard.healthOverview.averageSecurityScore": "Average Security Score",
+  "dashboard.warnings.title": "Warnings",
+  "dashboard.warnings.hint": "No warnings recorded.",
+
+  // converter-screen.tsx
+  "converter.title": "Converter",
+  "converter.input.title": "Input",
+  "converter.input.hint":
+    "Paste a config: a single URL (vless/vmess/trojan/ss/hysteria2/tuic), a multi-line subscription, Xray/Sing-box JSON, Clash/Clash.Meta YAML, or a WireGuard config. Or drop a file on the box below, upload one, or import from the clipboard.",
+  "converter.input.textareaPlaceholder": "vless://... or a multi-line subscription, etc. (drag a file here to load it)",
+  "converter.actions.parse": "Parse",
+  "converter.actions.parsing": "Parsing…",
+  "converter.actions.clear": "Clear",
+  "converter.actions.uploadFile": "Upload File",
+  "converter.actions.importFromClipboard": "Import from Clipboard",
+  "converter.actions.clipboardUnsupportedTitle":
+    "Clipboard import is unavailable in this browser/context (needs HTTPS and the Clipboard API).",
+  "converter.parserPreview.title": "Parser Preview",
+  "converter.parserPreview.detectedFormat": "Detected Format",
+  "converter.parserPreview.recovered": "Recovered",
+  "converter.parserPreview.protocolCount": "Protocol Count",
+  "converter.parserPreview.errors": "Errors",
+  "converter.parserPreview.warnings": "Warnings",
+  "converter.parserPreview.hint": "Parse an input above to see its preview.",
+  "converter.recoveryActions.title": "Recovery Actions",
+  "converter.recoveryActions.hint": "No recovery actions were recorded.",
+  "converter.recoveryActions.countPrefix": "Recovered Fields Count: ",
+  "converter.normalizedObject.title": "Normalized Object",
+  "converter.outputPanel.title": "Output",
+  "converter.outputPanel.qrDeferredHint": "QR output is deferred — no QR library has been reviewed under 14-DEPENDENCY_POLICY yet.",
+  "converter.outputPanel.nothingToExport": "Nothing to export yet.",
+  "converter.format.url": "Links (URL)",
+  "converter.format.xrayJson": "Xray JSON",
+  "converter.format.singboxJson": "Sing-box JSON",
+  "converter.format.clashYaml": "Clash YAML",
+
+  // analyzer-screen.tsx
+  "analyzer.title": "Analyzer",
+  "analyzer.nodeSelect.label": "Node:",
+  "analyzer.actions.analyze": "Analyze",
+  "analyzer.actions.analyzing": "Analyzing…",
+  "analyzer.hint.clickAnalyze": "Click Analyze to see results for this node.",
+  "analyzer.fields.issues": "Issues",
+  "analyzer.fields.compatible": "Compatible",
+  "analyzer.nodeDetails.title": "Node Details",
+  "analyzer.nodeDetails.completenessScore": "Completeness Score",
+  "analyzer.nodeDetails.presentOptionalFields": "Present Optional Fields",
+  "analyzer.nodeDetails.missingFields": "Missing Fields",
+  "analyzer.protocolAnalysis.title": "Protocol Analysis",
+  "analyzer.protocolAnalysis.recognized": "Recognized",
+  "analyzer.securityAnalysis.title": "Security Analysis",
+  "analyzer.securityAnalysis.securityScore": "Security Score",
+  "analyzer.securityAnalysis.tlsApplicable": "TLS Applicable",
+  "analyzer.securityAnalysis.tlsCoherent": "TLS Coherent",
+  "analyzer.securityAnalysis.knownFingerprint": "Known Fingerprint",
+  "analyzer.securityAnalysis.tlsIssues": "TLS Issues",
+  "analyzer.compatibilityAnalysis.title": "Compatibility Analysis",
+  "analyzer.compatibilityAnalysis.supportedNetworks": "Supported Networks",
+  "analyzer.cloudflareAnalysis.title": "Cloudflare Analysis",
+  "analyzer.cloudflareAnalysis.hint":
+    "Deferred — per doc 07 §4.3, Cloudflare Analysis is a semi-definitive Phase 10 module (06-ANALYZER_ENGINE) and is shown as a placeholder until that module exists.",
+  "analyzer.realityAnalysis.title": "Reality Analysis",
+  "analyzer.realityAnalysis.applicable": "Applicable",
+
+  // subscription-screen.tsx
+  "subscription.title": "Subscription Center",
+  "subscription.search.title": "Search",
+  "subscription.search.placeholder": "Search by protocol, address, or port…",
+  "subscription.filter.title": "Filter",
+  "subscription.filter.protocolLabel": "Protocol:",
+  "subscription.filter.all": "All",
+  "subscription.filter.validityLabel": "Validity:",
+  "subscription.filter.valid": "Valid",
+  "subscription.filter.invalid": "Invalid",
+  "subscription.sort.title": "Sort",
+  "subscription.sort.fieldLabel": "Field:",
+  "subscription.sort.directionLabel": "Direction:",
+  "subscription.sort.ascending": "Ascending",
+  "subscription.sort.descending": "Descending",
+  "subscription.group.title": "Group",
+  "subscription.group.byProtocol": "Group by protocol",
+  "subscription.nodeList.title": "Node List",
+  "subscription.nodeList.noMatch": "No nodes match the current search/filter.",
+
+  // extractor-screen.tsx
+  "extractor.title": "Extractor",
+  "extractor.uuid.title": "UUID Extractor",
+  "extractor.uuid.hint": "No nodes carry a uuid.",
+  "extractor.uuid.column": "UUID",
+  "extractor.ip.title": "IP Extractor",
+  "extractor.ip.hint": "No nodes have a literal IP address.",
+  "extractor.domain.title": "Domain Extractor",
+  "extractor.domain.hint": "No nodes have a domain address.",
+  "extractor.worker.title": "Worker Extractor",
+  "extractor.worker.hint":
+    "Deferred — per doc 07 §4.5's footnote, Worker Extractor depends on the Analyzer's semi-definitive `workerDetected` module (06-ANALYZER_ENGINE, Phase 10) and is shown as a placeholder until that module exists.",
+  "extractor.reality.title": "Reality Extractor",
+  "extractor.reality.hint": "No nodes use Reality.",
+  "extractor.reality.pbkColumn": "PBK",
+  "extractor.reality.sidColumn": "SID",
+  "extractor.reality.clickAnalyzeFirst": "Click Analyze first",
+  "extractor.dns.title": "DNS Extractor",
+  "extractor.dns.hint":
+    "Deferred — `dnsLeakRisk` (core/analyzer/analyze-node.js) is grouped with `workerDetected` among the semi-definitive Phase 10 modules (06-ANALYZER_ENGINE), so DNS Extractor is shown as a placeholder until that module exists, the same as Worker Extractor above.",
+
+  // export-screen.tsx
+  "export.title": "Export Center",
+  "export.section.title": "Export",
+  "export.format.txt": "TXT (URLs)",
+  "export.format.xrayJson": "Xray JSON",
+  "export.format.singboxJson": "Sing-box JSON",
+  "export.format.normalizedJson": "Normalized JSON",
+  "export.format.analysisJson": "Analysis JSON",
+  "export.format.clashYaml": "Clash YAML / Clash Meta / Mihomo / Provider File",
+  "export.format.csv": "CSV",
+  "export.hint.noAnalyzedNodes": "No analyzed nodes yet — visit the Analyzer Screen first.",
+  "export.actions.download": "Download",
+  "export.actions.copyToClipboard": "Copy to Clipboard",
+  "export.status.copied": "Copied.",
+  "export.status.copyFailed": "Copy failed.",
+  "export.preview.title": "Preview",
+  "export.skippedPrefix": "Skipped: ",
+  "export.zip.title": "ZIP Export",
+  "export.zip.hint":
+    "Bundles TXT, Xray JSON, Sing-box JSON, Normalized JSON, Clash YAML, and CSV plus a manifest.json (Export Version, Export Date, Node Count, UNM Version) into one archive — doc 08 §7's Full Project Snapshot.",
+  "export.zip.download": "Download ZIP",
+  "export.qr.title": "QR Export",
+  "export.qr.hint":
+    "One QR code per node (doc 08 §6's \"Single Node · Multi QR Pages\") — encodes each node's URL form, the same string TXT Export produces. Print this page for a printable sheet.",
+  "export.qr.downloadSvg": "Download SVG",
+  "export.htmlReport.title": "HTML Report Export",
+  "export.htmlReport.hint":
+    "Summary, Analysis, Security Report, Compatibility Report, Warnings, and Recommendations per node (doc 08 §8) — escaped per value, then sanitized as a whole document via DOMPurify (doc 08 §11, ADR-018) before either preview or download.",
+  "export.htmlReport.downloadHtml": "Download HTML",
+
+  // devconsole-screen.tsx
+  "devconsole.title": "Developer Console",
+  "devconsole.parserLogs.title": "Parser Logs",
+  "devconsole.parserLogs.parserColumn": "Parser",
+  "devconsole.parserLogs.sourceTypeColumn": "Source Type",
+  "devconsole.parserLogs.createdAtColumn": "Created At",
+  "devconsole.warnings.title": "Warnings",
+  "devconsole.warnings.hint": "No warnings recorded.",
+  "devconsole.errors.title": "Errors",
+  "devconsole.errors.hint": "No errors recorded.",
+  "devconsole.recoveryLogs.title": "Recovery Logs",
+  "devconsole.recoveryLogs.hint": "No recovery actions were recorded.",
+  "devconsole.validationLogs.title": "Validation Logs",
+  "devconsole.validationLogs.hint": "No validation field failures recorded.",
+  "devconsole.validationLogs.fieldColumn": "Field",
+  "devconsole.performanceLogs.title": "Performance Logs",
+  "devconsole.performanceLogs.hint":
+    "Deferred — no module in `core/worker/` records Worker Job Timing (no timing/duration field on any job result yet), so Performance Logs is shown as a placeholder until that data exists, the same as the Analyzer Screen's Cloudflare Analysis section.",
+  "devconsole.detectionLogs.title": "Detection Logs",
+  "devconsole.detectionLogs.parserColumn": "Parser",
+  "devconsole.detectionLogs.confidenceScoreColumn": "Confidence Score",
+  "devconsole.detectionLogs.alternativeCandidates.title": "Alternative Candidates",
+  "devconsole.detectionLogs.alternativeCandidates.hint":
+    "Deferred — `core/parser/factory.js`'s `parseWithFallback` ranks candidate parsers transiently while choosing one, but that ranking is never kept past parser selection (`core/parser/parse-and-validate.js` only keeps the chosen parser's name, extraction, and recovered fields). Shown as a placeholder until a module persists it (Rule 9: never fabricate).",
+
+  // settings-screen.tsx
+  "settings.title": "Settings",
+  "settings.themeEngine.title": "Theme Engine",
+  "settings.themeEngine.legend": "Theme",
+  "settings.themeEngine.dark": "Dark Mode",
+  "settings.themeEngine.light": "Light Mode",
+  "settings.themeEngine.auto": "Auto Mode (System Sync)",
+  "settings.themeEngine.currentlyAppliedPrefix": "Currently applied: ",
+  "settings.themeEngine.currentlyAppliedDark": "Dark",
+  "settings.themeEngine.currentlyAppliedLight": "Light",
+};
