@@ -17,6 +17,7 @@ import { ExportScreen } from "./export/export-screen.js";
 import { SettingsScreen } from "./settings/settings-screen.js";
 import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
 import { useSettingsState } from "./store/use-settings-state.js";
+import { parserStore } from "./store/use-parser-state.js";
 
 type Screen =
   | "dashboard" | "converter" | "analyzer" | "subscription" | "extractor"
@@ -32,6 +33,15 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
   }, [resolvedTheme]);
+
+  // Critical Fix #3: every parserStore mutation already write-throughs to
+  // core/storage/ in the background — this is the read-side counterpart,
+  // loading whatever was persisted in a prior session once on mount instead
+  // of starting empty (closes 09-ROADMAP Phase 8's "persist after browser
+  // restart" Exit Condition).
+  useEffect(() => {
+    parserStore.hydrate();
+  }, []);
 
   return (
     <div>
