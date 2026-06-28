@@ -24,6 +24,17 @@
  * NOT touch `core/`'s own source or the `npm test`/`npm run typecheck` dev
  * loop — only this packaging step's output changes.
  *
+ * `core/worker/converter.worker.js` is bundled the exact same way, for the
+ * exact same reason (ADR-016's own predicted follow-up, now closed): it
+ * transitively imports `to-clash.js`'s bare `"js-yaml"` specifier via
+ * `convertBatch`. Verified directly in a real browser before adding this
+ * target (not assumed by analogy): the raw unbundled file fires a real
+ * `Worker.onerror` plus a console 404 on the bare specifier when
+ * constructed as a real `{ type: "module" }` Worker — the same failure
+ * class ADR-016 found for the parser Worker, just observable as `onerror`
+ * here instead of a silent hang. Bundled output lives at
+ * `assets/js/converter-worker.js`, the same convention as `parser-worker.js`.
+ *
  * Not a dev-loop step — `npm test`/`npm run typecheck` never invoke this.
  * Run it only when packaging a release.
  *
@@ -76,3 +87,17 @@ await build({
   logLevel: "info",
 });
 console.log(`Built ${path.relative(root, workerOutfile)}`);
+
+const converterWorkerOutfile = path.join(root, "assets/js/converter-worker.js");
+await build({
+  entryPoints: [path.join(root, "core/worker/converter.worker.js")],
+  outfile: converterWorkerOutfile,
+  bundle: true,
+  format: "esm",
+  platform: "browser",
+  target: "es2023",
+  sourcemap: true,
+  minify: true,
+  logLevel: "info",
+});
+console.log(`Built ${path.relative(root, converterWorkerOutfile)}`);

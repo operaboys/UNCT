@@ -9,9 +9,13 @@
  * `handleParse` calls `ui/store/parser-worker-client.js#parseRawConfig`
  * (real-Worker-by-default, file://-only fallback to the same
  * parse -> normalize -> applyValidation chain the Foundation Gate already
- * drives — see ADR-016) and writes the result into `parserStore`; everything
- * this component renders is read back out through `useParserState()` +
- * Selectors (`core/store/selectors.js`) — Rule 11's boundary: this file
+ * drives — see ADR-016) and writes the result into `parserStore`; the
+ * Output Panel's conversion step calls
+ * `./converter-worker-client.js#convertBatchInWorker` the same way (same
+ * pattern, file://-only fallback to `core/converter/conversion.js#convertBatch`
+ * on the main thread — see ADR-016's Addendum). Everything this component
+ * renders is read back out through `useParserState()` + Selectors
+ * (`core/store/selectors.js`) — Rule 11's boundary: this file
  * sorts/displays/aggregates values Core already computed, it never scores
  * or validates anything itself.
  *
@@ -23,8 +27,7 @@
  * Cyber Professional/Glassmorphism system) is also out of scope here —
  * structure and data flow only.
  */
-import { useMemo, useState } from "preact/hooks";
-import { convertBatch } from "../../core/converter/conversion.js";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import {
   selectProtocolCounts,
   selectAggregatedWarnings,
@@ -33,9 +36,10 @@ import {
 } from "../../core/store/selectors.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
 import { parseRawConfig, CancelledError } from "../store/parser-worker-client.js";
+import { convertBatchInWorker, type ConvertResult, type ExportFormat } from "./converter-worker-client.js";
 import { formatProtocolCounts, formatDiagnosticList, formatSkippedProtocols } from "./format.js";
 
-type ExportFormat = "url" | "xrayJson" | "singboxJson" | "clashYaml";
+const EMPTY_CONVERT_RESULT: ConvertResult = { converted: [], skipped: [] };
 
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   url: "Links (URL)",
@@ -56,12 +60,30 @@ export function ConverterScreen() {
   const [lastParse, setLastParse] = useState<LastParse | null>(null);
   const [format, setFormat] = useState<ExportFormat>("url");
   const [isParsing, setIsParsing] = useState(false);
+  const [convertResult, setConvertResult] = useState<ConvertResult>(EMPTY_CONVERT_RESULT);
 
   const protocolCounts = useMemo(() => selectProtocolCounts({ nodes }), [nodes]);
   const warnings = useMemo(() => selectAggregatedWarnings({ nodes }), [nodes]);
   const errors = useMemo(() => selectAggregatedErrors({ nodes }), [nodes]);
   const recoveryActions = useMemo(() => selectAggregatedRecoveryActions({ nodes }), [nodes]);
-  const { converted, skipped } = useMemo(() => convertBatch(nodes, format), [nodes, format]);
+
+  useEffect(() => {
+    let stale = false;
+    convertBatchInWorker(nodes, format).then(
+      (result) => {
+        if (!stale) setConvertResult(result);
+      },
+      (err) => {
+        if (stale || err instanceof CancelledError) return;
+        setConvertResult(EMPTY_CONVERT_RESULT);
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [nodes, format]);
+
+  const { converted, skipped } = convertResult;
   const skippedMessage = formatSkippedProtocols(skipped);
 
   async function handleParse() {

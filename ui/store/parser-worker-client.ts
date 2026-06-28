@@ -41,6 +41,7 @@
 import { parseAndValidate } from "../../core/parser/parse-and-validate.js";
 import { createWorkerManager, CancelledError } from "../../core/worker/worker-manager.js";
 import { unflattenNode } from "../../core/worker/unflatten-node.js";
+import { createDetectedWorkerManager, type WorkerCtor } from "./worker-feature-detection.js";
 import type { UNMNode } from "../../core/types/unm";
 
 export { CancelledError };
@@ -59,19 +60,13 @@ type ParserWorkerManager = ReturnType<typeof createWorkerManager>;
 /**
  * Pure, dependency-injected feature detection — exported so the fallback
  * decision (not just the formatting logic) is unit-testable without a real
- * browser, by passing a fake/throwing/working `WorkerCtor` directly.
+ * browser, by passing a fake/throwing/working `WorkerCtor` directly. The
+ * actual detection logic lives in `worker-feature-detection.ts` (shared with
+ * `ui/converter/converter-worker-client.ts`); this wrapper only binds it to
+ * the parser Worker's own URL.
  */
-export function createParserWorkerManager(
-  WorkerCtor: (new (url: string, opts: { type: "module" }) => unknown) | undefined,
-): ParserWorkerManager | null {
-  if (typeof WorkerCtor !== "function") return null;
-  try {
-    return createWorkerManager({
-      workerFactory: () => new WorkerCtor(PARSER_WORKER_URL, { type: "module" }) as never,
-    });
-  } catch {
-    return null;
-  }
+export function createParserWorkerManager(WorkerCtor: WorkerCtor | undefined): ParserWorkerManager | null {
+  return createDetectedWorkerManager(WorkerCtor, PARSER_WORKER_URL);
 }
 
 const workerManager = createParserWorkerManager(

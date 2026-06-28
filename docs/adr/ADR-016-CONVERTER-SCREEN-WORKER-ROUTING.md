@@ -191,3 +191,77 @@ clone/ZIP-download of the repository opened `index.html` to a non-functional pag
 defeats doc 01's Offline-First goal and Deployment Mode 1. `assets/js/parser-worker.js` and
 `assets/js/parser-worker.js.map` are now committed alongside `assets/js/app.js` — still only ever
 written by `npm run build`, never hand-edited, but no longer excluded from the repository.
+
+## Addendum — Converter Screen's Convert step now also routes through a real Worker
+
+**Date:** 2026-06-28 | **Decider:** Mehdi
+
+This ADR's Consequences section above says a real fix to the bundle-size overage "would split
+`to-clash.js`'s `js-yaml`-dependent serialization into the existing **(currently unwired)**
+`core/worker/converter.worker.js`". That parenthetical is now corrected: `core/worker/
+converter.worker.js` is no longer unwired. It is wired to the Converter Screen's Convert step,
+following this exact ADR's own pattern, and the resulting bundle-size effect was the opposite of
+that paragraph's framing — see below.
+
+What changed, reusing this ADR's pattern rather than re-deriving it (per the ADR's own closing
+note above, "a future Phase 9 screen wiring the Analyzer or Converter Worker pools should reuse
+this exact pattern"):
+
+- **`ui/store/worker-feature-detection.ts` (new)**: the `typeof WorkerCtor !== "function"` guard +
+  `createWorkerManager` try/catch body this ADR introduced in `parser-worker-client.ts` is now
+  factored out into one shared `createDetectedWorkerManager(WorkerCtor, workerUrl)`, since the
+  Converter Worker client needed the exact same logic, differing only in the Worker script URL.
+  `parser-worker-client.ts`'s own `createParserWorkerManager` was refactored to delegate to this
+  helper too — no behavior change there, same try/catch, same return type.
+- **`ui/converter/converter-worker-client.ts` (new)**: mirrors `parser-worker-client.ts`'s
+  Worker-first-with-`file://`-fallback structure (`create ConverterWorkerManager`,
+  `convertBatchWith(manager, nodes, targetFormat)` parameterized for testing, `convertBatchInWorker`
+  as the real-singleton wrapper, dispatched on its own `"converter-screen-convert"` track). Unlike
+  the parser client, it needs **no flatten/unflatten step**: `core/worker/converter.worker.js`
+  takes ordinary `UNMNode` objects and returns `convertBatch`'s own already-flat,
+  already-structured-clone-safe `{ converted, skipped }` shape unchanged — confirmed directly from
+  source, not assumed by analogy to the parser client. `convertBatchWith`'s Worker-routed-path test
+  asserts the result `toEqual` the direct `convertBatch` output exactly (not modulo generated
+  fields, unlike the parser client's `stableNode()`-stripped comparison), proving this.
+- **`scripts/build.js` gains a third bundle target**, `assets/js/converter-worker.js` (+ `.map`),
+  for the identical reason point 6 above bundles `parser.worker.js`: a real Worker fetches its
+  script over HTTP(S) and cannot resolve the bare `"js-yaml"` specifier `core/converter/to-clash.js`
+  imports. This was verified in a real browser before adding the build target, not assumed from the
+  parser Worker's precedent alone: the raw unbundled `core/worker/converter.worker.js`, constructed
+  as a real `{ type: "module" }` Worker, fires a real `Worker.onerror` plus a console 404 on the
+  bare specifier; the bundled artifact responds correctly to a real conversion job.
+- **`ui/converter/converter-screen.tsx`'s Output Panel is now async**: the previous synchronous
+  `useMemo(() => convertBatch(nodes, format), [nodes, format])` is replaced with a `useState` +
+  `useEffect` pair that calls `convertBatchInWorker(nodes, format)` and ignores a `CancelledError`
+  from a superseded call (the same "Stale Jobs must never update State" policy, doc 10 §6.1, this
+  ADR already applies to `handleParse`) — same pattern, same staleness discipline, now on both of
+  this screen's Worker-routed steps.
+- **`core/converter/`, `core/worker/converter.worker.js`'s own envelope/wiring, and
+  `core/worker/worker-manager.js` are unchanged** — exactly as this ADR's own "no change to
+  `core/worker/worker-manager.js`, `core/worker/parser.worker.js`'s own source" precedent for the
+  Parse-side fix. Only a new UI/Client layer was added.
+
+**Bundle-size correction:** the Consequences section above attributes `app.js`'s ~1KB
+sub-budget overage to `core/converter/conversion.js` → `to-clash.js` pulling `js-yaml` into
+`app.js` because "the Converter Screen's 'Clash YAML' export option calls `convertBatch` directly
+on the main thread". That is no longer the path: the Converter Screen's Convert step now goes
+through `assets/js/converter-worker.js`, not `app.js`, for the Worker-available case. `app.js`
+still bundles `core/converter/conversion.js` (the `file://`-fallback code path still needs it
+in-thread, and `ui/export/export-screen.tsx`'s own direct `core/exporter/` → `convertBatch` calls
+are unaffected by this fix and remain main-thread by design, out of this ADR's scope), so the
+`js-yaml` weight has not left `app.js` — this fix does not retroactively resolve the §2.1 overage
+noted above, only adds a second, separate Worker-routed path for the common case.
+
+**Real-browser E2E verification** (the actual Converter Screen UI, not an isolated Worker probe):
+a real `vless://` URL was pasted into the Converter Screen's Input Panel, parsed, and converted to
+Clash YAML through `index.html` under both origins. `http://`: the converter Worker actually
+spawned and the Output Panel rendered correct Clash YAML. `file://`: zero Workers spawned for the
+Convert step, main-thread fallback engaged, same correct Clash YAML output. A console 404
+observed during the `http://` run was confirmed via direct CDP `Network.responseReceived`
+inspection to be the browser's own automatic `favicon.ico` request — unrelated to the converter
+Worker or its bundle, reproduced and ruled out, not a real defect.
+
+**`core/exporter/` / Export Center is explicitly out of scope for this fix** and remains exactly
+as before: `ui/export/export-screen.tsx` still calls `core/exporter/{to-txt,to-yaml,to-json,...}.js`
+→ `convertBatch` directly on the main thread. That is a separate, unchanged code path — see the
+correction this Addendum's date also applies to `README.md`'s Known Limitations section.

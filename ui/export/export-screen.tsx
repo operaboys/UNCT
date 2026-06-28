@@ -4,10 +4,14 @@
  * This pass covers exactly the formats the just-built Export Engine
  * (core/exporter/, 08-EXPORT_ENGINE) implements — TXT, Xray JSON, Sing-box
  * JSON, Normalized JSON, Analysis JSON, Clash YAML, CSV — by calling those
- * functions directly, the same "no new Core logic in UI" pattern
- * `converter-screen.tsx` set calling `convertBatch` directly (Rule 11's
- * boundary: this file only previews/downloads/copies what Core already
- * produced).
+ * functions directly on the main thread, the same "no new Core logic in UI"
+ * pattern `converter-screen.tsx` originally set when it first called
+ * `convertBatch` directly (Rule 11's boundary: this file only previews/
+ * downloads/copies what Core already produced). Unlike this screen,
+ * `converter-screen.tsx` itself no longer calls `convertBatch` directly —
+ * its Convert step now routes through `../converter/converter-worker-client.js` (a
+ * real Worker by default, ADR-016's Addendum) — but this screen's own
+ * formats are out of that fix's scope and still run on the main thread.
  *
  * ZIP Export (doc 08 §7, ADR-017) is now real: `core/exporter/to-zip.js`
  * bundles every format above plus a manifest.json into one archive via

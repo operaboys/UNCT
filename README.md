@@ -23,7 +23,7 @@
 | Phase 2 — Parser Infrastructure | ✅ کامل | `BaseParser` Contract، `ParserFactory` با Confidence Scoring و زنجیره‌ی Fallback (`core/parser/factory.js`) |
 | Phase 3 — Primary Parsers | ✅ کامل | Xray، URL، Subscription Parser |
 | Phase 4 — Extended Parsers | ✅ کامل | Sing-box، Clash/Clash.Meta، WireGuard Parser — Foundation Gate سطح Raw-config با Pass Rate ۱۰۰٪ روی دیتاست ۱۰۰تایی |
-| Phase 5 — Web Worker Engine | ✅ کامل (با یک محدودیت) | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` واقعی و به UI وصل‌اند. **`converter.worker.js` ساخته و تست شده ولی به هیچ صفحه‌ی UI وصل نیست** — تبدیل فرمت در Converter/Export Screen روی Main Thread اجرا می‌شود، نه در Worker (بخش محدودیت‌ها) |
+| Phase 5 — Web Worker Engine | ✅ کامل | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` + `converter.worker.js` واقعی‌اند و هر سه به Converter Screen وصل‌اند (Parse از طریق `parser.worker.js`، Convert از طریق `converter.worker.js`، هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016). **استثنا:** Export Center مسیر جدایی دارد و مستقیماً `core/exporter/` را روی Main Thread صدا می‌زند، نه از طریق این Worker Pool (بخش محدودیت‌ها) |
 | Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
 | Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store) به UI وصل است: نودهای Parser State (`core/store/parser-state.js`) با هر تغییر (`setNodes`/`addNode`/`updateNode`/`clearNodes`) به‌صورت Write-Through در پس‌زمینه در IndexedDB ذخیره می‌شوند و با `hydrate()` روی mount شدن UI بازخوانی می‌شوند — یعنی نودهای Parse‌شده با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). انتخاب Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
@@ -39,7 +39,7 @@
 | # | صفحه | وضعیت واقعی |
 |---|---|---|
 | 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، و «Recent Imports» همگی واقعی (از Session جاری). «Recent Exports» Placeholder غیرفعال است — هیچ صفحه‌ای هنوز Log فعالیت Export را ثبت نمی‌کند |
-| 2 | **Converter** | فقط **Paste Area** (textarea) — File Upload، Drag-Drop، Clipboard Import عمداً Deferred شده‌اند. Parse از طریق Worker واقعی انجام می‌شود (با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016) |
+| 2 | **Converter** | فقط **Paste Area** (textarea) — File Upload، Drag-Drop، Clipboard Import عمداً Deferred شده‌اند. Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016) |
 | 3 | **Analyzer** | ۵ بخش واقعی (Node Details، Protocol، Security+TLS، Compatibility/Network، Reality). «Cloudflare Analysis» Placeholder غیرفعال است (منتظر Phase 10) |
 | 4 | **Subscription Center** | Search/Filter (Protocol+Validity)/Sort/Group واقعی. Tag، Merge، Split، Deduplicate Deferred شده‌اند. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی برای انتخاب درست کتابخانه موجود شود) |
 | 5 | **Extractor** | UUID/IP/Domain/Reality Extractor واقعی. «Worker Extractor» و «DNS Extractor» Placeholder غیرفعال‌اند (وابسته به Phase 10) |
@@ -114,9 +114,11 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 
 - **`core/importer/` خالی است** (فقط `.gitkeep`) — File Upload و Drag-Drop وجود ندارند؛ تنها راه
   ورودی فعلی، Paste کردن متن در Converter Screen است.
-- **`core/worker/converter.worker.js` به هیچ صفحه‌ای وصل نیست** — تبدیل فرمت (Converter/Export
-  Screen) روی Main Thread اجرا می‌شود، نه در Worker. در حجم فعلی مشکلی ایجاد نمی‌کند ولی Worker
-  Pool برای این مسیر هنوز عملاً استفاده نمی‌شود.
+- **`core/worker/converter.worker.js` به Converter Screen وصل است، ولی نه به Export Center** —
+  در Converter Screen، هم Parse و هم Convert از طریق Worker واقعی انجام می‌شوند (Fallback به Main
+  Thread فقط زیر `file://`، ADR-016). Export Center (`ui/export/export-screen.tsx`) مسیر جدایی
+  دارد: مستقیماً `core/exporter/` → `convertBatch` را روی Main Thread صدا می‌زند؛ این یک تصمیم
+  Scope جداست (هنوز به این Worker Pool وصل نشده)، نه باگ.
 - **طراحی بصری حداقلی است** — فقط دو متغیر CSS (`--unct-bg`/`--unct-fg`) برای Dark/Light/Auto؛
   سیستم کامل «Cyber Professional / Glassmorphism / Neumorphism» سند ۰۷ §۲، و به همراه آن CSS
   واکنش‌گرا/Media Query برای معیار «Mobile Optimized» سند ۰۹ (فعلاً فقط یک `<meta viewport>` در
@@ -134,6 +136,4 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 ## گام بعدی واقعی
 
 طبق Roadmap، گام بعدی **Phase 10 (Analyzer Engine — Extended Modules: Cloudflare, Worker, Clean
-IP, DNS, Subscription, Compatibility Analyzer)** است. مستقل از ترتیب فاز، یک مورد از «محدودیت‌های
-شناخته‌شده» بالا — وصل کردن Converter Worker به UI — هر زمان قبل از Release واقعی لازم می‌شود؛
-تصمیم زمان‌بندی دقیق آن با مهدی است، نه چیزی که اینجا از پیش تعیین شده باشد.
+IP, DNS, Subscription, Compatibility Analyzer)** است.
