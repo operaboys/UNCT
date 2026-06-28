@@ -4,6 +4,8 @@ node_modules/
 # Test / coverage output
 coverage/
 .vitest/
+test-results/
+playwright-report/
 
 # Editor / OS
 .DS_Store

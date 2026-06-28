@@ -70,6 +70,7 @@ npm run test:watch
 npm run test:coverage
 npm run typecheck         # بررسی تایپ بدون خروجی (tsc --noEmit)
 npm run build             # بازساخت assets/js/app.js و assets/js/parser-worker.js
+npm run test:e2e          # تست واقعی مرورگر (Playwright) — قبلش npm run build را خودش صدا می‌زند
 ```
 
 > بعد از هر تغییر در `ui/` یا `core/worker/parser.worker.js`، حتماً `npm run build` را اجرا و
@@ -103,6 +104,16 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 `npm audit --omit=dev` صفر آسیب‌پذیری نشان می‌دهد» (تأییدشده) — یعنی Dependencyهای واقعی که به
 کاربر نهایی می‌رسند (`preact`, `dompurify`, `fflate`, `js-yaml`, `uqr`) امن‌اند.
 
+### تست E2E با Playwright (فقط Dev)
+
+`@playwright/test` (و `@types/node` برای تایپ ماژول‌های Node داخل `tests/e2e/`) به‌عنوان
+Dependency صرفاً Dev اضافه شده — درخواست صریح کاربر در همین تسک، نه یک ADR جدا (طبق همان رویه‌ای
+که برای `npm audit` بالا استفاده شد: ابزار Dev-only با یک یادداشت کوتاه در README، نه یک ADR
+کامل؛ `14-DEPENDENCY_POLICY.md` هنوز ردیفی برای ابزار E2E ندارد). اپ نهایی (`assets/js/`) به آن
+وابسته نیست. `tests/e2e/*.spec.js` عمداً خارج از `vitest.config.js`'s include است؛ فقط با
+`npm run test:e2e` (که اول `npm run build` را اجرا می‌کند، چون این تست‌ها روی Bundle واقعی اجرا
+می‌شوند نه سورس) با Playwright اجرا می‌شود.
+
 ---
 
 ## تصمیم Build Step
@@ -124,8 +135,12 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 
 این بخش صادقانه است — هرچیزی که در عمل ساخته نشده یا کامل وصل نیست، اینجاست:
 
-- **`core/importer/` خالی است** (فقط `.gitkeep`) — File Upload و Drag-Drop وجود ندارند؛ تنها راه
-  ورودی فعلی، Paste کردن متن در Converter Screen است.
+- **Drag-Drop Zone فقط Unit Test دارد، نه E2E** — تصمیم آگاهانه، نه کم‌کاری: شبیه‌سازی یک Drag
+  واقعی از خارج صفحه (File Manager سیستم‌عامل) در هیچ ابزار خودکارسازی مرورگری (Playwright هم)
+  ممکن نیست؛ تنها راه شبیه‌سازی داخل صفحه، ساخت دستی `DataTransfer`/`File` و Dispatch یک رویداد
+  `drop` ساختگی است — دقیقاً همان کاری که `tests/importer/from-drop-event.test.js` (Vitest/jsdom)
+  از قبل انجام می‌دهد؛ تکرارش در Playwright چیزی فراتر از همان مسیر را پوشش نمی‌دهد. جزئیات کامل
+  در کامنت پایانی `tests/e2e/file-upload.spec.js`.
 - **`core/worker/converter.worker.js` به Converter Screen وصل است، ولی نه به Export Center** —
   در Converter Screen، هم Parse و هم Convert از طریق Worker واقعی انجام می‌شوند (Fallback به Main
   Thread فقط زیر `file://`، ADR-016). Export Center (`ui/export/export-screen.tsx`) مسیر جدایی

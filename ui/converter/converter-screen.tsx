@@ -19,25 +19,36 @@
  * sorts/displays/aggregates values Core already computed, it never scores
  * or validates anything itself.
  *
- * Deliberately deferred past this first pass (doc 07 §4.2 lists them, none
- * block the Parser -> Validation -> Converter chain this screen exists to
- * prove): File Upload, Drag-Drop Zone, Clipboard Import (Input Panel — Paste
- * Area covers the same data path), and QR output (no QR library has been
- * reviewed under 14-DEPENDENCY_POLICY yet). Visual design (doc 07 §2's
- * Cyber Professional/Glassmorphism system) is also out of scope here —
- * structure and data flow only.
+ * Deliberately deferred past this first pass (doc 07 §4.2 lists it, it
+ * doesn't block the Parser -> Validation -> Converter chain this screen
+ * exists to prove): QR output (no QR library has been reviewed under
+ * 14-DEPENDENCY_POLICY yet). Visual design (doc 07 §2's Cyber
+ * Professional/Glassmorphism system) is also out of scope here — structure
+ * and data flow only.
+ *
+ * The Input Panel's other three methods (File Upload, Drag-Drop Zone,
+ * Clipboard Import) all reduce to the same raw-text string Paste Area
+ * already produces — `core/importer/` (a pure, sync text-extraction layer,
+ * no parsing) pulls that string out of a `File`/`DragEvent`/the clipboard,
+ * and `runParse` below feeds it into the exact same `parseRawConfig` call
+ * `handleParse` always used, so all four methods share one processing path
+ * (ADR-016).
  */
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
   selectProtocolCounts,
   selectAggregatedWarnings,
   selectAggregatedErrors,
   selectAggregatedRecoveryActions,
 } from "../../core/store/selectors.js";
+import { readFileAsText, extractTextFromDropEvent } from "../../core/importer/index.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
 import { parseRawConfig, CancelledError } from "../store/parser-worker-client.js";
 import { convertBatchInWorker, type ConvertResult, type ExportFormat } from "./converter-worker-client.js";
 import { formatProtocolCounts, formatDiagnosticList, formatSkippedProtocols } from "./format.js";
+
+const CLIPBOARD_IMPORT_SUPPORTED =
+  typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function";
 
 const EMPTY_CONVERT_RESULT: ConvertResult = { converted: [], skipped: [] };
 
@@ -61,6 +72,8 @@ export function ConverterScreen() {
   const [format, setFormat] = useState<ExportFormat>("url");
   const [isParsing, setIsParsing] = useState(false);
   const [convertResult, setConvertResult] = useState<ConvertResult>(EMPTY_CONVERT_RESULT);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const protocolCounts = useMemo(() => selectProtocolCounts({ nodes }), [nodes]);
   const warnings = useMemo(() => selectAggregatedWarnings({ nodes }), [nodes]);
@@ -86,10 +99,10 @@ export function ConverterScreen() {
   const { converted, skipped } = convertResult;
   const skippedMessage = formatSkippedProtocols(skipped);
 
-  async function handleParse() {
+  async function runParse(text: string) {
     setIsParsing(true);
     try {
-      const result = await parseRawConfig(raw);
+      const result = await parseRawConfig(text);
       parserStore.setNodes(result.nodes);
       setLastParse({ parserName: result.parserName, recovered: result.recovered });
       setParseError(null);
@@ -106,11 +119,58 @@ export function ConverterScreen() {
     }
   }
 
+  async function handleParse() {
+    await runParse(raw);
+  }
+
   function handleClear() {
     setRaw("");
     setParseError(null);
     setLastParse(null);
     parserStore.clearNodes();
+  }
+
+  async function handleFileInputChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+    const text = await readFileAsText(file);
+    setRaw(text);
+    await runParse(text);
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    setIsDragOver(true);
+  }
+
+  function handleDragLeave() {
+    setIsDragOver(false);
+  }
+
+  async function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    let text: string;
+    try {
+      text = await extractTextFromDropEvent(e);
+    } catch {
+      return; // nothing dropped that this Drop Zone can read — no-op, not an error
+    }
+    setRaw(text);
+    await runParse(text);
+  }
+
+  async function handleClipboardImport() {
+    if (!CLIPBOARD_IMPORT_SUPPORTED) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      setRaw(text);
+      await runParse(text);
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
@@ -121,21 +181,46 @@ export function ConverterScreen() {
         <h2>Input</h2>
         <p class="hint">
           Paste a config: a single URL (vless/vmess/trojan/ss/hysteria2/tuic), a multi-line
-          subscription, Xray/Sing-box JSON, Clash/Clash.Meta YAML, or a WireGuard config. File
-          Upload, Drag-Drop, and Clipboard Import are deferred past this first pass.
+          subscription, Xray/Sing-box JSON, Clash/Clash.Meta YAML, or a WireGuard config. Or drop
+          a file on the box below, upload one, or import from the clipboard.
         </p>
         <textarea
           rows={8}
           cols={80}
           value={raw}
           onInput={(e) => setRaw((e.target as HTMLTextAreaElement).value)}
-          placeholder="vless://... or a multi-line subscription, etc."
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          placeholder="vless://... or a multi-line subscription, etc. (drag a file here to load it)"
+          style={isDragOver ? { outline: "2px dashed currentColor" } : undefined}
         />
         <div class="actions">
           <button type="button" onClick={handleParse} disabled={raw.trim().length === 0 || isParsing}>
             {isParsing ? "Parsing…" : "Parse"}
           </button>
           <button type="button" onClick={handleClear}>Clear</button>
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isParsing}>
+            Upload File
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            style={{ display: "none" }}
+            onChange={handleFileInputChange}
+          />
+          <button
+            type="button"
+            onClick={handleClipboardImport}
+            disabled={!CLIPBOARD_IMPORT_SUPPORTED || isParsing}
+            title={
+              CLIPBOARD_IMPORT_SUPPORTED
+                ? undefined
+                : "Clipboard import is unavailable in this browser/context (needs HTTPS and the Clipboard API)."
+            }
+          >
+            Import from Clipboard
+          </button>
         </div>
         {parseError && <p class="error" role="alert">{parseError}</p>}
       </section>
