@@ -41,8 +41,7 @@ UNCT/
 │   │   └── registry/              ← ⚠️ اصلاح‌شده (بازبینی اولویت ۳): **UNM Schema Registry** — نگه‌داری نسخه‌های Schema و قوانین Migration بین نسخه‌ها (نه Runtime Node Storage؛ آن مسئولیت `core/store/` است — این دو همپوشانی ندارند)
 │   │
 │   ├── importer/
-│   ├── detector/
-│   ├── parser/
+│   ├── parser/                    ← ⚠️ اصلاح‌شده: `detector/` و `normalizer/` به‌عنوان پوشه‌ی مرکزی جدا حذف شدند — هر Parser مسئول Detection/Normalization خودش است (توضیح کامل زیر جدول)
 │   │   ├── base/                ← BaseParser Contract (سند 12) — Interface در core/types/ تعریف می‌شود
 │   │   ├── xray/
 │   │   ├── singbox/
@@ -52,7 +51,6 @@ UNCT/
 │   │   └── wireguard/
 │   │
 │   ├── validator/
-│   ├── normalizer/
 │   ├── analyzer/
 │   │   ├── core/                ← Protocol/Security/TLS/Network/Reality (Spec قطعی)
 │   │   └── extended/             ← Cloudflare/Worker/DNS/Subscription/Compatibility (نیمه‌قطعی)
@@ -102,6 +100,10 @@ UNCT/
     ├── changelog/
     └── specifications/
 ```
+
+> ⚠️ **توضیح حذف `core/detector/` و `core/normalizer/`:** Detection و Normalization
+> به‌جای یک ماژول مرکزی، در عمل به‌صورت per-Parser (هر `core/parser/*/detect.js` و
+> `normalize.js`) پیاده‌سازی شدند تا با Extension Rule سند ۱۲ §۶ هماهنگ بمانند.
 
 ---
 

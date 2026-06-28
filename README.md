@@ -124,9 +124,10 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
   واکنش‌گرا/Media Query برای معیار «Mobile Optimized» سند ۰۹ (فعلاً فقط یک `<meta viewport>` در
   `index.html` هست، بدون هیچ `@media`)، عمداً هردو به انتهای کل Roadmap موکول شده‌اند — تصمیمی
   قطعی، نه سؤال باز.
-- **`core/normalizer/` و `core/detector/` خالی‌اند** (فقط `.gitkeep`) — این یک محدودیت واقعی
-  نیست بلکه یک نتیجه‌ی معماری: منطق Detect/Normalize داخل خود هر Parser (`detect()`/
-  `normalize()`/`normalizeMany()`) و `core/unm/mapper/` پیاده شده، نه در ماژول جدا.
+- **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** (قبلاً فقط `.gitkeep` داشتند) —
+  این یک محدودیت واقعی نبود بلکه یک نتیجه‌ی معماری: منطق Detect/Normalize داخل خود هر Parser
+  (`detect()`/`normalize()`/`normalizeMany()`) و `core/unm/mapper/` پیاده شده، نه در ماژول جدا؛
+  توضیح کامل در `docs/blueprints/MASTER_FILE_STRUCTURE.md`.
 - **`plugins/` و `reports/` خالی‌اند** — طبق برنامه، چون Phase 11/12 هنوز شروع نشده‌اند.
 - چند بخش از صفحات اصلی Placeholder غیرفعال‌اند (جدول بالا) — همگی به‌خاطر نبود ماژول
   Analyzer نیمه‌قطعی (Phase 10) یا نبود Log/Activity Source، نه باگ.
