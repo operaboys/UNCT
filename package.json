@@ -23,6 +23,7 @@
   "dependencies": {
     "fflate": "0.8.3",
     "js-yaml": "^4.2.0",
-    "preact": "^10.24.0"
+    "preact": "^10.24.0",
+    "uqr": "0.1.3"
   }
 }

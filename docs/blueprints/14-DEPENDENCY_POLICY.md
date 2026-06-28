@@ -23,7 +23,7 @@ Minimal Dependencies · Maximum Control
 | `htm` (اختیاری) | جایگزین JSX بدون نیاز به Build Step | ✅ تأییدشده (همراه Preact) |
 | js-yaml | YAML Parsing/Serialization | تأییدشده (نسخه‌ی قبلی) |
 | Dexie Adapter (اختیاری) | لایه‌ی کمکی روی IndexedDB | تأییدشده (نسخه‌ی قبلی) |
-| QRCode Generator | تولید QR Code | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `qrcode-generator` (ADR-017، Phase 9 Export Engine)** |
+| QRCode Generator | تولید QR Code | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `uqr@0.1.3` (ADR-017، Phase 9 Export Engine — جایگزین `qrcode-generator` که به‌خاطر معماری غیرقابل‌Tree-Shake، در همان ADR کنار گذاشته شد)** |
 | ZIP Utility | ساخت/خواندن فایل ZIP | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `fflate@0.8.3` (ADR-017، Phase 9 Export Engine)** |
 | **DOMPurify** | HTML Sanitization / XSS Protection | 🔴 **REQUIRED** *(اصلاح‌شده — بازبینی اولویت ۳؛ Used In: Export Engine, HTML Preview, Report Rendering — اگر Export HTML و Import داده‌ی خارجی وجود دارد، این Dependency اختیاری نیست)* |
 | **Testing Framework** | Automated Testing | ⏳ Phase 1 Decision Required — **Candidates:** Vitest, Jest, Web Test Runner *(بازبینی اولویت ۳؛ هنوز انتخاب نهایی نشده). 💭 یادآوری (بازبینی نهایی): این دومین بار است که `Vitest` به‌عنوان گزینه‌ی برتر پیشنهاد می‌شود (سازگار با ESM، سریع) — همچنان تصمیم نهایی با مهدی است، نه یک انتخاب خودکار.* |
@@ -70,7 +70,7 @@ Minimal Dependencies · Maximum Control
 
 | سقف | مقدار |
 |---|---|
-| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) — **Baseline اندازه‌گیری‌شده (Phase 9، پس از ADR-017): 51244 بایت (50.04 KiB)، تأییدشده توسط مهدی به‌عنوان Overage جزئی پذیرفته‌شده (دلیل: کدِ DEFLATE واقعیِ `fflate`، غیرقابل‌حذف برای ZIP واقعی)** |
+| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) — **Baseline اندازه‌گیری‌شده (Phase 9، پس از ADR-017 + Addendum 2): 55651 بایت (54.35 KiB)، تأییدشده توسط مهدی به‌عنوان Overage پذیرفته‌شده (دلیل: کدِ DEFLATE واقعیِ `fflate` + ماژول `encode` واقعی `uqr`، هر دو غیرقابل‌حذف برای ZIP/QR واقعی؛ جایگزینی `qrcode-generator`→`uqr` این Overage را از ۸۴۱۶ به ۴۴۰۷ بایت کاهش داد)** |
 | کل Dependencyهای خارجی (Preact + YAML + ZIP + QR + Virtual List + ...) | ≤ 150KB (gzip) — با فاصله‌ی زیاد رعایت می‌شود |
 
 **قانون:** قبل از هر Release، اندازه‌ی Bundle نهایی باید اندازه‌گیری شود (مثلاً با `source-map-explorer` یا ابزار مشابه در زمان توسعه، نه به‌عنوان Runtime Dependency). عبور از سقف بدون تأیید معماری مجاز نیست — جزئیات این تأیید برای Overage فعلی در `ADR-017-EXPORT-DEPENDENCIES.md`'s Addendum ثبت شده. از این Checkpoint به بعد، Checkpointهای جدید باید نسبت به Baseline ۵۱۲۴۴ بایت (نه عدد قدیمی) سنجیده شوند؛ هر Overage جدید نسبت به این Baseline هم باز نیاز به تأیید معماری مجزا دارد.
@@ -140,7 +140,7 @@ Minimal Dependencies · Maximum Control
 | Field | Value |
 |---|---|
 | نسخه | v2.7 |
-| اصلاحات نسبت به v2.6 | (Phase 9 Export Engine) ثبت پکیج مشخص برای دو ردیف از‌قبل‌تأییدشده‌ی عمومی: `fflate@0.8.3` برای ZIP Utility، `qrcode-generator@2.0.4` برای QRCode Generator — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-017-EXPORT-DEPENDENCIES.md` |
+| اصلاحات نسبت به v2.6 | (Phase 9 Export Engine) ثبت پکیج مشخص برای دو ردیف از‌قبل‌تأییدشده‌ی عمومی: `fflate@0.8.3` برای ZIP Utility، `uqr@0.1.3` برای QRCode Generator (جایگزین `qrcode-generator@2.0.4` که به‌خاطر معماری غیرقابل‌Tree-Shake کنار گذاشته شد) — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-017-EXPORT-DEPENDENCIES.md` |
 | اصلاحات نسبت به v2.5 | (بازبینی نهایی) ثبت یادآوری دومین پیشنهاد Vitest برای Testing Framework — بدون تصمیم‌گیری خودسرانه |
 | اصلاحات نسبت به v2.4 | (بازبینی نهایی) افزودن Bundle Size Budget (Section 2.1)؛ افزودن Preact Testing Library به Candidate List؛ ثبت Comlink به‌عنوان Dependency پیشنهادی-ولی-تأییدنشده (نیاز به بررسی قبل از Phase 5) |
 | سند بعدی | `15-BLUEPRINT_TESTING_FRAMEWORK` |

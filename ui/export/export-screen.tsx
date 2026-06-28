@@ -12,10 +12,17 @@
  * ZIP Export (doc 08 §7, ADR-017) is now real: `core/exporter/to-zip.js`
  * bundles every format above plus a manifest.json into one archive via
  * `fflate`, called directly here the same "no new Core logic in UI" way as
- * every other format. QR and HTML Report (doc 08 §6, §8) still need their
- * own dependency decision/DOMPurify sanitization and remain disabled
- * placeholders, the same treatment `extractor-screen.tsx` gives Worker/DNS
- * Extractor.
+ * every other format.
+ *
+ * QR Export (doc 08 §6, ADR-017) is now real too: `core/exporter/to-qr.js`
+ * returns only the raw boolean matrix per node via `uqr`'s `encode()` (no
+ * DOM/Canvas in core/);
+ * `ui/export/qr-render.ts`'s pure `matrixToSvgPath`/`qrToSvgMarkup` turn that
+ * into `<svg>` markup here — one QR per node satisfies doc 08 §6's "Multi QR
+ * Pages", "Printable Sheets" is the browser's own print dialog (no new
+ * dependency needed for either). HTML Report (doc 08 §8) still needs DOMPurify
+ * sanitization and remains a disabled placeholder, the same treatment
+ * `extractor-screen.tsx` gives Worker/DNS Extractor.
  *
  * Clipboard Quick Copy is doc 07 §4.6's own footnote suggestion ("باید کنار
  * بقیه‌ی Export Profiles در دسترس باشد") — trivial with the existing
@@ -29,11 +36,14 @@
 import { useMemo, useState } from "preact/hooks";
 import {
   exportTxt, exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson, exportClashYaml, exportCsv,
-  exportZip,
+  exportZip, exportQr,
 } from "../../core/exporter/index.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { formatSkipped, type SkippedExportNode } from "./format.js";
+import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
+
+const QR_CELL_SIZE = 4;
 
 type Format = "txt" | "xrayJson" | "singboxJson" | "normalizedJson" | "analysisJson" | "clashYaml" | "csv";
 
@@ -83,6 +93,9 @@ export function ExportScreen() {
   );
   const zipSkippedMessage = formatSkipped(zipSkipped);
 
+  const { qrCodes, skipped: qrSkipped } = useMemo(() => exportQr(nodes), [nodes]);
+  const qrSkippedMessage = formatSkipped(qrSkipped);
+
   function handleFormatChange(next: Format) {
     setFormat(next);
     setCopyStatus("idle");
@@ -114,6 +127,17 @@ export function ExportScreen() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "export.zip";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleDownloadQr(nodeId: string, matrix: readonly (readonly boolean[])[], moduleCount: number) {
+    const svg = qrToSvgMarkup(matrix, moduleCount, QR_CELL_SIZE);
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qr-${nodeId}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -173,13 +197,38 @@ export function ExportScreen() {
         )}
       </section>
 
-      <section aria-label="QR Export" aria-disabled="true">
+      <section aria-label="QR Export">
         <h2>QR Export</h2>
-        <p class="hint">
-          Deferred — doc 08 §6's QR code generation needs a new dependency
-          (14-DEPENDENCY_POLICY), not yet reviewed; shown as a placeholder until core/exporter/
-          implements it.
-        </p>
+        {nodes.length === 0 ? (
+          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        ) : (
+          <>
+            <p class="hint">
+              One QR code per node (doc 08 §6's "Single Node · Multi QR Pages") — encodes each
+              node's URL form, the same string TXT Export produces. Print this page for a
+              printable sheet.
+            </p>
+            <div class="qr-grid">
+              {qrCodes.map((qr) => (
+                <figure key={qr.nodeId}>
+                  <svg
+                    viewBox={`0 0 ${qr.moduleCount * QR_CELL_SIZE} ${qr.moduleCount * QR_CELL_SIZE}`}
+                    width={qr.moduleCount * QR_CELL_SIZE}
+                    height={qr.moduleCount * QR_CELL_SIZE}
+                  >
+                    <rect width="100%" height="100%" fill="#fff" />
+                    <path d={matrixToSvgPath(qr.matrix, QR_CELL_SIZE)} fill="#000" />
+                  </svg>
+                  <figcaption>{qr.protocol}</figcaption>
+                  <button type="button" onClick={() => handleDownloadQr(qr.nodeId, qr.matrix, qr.moduleCount)}>
+                    Download SVG
+                  </button>
+                </figure>
+              ))}
+            </div>
+            {qrSkippedMessage && <p class="hint">Skipped: {qrSkippedMessage}</p>}
+          </>
+        )}
       </section>
 
       <section aria-label="HTML Report Export" aria-disabled="true">
