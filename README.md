@@ -114,18 +114,14 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 
 - **`core/importer/` خالی است** (فقط `.gitkeep`) — File Upload و Drag-Drop وجود ندارند؛ تنها راه
   ورودی فعلی، Paste کردن متن در Converter Screen است.
-- **Storage Engine (`core/storage/`, Phase 8) به هیچ صفحه‌ای وصل نیست** — با اینکه در سطح Core
-  ساخته و تست شده (IndexedDB Adapter + Node Store)، هیچ صفحه‌ای نودها را در آن ذخیره نمی‌کند.
-  نتیجه: داده‌ی Parse/Analyze‌شده با Refresh یا بستن مرورگر از بین می‌رود. فقط انتخاب Theme در
-  Settings واقعاً Persist می‌شود (با `core/storage/local-adapter.js`، نه IndexedDB).
 - **`core/worker/converter.worker.js` به هیچ صفحه‌ای وصل نیست** — تبدیل فرمت (Converter/Export
   Screen) روی Main Thread اجرا می‌شود، نه در Worker. در حجم فعلی مشکلی ایجاد نمی‌کند ولی Worker
   Pool برای این مسیر هنوز عملاً استفاده نمی‌شود.
 - **طراحی بصری حداقلی است** — فقط دو متغیر CSS (`--unct-bg`/`--unct-fg`) برای Dark/Light/Auto؛
-  سیستم کامل «Cyber Professional / Glassmorphism / Neumorphism» سند ۰۷ §۲ عمداً به انتهای کل
-  Roadmap موکول شده، هنوز شروع نشده.
-- **«Mobile Optimized» (معیار موفقیت Phase 9 سند ۰۹) تأیید نشده** — فقط یک `<meta viewport>`
-  در `index.html` هست؛ بدون Media Query یا CSS واکنش‌گرا. نیاز به بررسی/کار جدا.
+  سیستم کامل «Cyber Professional / Glassmorphism / Neumorphism» سند ۰۷ §۲، و به همراه آن CSS
+  واکنش‌گرا/Media Query برای معیار «Mobile Optimized» سند ۰۹ (فعلاً فقط یک `<meta viewport>` در
+  `index.html` هست، بدون هیچ `@media`)، عمداً هردو به انتهای کل Roadmap موکول شده‌اند — تصمیمی
+  قطعی، نه سؤال باز.
 - **`core/normalizer/` و `core/detector/` خالی‌اند** (فقط `.gitkeep`) — این یک محدودیت واقعی
   نیست بلکه یک نتیجه‌ی معماری: منطق Detect/Normalize داخل خود هر Parser (`detect()`/
   `normalize()`/`normalizeMany()`) و `core/unm/mapper/` پیاده شده، نه در ماژول جدا.
