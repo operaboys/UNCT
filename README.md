@@ -26,7 +26,7 @@
 | Phase 5 — Web Worker Engine | ✅ کامل (با یک محدودیت) | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` واقعی و به UI وصل‌اند. **`converter.worker.js` ساخته و تست شده ولی به هیچ صفحه‌ی UI وصل نیست** — تبدیل فرمت در Converter/Export Screen روی Main Thread اجرا می‌شود، نه در Worker (بخش محدودیت‌ها) |
 | Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
-| Phase 8 — Storage Layer | ⚠️ کامل فقط در سطح Core | `core/storage/` (IndexedDB Adapter + Node Store) ساخته و تست شده، ولی **به هیچ صفحه‌ی UI وصل نیست**. یعنی نودهای Parse/Analyze‌شده فقط در حافظه‌ی همان Session هستند و با Refresh/Restart مرورگر از بین می‌روند. تنها چیزی که واقعاً Persist می‌شود، انتخاب Theme در Settings است (از طریق `core/storage/local-adapter.js`) (بخش محدودیت‌ها) |
+| Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store) به UI وصل است: نودهای Parser State (`core/store/parser-state.js`) با هر تغییر (`setNodes`/`addNode`/`updateNode`/`clearNodes`) به‌صورت Write-Through در پس‌زمینه در IndexedDB ذخیره می‌شوند و با `hydrate()` روی mount شدن UI بازخوانی می‌شوند — یعنی نودهای Parse‌شده با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). انتخاب Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
 | Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته شده؛ Export Engine هر ۷ فرمت سند ۰۸ (TXT, JSON×4, CSV, Clash YAML, ZIP, QR, HTML Report) کامل. جزئیات محدودیت هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ تأیید نشده — فقط یک `<meta viewport>` در `index.html` هست، بدون CSS واکنش‌گرا/Media Query (نیاز به بررسی) |
 | Phase 10 — Analyzer Extended | ❌ شروع نشده | Cloudflare/Worker/Clean IP/DNS/Subscription/Compatibility Analyzer |
 | Phase 11 — Plugin System | ❌ شروع نشده | `plugins/` فقط `.gitkeep` دارد |
@@ -134,6 +134,6 @@ npm run build             # بازساخت assets/js/app.js و assets/js/parser-
 ## گام بعدی واقعی
 
 طبق Roadmap، گام بعدی **Phase 10 (Analyzer Engine — Extended Modules: Cloudflare, Worker, Clean
-IP, DNS, Subscription, Compatibility Analyzer)** است. مستقل از ترتیب فاز، دو مورد بالا («محدودیت‌های
-شناخته‌شده») — وصل کردن Storage Engine و Converter Worker به UI — هر زمان قبل از Release واقعی
-لازم می‌شوند؛ تصمیم زمان‌بندی دقیق آن‌ها با مهدی است، نه چیزی که اینجا از پیش تعیین شده باشد.
+IP, DNS, Subscription, Compatibility Analyzer)** است. مستقل از ترتیب فاز، یک مورد از «محدودیت‌های
+شناخته‌شده» بالا — وصل کردن Converter Worker به UI — هر زمان قبل از Release واقعی لازم می‌شود؛
+تصمیم زمان‌بندی دقیق آن با مهدی است، نه چیزی که اینجا از پیش تعیین شده باشد.
