@@ -20,9 +20,18 @@
  * `ui/export/qr-render.ts`'s pure `matrixToSvgPath`/`qrToSvgMarkup` turn that
  * into `<svg>` markup here — one QR per node satisfies doc 08 §6's "Multi QR
  * Pages", "Printable Sheets" is the browser's own print dialog (no new
- * dependency needed for either). HTML Report (doc 08 §8) still needs DOMPurify
- * sanitization and remains a disabled placeholder, the same treatment
- * `extractor-screen.tsx` gives Worker/DNS Extractor.
+ * dependency needed for either).
+ *
+ * HTML Report Export (doc 08 §8, §11 Security Layer, ADR-018) is now real
+ * too: `core/exporter/to-html.js` builds the already-escaped-and-DOMPurify-
+ * sanitized document directly from `useAnalyzerState()`'s same bundle the
+ * Analysis JSON format above already reads — no second sanitization pass
+ * belongs here (Rule 9: this screen never re-derives or re-judges what Core
+ * already produced). The preview below renders that markup in a sandboxed
+ * `<iframe>` (`sandbox="allow-same-origin"`, no `allow-scripts`) rather than
+ * `dangerouslySetInnerHTML`-equivalent on the page itself, so even a future
+ * regression in the Core sanitization can never execute in this document's
+ * own context.
  *
  * Clipboard Quick Copy is doc 07 §4.6's own footnote suggestion ("باید کنار
  * بقیه‌ی Export Profiles در دسترس باشد") — trivial with the existing
@@ -36,7 +45,7 @@
 import { useMemo, useState } from "preact/hooks";
 import {
   exportTxt, exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson, exportClashYaml, exportCsv,
-  exportZip, exportQr,
+  exportZip, exportQr, exportHtmlReport,
 } from "../../core/exporter/index.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
@@ -96,6 +105,11 @@ export function ExportScreen() {
   const { qrCodes, skipped: qrSkipped } = useMemo(() => exportQr(nodes), [nodes]);
   const qrSkippedMessage = formatSkipped(qrSkipped);
 
+  const { content: htmlReportContent } = useMemo(
+    () => exportHtmlReport(nodes, analysisByNodeId),
+    [nodes, analysisByNodeId],
+  );
+
   function handleFormatChange(next: Format) {
     setFormat(next);
     setCopyStatus("idle");
@@ -138,6 +152,16 @@ export function ExportScreen() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `qr-${nodeId}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleDownloadHtmlReport() {
+    const blob = new Blob([htmlReportContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "report.html";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -231,12 +255,27 @@ export function ExportScreen() {
         )}
       </section>
 
-      <section aria-label="HTML Report Export" aria-disabled="true">
+      <section aria-label="HTML Report Export">
         <h2>HTML Report Export</h2>
-        <p class="hint">
-          Deferred — doc 08 §11 mandates DOMPurify sanitization (ADR-004) before any HTML Report
-          can render user content; shown as a placeholder until core/exporter/ implements it.
-        </p>
+        {nodes.length === 0 ? (
+          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        ) : (
+          <>
+            <p class="hint">
+              Summary, Analysis, Security Report, Compatibility Report, Warnings, and
+              Recommendations per node (doc 08 §8) — escaped per value, then sanitized as a whole
+              document via DOMPurify (doc 08 §11, ADR-018) before either preview or download.
+            </p>
+            <button type="button" onClick={handleDownloadHtmlReport}>Download HTML</button>
+            <h3>Preview</h3>
+            <iframe
+              title="HTML Report Preview"
+              sandbox="allow-same-origin"
+              srcdoc={htmlReportContent}
+              style={{ width: "100%", height: "400px", border: "1px solid #ccc" }}
+            />
+          </>
+        )}
       </section>
     </main>
   );

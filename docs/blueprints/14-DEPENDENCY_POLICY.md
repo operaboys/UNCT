@@ -25,7 +25,7 @@ Minimal Dependencies · Maximum Control
 | Dexie Adapter (اختیاری) | لایه‌ی کمکی روی IndexedDB | تأییدشده (نسخه‌ی قبلی) |
 | QRCode Generator | تولید QR Code | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `uqr@0.1.3` (ADR-017، Phase 9 Export Engine — جایگزین `qrcode-generator` که به‌خاطر معماری غیرقابل‌Tree-Shake، در همان ADR کنار گذاشته شد)** |
 | ZIP Utility | ساخت/خواندن فایل ZIP | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `fflate@0.8.3` (ADR-017، Phase 9 Export Engine)** |
-| **DOMPurify** | HTML Sanitization / XSS Protection | 🔴 **REQUIRED** *(اصلاح‌شده — بازبینی اولویت ۳؛ Used In: Export Engine, HTML Preview, Report Rendering — اگر Export HTML و Import داده‌ی خارجی وجود دارد، این Dependency اختیاری نیست)* |
+| **DOMPurify** | HTML Sanitization / XSS Protection | 🔴 **REQUIRED** — **پکیج مشخص: `dompurify@3.4.11` (ADR-018، Phase 9 Export Engine — HTML Report)**؛ مصرف به‌صورت دو لایه: `escapeHtml()` دستی روی هر مقدار + یک پاس `DOMPurify.sanitize(..., {WHOLE_DOCUMENT:true})` روی کل سند *(اصلاح‌شده — بازبینی اولویت ۳؛ Used In: Export Engine, HTML Preview, Report Rendering — اگر Export HTML و Import داده‌ی خارجی وجود دارد، این Dependency اختیاری نیست)* |
 | **Testing Framework** | Automated Testing | ⏳ Phase 1 Decision Required — **Candidates:** Vitest, Jest, Web Test Runner *(بازبینی اولویت ۳؛ هنوز انتخاب نهایی نشده). 💭 یادآوری (بازبینی نهایی): این دومین بار است که `Vitest` به‌عنوان گزینه‌ی برتر پیشنهاد می‌شود (سازگار با ESM، سریع) — همچنان تصمیم نهایی با مهدی است، نه یک انتخاب خودکار.* |
 | **Preact Testing Library** | Component Testing | ⏳ Phase 9 Decision Required *(جدید — بازبینی نهایی؛ همراه با انتخاب Testing Framework اصلی تصمیم‌گیری می‌شود)* |
 | یک کتابخانه‌ی Virtual List سبک | رندر لیست‌های ۱۰,۰۰۰+ آیتمی (طبق سند 13) | ⏳ نیاز به انتخاب دقیق در Phase 9 — **باید Actively Maintained باشد** (پیشنهاد بازبینی؛ بعضی کتابخانه‌های Virtual Scroll سال‌هاست آپدیت نشده‌اند) |
@@ -70,10 +70,10 @@ Minimal Dependencies · Maximum Control
 
 | سقف | مقدار |
 |---|---|
-| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) — **Baseline اندازه‌گیری‌شده (Phase 9، پس از ADR-017 + Addendum 2): 55651 بایت (54.35 KiB)، تأییدشده توسط مهدی به‌عنوان Overage پذیرفته‌شده (دلیل: کدِ DEFLATE واقعیِ `fflate` + ماژول `encode` واقعی `uqr`، هر دو غیرقابل‌حذف برای ZIP/QR واقعی؛ جایگزینی `qrcode-generator`→`uqr` این Overage را از ۸۴۱۶ به ۴۴۰۷ بایت کاهش داد)** |
-| کل Dependencyهای خارجی (Preact + YAML + ZIP + QR + Virtual List + ...) | ≤ 150KB (gzip) — با فاصله‌ی زیاد رعایت می‌شود |
+| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) — **Baseline اندازه‌گیری‌شده (Phase 9، پس از ADR-018 — تکمیل کامل Export Engine): 67594 بایت (66.01 KiB)، تأییدشده توسط مهدی به‌عنوان Overage پذیرفته‌شده (دلیل این مرحله: `dompurify` یک Export یکپارچه‌ی غیرقابل‌Tree-Shake دارد — ۱۰۶۵۸ بایت از این عدد، طبق Probe مجزا — و طبق سند ۰۸ §۱۱ Sanitization اختیاری نیست؛ جزئیات کامل در `ADR-018-HTML-REPORT-DOMPURIFY.md`)** |
+| کل Dependencyهای خارجی (Preact + YAML + ZIP + QR + HTML Sanitizer + Virtual List + ...) | ≤ 150KB (gzip) — با فاصله‌ی زیاد رعایت می‌شود (مجموع سه Dependency فاز Export Engine یعنی fflate+uqr+dompurify در همان عدد ۶۷۵۹۴ بایت بالا گنجانده شده) |
 
-**قانون:** قبل از هر Release، اندازه‌ی Bundle نهایی باید اندازه‌گیری شود (مثلاً با `source-map-explorer` یا ابزار مشابه در زمان توسعه، نه به‌عنوان Runtime Dependency). عبور از سقف بدون تأیید معماری مجاز نیست — جزئیات این تأیید برای Overage فعلی در `ADR-017-EXPORT-DEPENDENCIES.md`'s Addendum ثبت شده. از این Checkpoint به بعد، Checkpointهای جدید باید نسبت به Baseline ۵۱۲۴۴ بایت (نه عدد قدیمی) سنجیده شوند؛ هر Overage جدید نسبت به این Baseline هم باز نیاز به تأیید معماری مجزا دارد.
+**قانون:** قبل از هر Release، اندازه‌ی Bundle نهایی باید اندازه‌گیری شود (مثلاً با `source-map-explorer` یا ابزار مشابه در زمان توسعه، نه به‌عنوان Runtime Dependency). عبور از سقف بدون تأیید معماری مجاز نیست — جزئیات این تأیید برای Overageهای فعلی در `ADR-017-EXPORT-DEPENDENCIES.md`'s Addendum (fflate/uqr) و `ADR-018-HTML-REPORT-DOMPURIFY.md` (dompurify) ثبت شده. از این Checkpoint به بعد، Checkpointهای جدید باید نسبت به Baseline ۶۷۵۹۴ بایت (نه اعداد قدیمی‌تر) سنجیده شوند؛ هر Overage جدید نسبت به این Baseline هم باز نیاز به تأیید معماری مجزا دارد.
 
 ---
 
@@ -139,7 +139,8 @@ Minimal Dependencies · Maximum Control
 
 | Field | Value |
 |---|---|
-| نسخه | v2.7 |
+| نسخه | v2.8 |
+| اصلاحات نسبت به v2.7 | (Phase 9 Export Engine — تکمیل) ثبت پکیج مشخص برای ردیف از‌قبل‌تأییدشده‌ی DOMPurify: `dompurify@3.4.11` (HTML Report Export) — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-018-HTML-REPORT-DOMPURIFY.md`؛ به‌روزرسانی Baseline بخش ۲.۱ به ۶۷۵۹۴ بایت (هر سه Dependency فاز Export Engine: fflate+uqr+dompurify) |
 | اصلاحات نسبت به v2.6 | (Phase 9 Export Engine) ثبت پکیج مشخص برای دو ردیف از‌قبل‌تأییدشده‌ی عمومی: `fflate@0.8.3` برای ZIP Utility، `uqr@0.1.3` برای QRCode Generator (جایگزین `qrcode-generator@2.0.4` که به‌خاطر معماری غیرقابل‌Tree-Shake کنار گذاشته شد) — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-017-EXPORT-DEPENDENCIES.md` |
 | اصلاحات نسبت به v2.5 | (بازبینی نهایی) ثبت یادآوری دومین پیشنهاد Vitest برای Testing Framework — بدون تصمیم‌گیری خودسرانه |
 | اصلاحات نسبت به v2.4 | (بازبینی نهایی) افزودن Bundle Size Budget (Section 2.1)؛ افزودن Preact Testing Library به Candidate List؛ ثبت Comlink به‌عنوان Dependency پیشنهادی-ولی-تأییدنشده (نیاز به بررسی قبل از Phase 5) |
