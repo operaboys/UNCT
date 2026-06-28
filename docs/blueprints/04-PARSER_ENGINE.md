@@ -42,6 +42,8 @@ Raw Input → Preprocessor → Format Detector → Parser Selection → Field Ex
 **هدف:** پاکسازی داده‌ها قبل از پردازش
 
 **عملیات:**
+- Normalize Persian/Arabic-Indic Digits to ASCII *(جدید — افزوده‌شده طبق تصمیم دوزبانه‌سازی پروژه)*
+- Normalize Arabic Letter Forms to Persian Forms *(جدید — افزوده‌شده طبق تصمیم دوزبانه‌سازی پروژه)*
 - Trim
 - Normalize Line Endings
 - Remove BOM
@@ -52,6 +54,20 @@ Raw Input → Preprocessor → Format Detector → Parser Selection → Field Ex
 - Remove Duplicate Whitespace
 
 **خروجی:** Clean Text · Metadata · Warnings
+
+> 🔢 **Normalize Persian/Arabic-Indic Digits to ASCII** *(جدید)*: هر رقم فارسی (۰۱۲۳۴۵۶۷۸۹) و
+> عربی (٠١٢٣٤٥٦٧٨٩) در متن خام، پیش از هر عملیات دیگر همین Stage، به معادل ASCII (`0-9`) تبدیل
+> می‌شود. دلیل قرارگرفتن در همین جای اول Stage 01: هر چهار مسیر ورودی (Paste, Upload, Drag-Drop,
+> Clipboard — سند ۰۷ بخش ۴.۲) به این یک نقطه‌ی مشترک می‌رسند؛ نرمال‌سازی اینجا یعنی Stageهای بعدی
+> (Format Detector, Field Extraction, Validation) همیشه فقط رقم ASCII می‌بینند، بدون نیاز به
+> پوشش‌دادن این تفاوت در هر Parser/Validator جدا.
+>
+> 🔤 **Normalize Arabic Letter Forms to Persian Forms** *(جدید)*: حروف هم‌شکل عربی به معادل فارسی
+> خودشان تبدیل می‌شوند (مثلاً `ي` (Arabic Yeh, U+064A) → `ی` (Persian Yeh, U+06CC)؛ `ك` (Arabic
+> Kaf, U+0643) → `ک` (Persian Kaf, U+06A9)). دلیل: این حروف از نظر بصری تقریباً یکسان‌اند ولی
+> Codepoint متفاوت دارند؛ بدون این نرمال‌سازی، Search/Filter روی Remark یا سایر متن‌های آزاد
+> (سند ۰۷ بخش ۴.۴ — Subscription Center) می‌تواند به‌خاطر این تفاوت نامرئی، بی‌صدا نتیجه‌ی غلط
+> بدهد (False Negative در نتیجه‌ی جستجو) — یک کلاس باگ واقعی و سندشده در پروژه‌های مشابه.
 
 ---
 
@@ -271,7 +287,8 @@ const networkTypeMapping: Record<string, NetworkType> = {
 
 | Field | Value |
 |---|---|
-| نسخه | v1.4 |
+| نسخه | v1.5 |
+| اصلاحات نسبت به v1.4 | (دوزبانه‌سازی پروژه) افزودن دو قانون به Stage 01 — Preprocessor: نرمال‌سازی ارقام فارسی/عربی به ASCII (قبل از هر عملیات دیگر)، و نرمال‌سازی حروف عربی به فرم فارسی معادل (جلوگیری از شکست خاموش Search/Filter) |
 | اصلاحات نسبت به v1.3 | (بازبینی نهایی) افزودن Lazy Alternative Detection (Performance)؛ افزودن Validation Scope Rule (Node-by-Node بودن اجباری)؛ افزودن Stage 13.1 Normalization Mapping Table |
 | ✅ Flag بسته‌شده | `ValidationStatus`/`RiskScore` دیگر فیلد تخت UNM نیستند؛ داخل `validation`/`analysis` objects هستند (طبق سند 05) |
 | سند بعدی | `05-BLUEPRINT_UNIVERSAL_NODE_MODEL` |
