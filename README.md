@@ -2,76 +2,81 @@
 
 ابزار آفلاین و کلاینت‌ساید برای تبدیل، تحلیل، و مدیریت کانفیگ‌های شبکه (VLESS, VMESS, Trojan, Shadowsocks, Hysteria2, TUIC, WireGuard).
 
-## وضعیت پروژه
+## وضعیت کلی
 
-✅ **Phase 1 (Foundation Layer)** — کامل. UNM (`core/types/`, `core/unm/`) با Immutability/Invariants
-(سند 05، ADR-002)، Validation Engine Node-by-Node با Cross-Field (`core/validator/`, Stage 13، پوشش
-تست > ۹۵٪)، Error Code Registry (`core/errors/`)، Normalization Mapping Table (`core/unm/mapper/`،
-Stage 13.1)، Testing Infrastructure (Vitest dev-only طبق ADR-005، `tsc --noEmit`)، و Foundation
-Acceptance Gate در سطح UNM/Validation (`tests/baseline-dataset/`، دامنه‌ی دقیق در
-`docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`). نسخه‌ی Schema جداگانه از نسخه‌ی سند است: `UNM_SCHEMA_VERSION`
-در `core/unm/registry/schema-registry.js`.
+**Phase 0 تا Phase 9 (طبق `docs/blueprints/09-DEVELOPMENT_ROADMAP.md`) کامل‌اند** — هسته‌ی UNM،
+شش Parser، Worker Engine، شش ماژول Analyzer، Converter Engine، Storage Engine (در سطح Core)،
+و کل ۸ صفحه‌ی UI به‌همراه Export Engine (هر هفت فرمت سند ۰۸). **Phase 10 تا 12 هنوز شروع
+نشده‌اند.** جزئیات دقیق هر فاز و محدودیت‌های واقعی هرکدام در ادامه — از جمله چند مورد که در
+سطح Core ساخته شده‌اند ولی هنوز به هیچ صفحه‌ی UI وصل نشده‌اند (بخش «محدودیت‌های شناخته‌شده»).
 
-🚧 **Phase 2 (Parser Infrastructure)** — در حال انجام. تا اینجا:
-- **BaseParser Contract** (`core/types/parser.d.ts` + اجرای Runtime در `core/parser/base/`) — پنج متد
-  الزامی (`detect`/`parse`/`validateStructure`/`normalize`/`recover`) و دو فیلد رزروشده
-  (`isAsync?`/`parseAsync?` برای Plugin Parsers آینده، Phase 11)، طبق سند 12 §2.
-- **ParserFactory** (`core/parser/factory.js`) — ثبت Parser، Confidence Scoring (Highest Confidence
-  Wins، آستانه‌ی Unknown Format = ۵۰٪)، و زنجیره‌ی Fallback (Primary → Secondary → ...) طبق سند 12
-  §4/§5.
-- **Xray Parser** (`core/parser/xray/`، Priority: Highest، سند 04 Stage 04) — تشخیص Xray JSON،
-  استخراج ساختاری از `outbounds[].settings.vnext/servers` (تفکیک DNS از Server Address). **چندنودی**
-  (`producesMany`/`normalizeMany`، ADR-008): هم **Multi-Outbound** هم **Multi-User** (هر User در
-  `vnext[].users[]` یک نود جدا) — جلوگیری از Data Loss (قانون ۹). نگاشت مقدار (Stage 13.1) و نام با
-  Priority Chain (مثل `publicKey`→`pbk`، ثبت در `originalMappings`)؛ Recovery مرحله‌ی 10/11 (ترمیم JSON
-  خراب + Fuzzy Key با Levenshtein) — با قانون مطلق «هرگز uuid/password/pbk/sid را Invent نکن».
-- **URL Parser** (`core/parser/url/`، سند 04 Stage 07) — اسکیم‌های
-  `vless/vmess/trojan/ss/hysteria2(hy2)/tuic/wireguard`. شامل لایه‌ی مجزای **Stage 12 — URL
-  Preprocessing** (`preprocess.js`؛ Escape/Normalize/Validate، با محافظت از Username/Password/UUID/
-  Path/Query)، رمزگشایی Base64 (vmess JSON، ss SIP002/legacy)، و Recovery مرحله‌ی 10/11 (Fuzzy Scheme
-  + پاک‌سازی Base64). کلیدهای WireGuard در `extensions` می‌نشینند (UNM Freeze دست‌نخورده).
-- **Subscription Parser** (`core/parser/subscription/`، سند 04 Stage 08) — ورودی Base64/TXT/Mixed،
-  با Auto Decode/Split/Deduplicate/Validate/Normalize. **بازاستفاده‌ی صریح از URL Parser** برای هر خط
-  (نه بازنویسی). Subscription Validation (تشخیص Empty/Broken-Base64/Duplicate) **قبل از** Split/Merge
-  اجرا می‌شود (سند 03 §2.1). خروجی N نود: با `producesMany=true` و `normalizeMany` (ADR-008)؛
-  `normalize` تک‌نودی عمداً **خطای بلند** می‌دهد تا Silent Data Loss رخ ندهد (قانون ۹ ANTI_CHAOS).
-  مصرف‌کننده‌ها از `normalizeAll(parser, extraction)` فکتوری استفاده می‌کنند.
-- **Sing-box Parser** (`core/parser/singbox/`، سند 04 Stage 05) — کانفیگ JSON با آرایه‌ی
-  `outbounds`/`endpoints`؛ اولین پارسر واقعیِ **چندنودی** (`producesMany`/`normalizeMany`، ADR-008).
-  نام‌های snake_case مخصوص sing-box (`server`/`server_port`/`type`، `tls.reality.public_key`، …) با
-  Priority Chain خودش به فیلدهای Canonical نگاشت می‌شوند؛ `security` از `tls.enabled`/`reality.enabled`
-  استنتاج می‌شود؛ WireGuard در `extensions.wireguard` (ADR-007). از Xray با نام فیلدها تفکیک می‌شود
-  (`type` در برابر `protocol`) تا Confidence تصادم نکند.
-- **Clash / Clash.Meta Parser** (`core/parser/clash/`، سند 04 Stage 06) — کانفیگ YAML با آرایه‌ی
-  `proxies`؛ چندنودی (ADR-008). از `js-yaml` برای Decode استفاده می‌کند (سند 14 §5: بدون Parser
-  سفارشی YAML). نام‌های kebab-case کلش (`client-fingerprint`، `reality-opts.public-key`، `ws-opts`، …)
-  با Priority Chain خودش نگاشت می‌شوند؛ `security` از `tls`/`reality-opts` و TLS-native بودن پروتکل
-  استنتاج می‌شود؛ `sourceType` بین `clash-yaml`/`clash-meta-yaml` تفکیک می‌شود. چون YAML است (نه JSON
-  معتبر)، Confidence با Xray/Sing-box تصادم نمی‌کند.
-- **WireGuard Parser** (`core/parser/wireguard/`، سند 04 Stage 09) — فرمت متنی wg-quick
-  (`[Interface]`/`[Peer]`). چندنودی (ADR-008): یک کانفیگ می‌تواند چند `[Peer]` داشته باشد → چند نود،
-  با فیلدهای مشترک `[Interface]` روی همه. استخراج PrivateKey/PublicKey/Endpoint/AllowedIPs/DNS/MTU/
-  PersistentKeepalive؛ Endpoint به address/port هسته تبدیل و بقیه در `extensions.wireguard` با **همان
-  helper مشترک `buildWireguardExtensions` (ADR-007)** که Sing-box/Clash/URL استفاده می‌کنند — کلیدها
-  عیناً یکسان. Recovery: تصحیح Fuzzy نام سکشن‌ها (هرگز کلید Invent نمی‌شود).
-- **Helperهای اشتراکی Parser** (`core/parser/shared/`) — `resolvePriority` (Priority Chain)،
-  `levenshtein/fuzzyKey/fuzzyMatch`، `buildWireguardExtensions` (ADR-007)، `repairJson`، و
-  `splitHostPort`؛ جدول نگاشت از `core/unm/mapper/` بازاستفاده می‌شود نه بازنویسی.
+تست: **۶۰۸ تست در ۵۹ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا.
 
-> تصمیم Build-Path (Zero-Build در برابر Build-Step) همچنان **Zero-Build موکول‌مانده** است — ADR-005
-> بدون تغییر معتبر است. **`js-yaml`** اولین وابستگی Runtime پروژه است (تأییدشده در سند 14 §5، حجم ~۴۴KB
-> minified — زیر سقف ۱۵۰KB سند 14 §2.1)؛ نحوه‌ی تحویل ESM/مرورگری آن بخشی از همان ADR بسته‌بندیِ موکول است.
+---
 
-### دستورها (dev-only)
+## وضعیت هر فاز
+
+| فاز | وضعیت | توضیح واقعی |
+|---|---|---|
+| Phase 0 — Architecture | ✅ کامل | ۱۹ سند Blueprint در `docs/blueprints/` |
+| Phase 1 — Foundation Layer | ✅ کامل | UNM Immutable (`core/types/`, `core/unm/`)، Validation Engine Node-by-Node با Cross-Field (`core/validator/`)، Error Code Registry (`core/errors/`)، Testing Infrastructure (Vitest)، Foundation Acceptance Gate در سطح UNM/Validation و در سطح Raw-config (`tests/baseline-dataset/`) |
+| Phase 2 — Parser Infrastructure | ✅ کامل | `BaseParser` Contract، `ParserFactory` با Confidence Scoring و زنجیره‌ی Fallback (`core/parser/factory.js`) |
+| Phase 3 — Primary Parsers | ✅ کامل | Xray، URL، Subscription Parser |
+| Phase 4 — Extended Parsers | ✅ کامل | Sing-box، Clash/Clash.Meta، WireGuard Parser — Foundation Gate سطح Raw-config با Pass Rate ۱۰۰٪ روی دیتاست ۱۰۰تایی |
+| Phase 5 — Web Worker Engine | ✅ کامل (با یک محدودیت) | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` واقعی و به UI وصل‌اند. **`converter.worker.js` ساخته و تست شده ولی به هیچ صفحه‌ی UI وصل نیست** — تبدیل فرمت در Converter/Export Screen روی Main Thread اجرا می‌شود، نه در Worker (بخش محدودیت‌ها) |
+| Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
+| Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
+| Phase 8 — Storage Layer | ⚠️ کامل فقط در سطح Core | `core/storage/` (IndexedDB Adapter + Node Store) ساخته و تست شده، ولی **به هیچ صفحه‌ی UI وصل نیست**. یعنی نودهای Parse/Analyze‌شده فقط در حافظه‌ی همان Session هستند و با Refresh/Restart مرورگر از بین می‌روند. تنها چیزی که واقعاً Persist می‌شود، انتخاب Theme در Settings است (از طریق `core/storage/local-adapter.js`) (بخش محدودیت‌ها) |
+| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته شده؛ Export Engine هر ۷ فرمت سند ۰۸ (TXT, JSON×4, CSV, Clash YAML, ZIP, QR, HTML Report) کامل. جزئیات محدودیت هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ تأیید نشده — فقط یک `<meta viewport>` در `index.html` هست، بدون CSS واکنش‌گرا/Media Query (نیاز به بررسی) |
+| Phase 10 — Analyzer Extended | ❌ شروع نشده | Cloudflare/Worker/Clean IP/DNS/Subscription/Compatibility Analyzer |
+| Phase 11 — Plugin System | ❌ شروع نشده | `plugins/` فقط `.gitkeep` دارد |
+| Phase 12 — Advanced/Backlog | ❌ شروع نشده | `reports/` فقط `.gitkeep` دارد |
+
+---
+
+## ۸ صفحه‌ی اصلی (Main Screens)
+
+| # | صفحه | وضعیت واقعی |
+|---|---|---|
+| 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، و «Recent Imports» همگی واقعی (از Session جاری). «Recent Exports» Placeholder غیرفعال است — هیچ صفحه‌ای هنوز Log فعالیت Export را ثبت نمی‌کند |
+| 2 | **Converter** | فقط **Paste Area** (textarea) — File Upload، Drag-Drop، Clipboard Import عمداً Deferred شده‌اند. Parse از طریق Worker واقعی انجام می‌شود (با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016) |
+| 3 | **Analyzer** | ۵ بخش واقعی (Node Details، Protocol، Security+TLS، Compatibility/Network، Reality). «Cloudflare Analysis» Placeholder غیرفعال است (منتظر Phase 10) |
+| 4 | **Subscription Center** | Search/Filter (Protocol+Validity)/Sort/Group واقعی. Tag، Merge، Split، Deduplicate Deferred شده‌اند. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی برای انتخاب درست کتابخانه موجود شود) |
+| 5 | **Extractor** | UUID/IP/Domain/Reality Extractor واقعی. «Worker Extractor» و «DNS Extractor» Placeholder غیرفعال‌اند (وابسته به Phase 10) |
+| 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، ZIP (+ manifest.json)، QR (هر نود)، HTML Report (Escape + DOMPurify Sanitize، ADR-018)، Clipboard Quick Copy — همگی واقعی |
+| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) — طبق سند ۰۷ §۲ تنها محتوای مستندشده‌ی این صفحه. ظاهر کامل «Cyber Professional / Glassmorphism» سند ۰۷ §۲ هنوز شروع نشده (عمداً به انتهای کل Roadmap موکول شده) |
+| 8 | **Developer Console** | ۵ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs). «Performance Logs» و نیمه‌ی «Alternative Candidates» Placeholder غیرفعال‌اند — هیچ ماژولی این داده را هنوز ثبت نمی‌کند |
+
+---
+
+## نحوه‌ی اجرا — کاربر نهایی (بدون نصب هیچ‌چیز)
+
+۱. در صفحه‌ی ریپو (`operaboys/UNCT`) روی دکمه‌ی سبز **Code** بزنید → **Download ZIP**.
+   ⚠️ **حتماً قبل از این کار، برانچ بالای لیست فایل‌ها را روی `claude/unct-phase-1-foundation-flrbrr`
+   بگذارید — نه `main`.**
+۲. فایل ZIP را Extract کنید.
+۳. داخل پوشه‌ی Extract‌شده، مستقیماً روی **`index.html`** بزنید (بدون اجرای هیچ دستوری، بدون نصب).
+
+برنامه باید بلافاصله باز و کامل قابل‌استفاده باشد — هر ۸ صفحه از طریق نوار بالای صفحه در دسترس‌اند.
+
+---
+
+## برای توسعه‌دهنده
 
 ```
-npm install          # نصب ابزار توسعه (اپ خودش Zero-Build/استاتیک می‌ماند)
-npm test             # اجرای کل تست‌ها (Vitest)
-npm run typecheck    # بررسی تایپ بدون خروجی (tsc --noEmit)
+npm install              # نصب ابزار توسعه (اپ خودش Zero-Build/استاتیک می‌ماند)
+npm test                  # اجرای کل تست‌ها (Vitest)
+npm run test:watch
 npm run test:coverage
+npm run typecheck         # بررسی تایپ بدون خروجی (tsc --noEmit)
+npm run build             # بازساخت assets/js/app.js و assets/js/parser-worker.js
 ```
 
-## قبل از هر کد: بخوان
+> بعد از هر تغییر در `ui/` یا `core/worker/parser.worker.js`، حتماً `npm run build` را اجرا و
+> خروجی (`assets/js/app.js*`, `assets/js/parser-worker.js*`) را در همان Commit وارد کنید — این
+> خروجی Commit می‌شود، نه Gitignore (بخش بعدی).
+
+### قبل از هر کد: بخوان
 
 به ترتیب این فایل‌ها را در `docs/blueprints/` بخوان:
 
@@ -83,31 +88,56 @@ npm run test:coverage
 6. `09-DEVELOPMENT_ROADMAP.md`
 7. `15-TESTING_FRAMEWORK.md`
 
-بقیه‌ی اسناد هم برای Context کلی موجودند.
+بقیه‌ی اسناد هم برای Context کلی موجودند؛ تصمیم‌های معماری مهم در `docs/adr/ADR-001` تا
+`ADR-018` ثبت شده‌اند.
 
-## تصمیم Build Step (حل‌شده)
+---
 
-تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild) فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند (ADR-005). `npm run build` خروجی را در `assets/js/app.js` می‌سازد (هرگز دستی ویرایش نشود؛ **اصلاح بحرانی
-۲۰۲۶-۰۶-۲۸:** این خروجی دیگر Gitignore نیست — برخلاف نسخه‌ی قبلی این جمله، از این پس Commit
-می‌شود تا Clone/Download مستقیم ریپو بدون اجرای هیچ دستوری کار کند؛ جزئیات کامل در Addendum
-`ADR-014`/`ADR-016`).
+## تصمیم Build Step
 
-## گام بعدی
+تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با
+`docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild)
+فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند
+(ADR-005). `npm run build` خروجی را در `assets/js/app.js` و `assets/js/parser-worker.js` می‌سازد.
 
-هر شش Parser (Xray, URL, Subscription, Sing-box, Clash, WireGuard) کامل‌اند — Phase 4 تمام شد.
-**Foundation Acceptance Gate در سطح Raw-config هم عبور کرد** (`tests/baseline-dataset/raw-config-gate.test.js`،
-طبق `docs/adr/ADR-006-PHASE1-GATE-SCOPE.md`): دیتاست خام ۱۰۰تایی (۵۰ Valid / ۳۰ Partially-Broken /
-۲۰ Invalid، پوشش هر ۷ پروتکل و هر ۶ فرمت) از مسیر کامل `Raw → ParserFactory (selectParser + زنجیره‌ی
-Fallback §5) → normalizeMany/normalize → applyValidation` عبور داده شد؛ Pass Rate **۱۰۰٪** (Valid
-۵۰/۵۰، Broken ۳۰/۳۰ با Recovery، Invalid ۲۰/۲۰ بدون False-Positive).
+**اصلاح بحرانی (۲۰۲۶-۰۶-۲۸):** این خروجی‌ها دیگر Gitignore نیستند — قبلاً بودند، که یعنی هرکس
+ریپو را Clone/Download ZIP می‌کرد بدون اجرای `npm run build`، با یک صفحه‌ی غیرکارکننده مواجه
+می‌شد؛ این مستقیماً با هدف Offline-First پروژه (Deployment Mode 1) در تناقض بود. از این پس این
+چهار فایل Commit می‌شوند (هنوز هرگز دستی ویرایش نمی‌شوند — فقط `npm run build` آن‌ها را
+می‌سازد). جزئیات کامل در Addendum انتهای `ADR-014` و `ADR-016`.
 
-**شکاف Detection Threshold رفع شد** (`docs/adr/ADR-009-DETECTION-FUZZY-TOLERANCE.md`): اسکیم
-URL تایپوشده (`vmes://`) و Base64 ساب‌اسکریپشن کمی‌آلوده هر دو قبلاً در همان مرحله‌ی Detection
-رد می‌شدند و `recover()`‌شان هرگز اجرا نمی‌شد. حالا `detectUrl`/`detectSubscription` با تحمل
-محدود (`fuzzyMatch` با `maxDist=2` روی نام اسکیم؛ نسبت آلودگی ≤۱۵٪ روی Base64) امتیاز میانی
-(۵۵) می‌دهند — بالای آستانه‌ی ۵۰ ولی پایین‌تر از تطبیق دقیق — تا `recover()`‌های موجود
-(بدون تغییر در Extract/Normalize) قابل‌دسترس شوند؛ با تست end-to-end از طریق
-`parseWithFallback`.
+---
 
-گام بعدی فازهای بعدی Roadmap (Analyzer/Converter/Worker/UI) است. هر Parser جدید فقط با Extend
-کردن `BaseParser` و ثبت در `ParserFactory` اضافه می‌شود، بدون تغییر Parserهای موجود (سند 12 §6).
+## محدودیت‌های شناخته‌شده (Known Limitations)
+
+این بخش صادقانه است — هرچیزی که در عمل ساخته نشده یا کامل وصل نیست، اینجاست:
+
+- **`core/importer/` خالی است** (فقط `.gitkeep`) — File Upload و Drag-Drop وجود ندارند؛ تنها راه
+  ورودی فعلی، Paste کردن متن در Converter Screen است.
+- **Storage Engine (`core/storage/`, Phase 8) به هیچ صفحه‌ای وصل نیست** — با اینکه در سطح Core
+  ساخته و تست شده (IndexedDB Adapter + Node Store)، هیچ صفحه‌ای نودها را در آن ذخیره نمی‌کند.
+  نتیجه: داده‌ی Parse/Analyze‌شده با Refresh یا بستن مرورگر از بین می‌رود. فقط انتخاب Theme در
+  Settings واقعاً Persist می‌شود (با `core/storage/local-adapter.js`، نه IndexedDB).
+- **`core/worker/converter.worker.js` به هیچ صفحه‌ای وصل نیست** — تبدیل فرمت (Converter/Export
+  Screen) روی Main Thread اجرا می‌شود، نه در Worker. در حجم فعلی مشکلی ایجاد نمی‌کند ولی Worker
+  Pool برای این مسیر هنوز عملاً استفاده نمی‌شود.
+- **طراحی بصری حداقلی است** — فقط دو متغیر CSS (`--unct-bg`/`--unct-fg`) برای Dark/Light/Auto؛
+  سیستم کامل «Cyber Professional / Glassmorphism / Neumorphism» سند ۰۷ §۲ عمداً به انتهای کل
+  Roadmap موکول شده، هنوز شروع نشده.
+- **«Mobile Optimized» (معیار موفقیت Phase 9 سند ۰۹) تأیید نشده** — فقط یک `<meta viewport>`
+  در `index.html` هست؛ بدون Media Query یا CSS واکنش‌گرا. نیاز به بررسی/کار جدا.
+- **`core/normalizer/` و `core/detector/` خالی‌اند** (فقط `.gitkeep`) — این یک محدودیت واقعی
+  نیست بلکه یک نتیجه‌ی معماری: منطق Detect/Normalize داخل خود هر Parser (`detect()`/
+  `normalize()`/`normalizeMany()`) و `core/unm/mapper/` پیاده شده، نه در ماژول جدا.
+- **`plugins/` و `reports/` خالی‌اند** — طبق برنامه، چون Phase 11/12 هنوز شروع نشده‌اند.
+- چند بخش از صفحات اصلی Placeholder غیرفعال‌اند (جدول بالا) — همگی به‌خاطر نبود ماژول
+  Analyzer نیمه‌قطعی (Phase 10) یا نبود Log/Activity Source، نه باگ.
+
+---
+
+## گام بعدی واقعی
+
+طبق Roadmap، گام بعدی **Phase 10 (Analyzer Engine — Extended Modules: Cloudflare, Worker, Clean
+IP, DNS, Subscription, Compatibility Analyzer)** است. مستقل از ترتیب فاز، دو مورد بالا («محدودیت‌های
+شناخته‌شده») — وصل کردن Storage Engine و Converter Worker به UI — هر زمان قبل از Release واقعی
+لازم می‌شوند؛ تصمیم زمان‌بندی دقیق آن‌ها با مهدی است، نه چیزی که اینجا از پیش تعیین شده باشد.
