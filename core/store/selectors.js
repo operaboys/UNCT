@@ -18,6 +18,7 @@
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  */
 import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
+import { normalizeText } from "../i18n/normalize.js";
 
 /**
  * @param {ParserState} state
@@ -150,24 +151,33 @@ export function selectAverageSecurityScore(state) {
 }
 
 /**
- * Full-text search across the identity fields every node always has
- * (Subscription Center's "Search Nodes", doc 07 §4.4 / doc 03 §2.1).
- * `remark`/`group`/`tags` (spec 05 §2) are real UNMNode fields but no parser
- * populates them yet, so searching them today would always miss — scoped to
- * `protocol`/`address`/`port` instead. Case-insensitive substring match; a
- * blank query returns every node, not none.
+ * Full-text search across the identity fields every node always has, plus
+ * `remark` (Subscription Center's "Search Nodes", doc 07 §4.4 / doc 03
+ * §2.1) — several parsers (url/singbox/clash/xray `normalize.js`) populate
+ * `remark` from `ps=`/`tag`/`name` today, unlike `group`/`tags` (spec 05
+ * §2), which no parser populates yet and would always miss. Case-insensitive
+ * substring match; a blank query returns every node, not none.
+ *
+ * The query is run through `normalizeText` (same digit/letter normalization
+ * the Parser Factory applies to raw input, `core/i18n/normalize.js`) before
+ * comparison: a node's `remark` already passed through that normalization at
+ * parse time (the whole raw config is normalized before extraction), but the
+ * query is typed live and never goes through that pipeline — without this, a
+ * user search typed with an Arabic-letterform keyboard (e.g. "ي" for "ی")
+ * would miss matches against already-normalized Persian text.
  * @param {ParserState} state
  * @param {string} query
  * @returns {readonly UNMNode[]}
  */
 export function selectNodesMatchingSearch(state, query) {
-  const q = query.trim().toLowerCase();
+  const q = normalizeText(query).trim().toLowerCase();
   if (q === "") return state.nodes;
   return state.nodes.filter(
     (n) =>
       n.protocol.toLowerCase().includes(q) ||
       n.address.toLowerCase().includes(q) ||
-      String(n.port).includes(q),
+      String(n.port).includes(q) ||
+      (typeof n.remark === "string" && n.remark.toLowerCase().includes(q)),
   );
 }
 

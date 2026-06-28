@@ -240,6 +240,17 @@ describe("selectNodesMatchingSearch", () => {
 
     expect(selectNodesMatchingSearch(state, "nomatch")).toEqual([]);
   });
+
+  it("matches a Persian remark when the query is typed with Arabic letterforms (ك/ي vs ک/ی)", () => {
+    // "کانفیگ" uses Persian Keheh (ک) and Persian Yeh (ی) — the form a node's
+    // remark already has after the Parser Factory's normalizeText pass.
+    const a = node({ remark: "کانفیگ" });
+    const state = { nodes: [a] };
+
+    // "كانفيگ" — same word, typed with an Arabic keyboard (ك Arabic Kaf, ي
+    // Arabic Yeh) — must still find it via the query-side normalizeText pass.
+    expect(selectNodesMatchingSearch(state, "كانفيگ")).toEqual([a]);
+  });
 });
 
 describe("selectNodesFilteredByProtocol", () => {
