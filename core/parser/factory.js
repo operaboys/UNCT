@@ -163,9 +163,3 @@ export function createParserFactory() {
 
   return { register, get, list, detectCandidates, selectParser, parseWithFallback };
 }
-
-/**
- * Shared app-wide factory instance. Concrete parsers (Phase 2 steps after
- * this one) register themselves here at module load time.
- */
-export const parserFactory = createParserFactory();
