@@ -21,11 +21,12 @@ import {
   selectNodesFilteredByValidity,
   selectNodesSortedByField,
   selectNodesGroupedByProtocol,
+  selectSubscriptionSummary,
 } from "../../core/store/selectors.js";
 import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
-import { sortNodesBySecurityScore, formatNodeSecurityScore } from "./format.js";
+import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
 
 type ProtocolFilter = "all" | (typeof PROTOCOLS)[number];
 type ValidityFilter = "all" | "valid" | "invalid";
@@ -58,9 +59,58 @@ export function SubscriptionScreen() {
     [grouped, visibleNodes],
   );
 
+  const summary = useMemo(
+    () => selectSubscriptionSummary({ nodes }, { analysisByNodeId }),
+    [nodes, analysisByNodeId],
+  );
+
   return (
     <main class="subscription-screen">
       <h1>Subscription Center</h1>
+
+      <section aria-label="Summary">
+        <h2>Summary</h2>
+        <dl>
+          <dt>Total Nodes</dt><dd>{summary.totalNodes}</dd>
+          <dt>Duplicate Nodes</dt><dd>{summary.duplicateNodeCount}</dd>
+          <dt>Invalid Nodes</dt><dd>{summary.invalidNodeIds.length}</dd>
+          <dt>Dead Nodes Candidate</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd>
+        </dl>
+
+        <h3>Protocol Distribution</h3>
+        {summary.totalNodes === 0 ? (
+          <p class="hint">No nodes yet.</p>
+        ) : (
+          <table aria-label="Protocol Distribution">
+            <thead><tr><th>Protocol</th><th>Count</th></tr></thead>
+            <tbody>
+              {Object.entries(summary.protocolDistribution).map(([protocol, count]) => (
+                <tr key={protocol}><td>{protocol}</td><td>{count}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <h3>Security Ranking</h3>
+        {summary.securityRanking.length === 0 ? (
+          <p class="hint">No nodes analyzed yet — visit the Analyzer Screen to score nodes.</p>
+        ) : (
+          <table aria-label="Security Ranking">
+            <thead><tr><th>Address</th><th>Security Score</th></tr></thead>
+            <tbody>
+              {summary.securityRanking.map((entry) => {
+                const n = nodes.find((candidate) => candidate.nodeId === entry.nodeId);
+                return (
+                  <tr key={entry.nodeId}>
+                    <td>{n ? `${n.address}:${n.port}` : entry.nodeId}</td>
+                    <td>{formatScore(entry.securityScore)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <section aria-label="Search">
         <h2>Search</h2>

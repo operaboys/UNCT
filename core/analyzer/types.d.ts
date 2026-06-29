@@ -188,3 +188,56 @@ export interface CompatibilityAnalysis {
   /** Per-client verdict: can this specific client app use this node? */
   clients: Record<ClientApp, boolean | null>;
 }
+
+/**
+ * One identity-key collision group from the Subscription Analyzer's
+ * duplicate detection (§2.5) — always length >= 2. See
+ * `extended/subscription-analyzer.js`'s `duplicateKey` for the criterion
+ * and its justification.
+ */
+export interface DuplicateGroup {
+  /** The shared identity key these nodes collide on (protocol|address|port|credential). */
+  key: string;
+  /** Every node sharing that identity key. */
+  nodeIds: string[];
+}
+
+/**
+ * One node's place in the Subscription Analyzer's Security Ranking (§2.5).
+ * Nodes the Analyzer has not yet scored are OMITTED entirely from the
+ * ranking, never represented with a fabricated 0 (Rule 9).
+ */
+export interface SecurityRankEntry {
+  nodeId: string;
+  /** Echoed from that node's own `AnalysisBundle.security.securityScore` (ADR-011). */
+  securityScore: number;
+}
+
+/**
+ * Output of the Subscription Analyzer (§2.5) — the second نیمه‌قطعی
+ * (Extended) module (Phase 10), picked second for being the next-lowest-risk
+ * module in §2 after Compatibility (§2.6).
+ *
+ * Unlike every other analyzer module (the six §1 Core modules, plus
+ * Compatibility §2.6), this one's INPUT is a whole `UNMNode[]` collection,
+ * not one node — §2.5's own text: "این مورد به مجموعه‌ای از Nodeها (نه یک
+ * Node تنها) عمل می‌کند". Its OUTPUT is therefore also one aggregate object,
+ * never a per-node verdict — it does not appear in `AnalysisBundle` and is
+ * never threaded through `analyze-node.js`.
+ */
+export interface SubscriptionSummary {
+  /** `nodes.length`. */
+  totalNodes: number;
+  /** Count of nodes per `protocol`. */
+  protocolDistribution: Record<string, number>;
+  /** Identity-key collision groups (each length >= 2). */
+  duplicateGroups: DuplicateGroup[];
+  /** Total nodes appearing across `duplicateGroups` (sum of group sizes) — the headline "Duplicate Nodes" count. */
+  duplicateNodeCount: number;
+  /** nodeIds where `validation.overallValid === false` — read from the Validation Engine's own existing verdict, never re-judged here. */
+  invalidNodeIds: string[];
+  /** Always `null`: no field anywhere in UNM/metadata records connection liveness, so there is nothing to compute "candidate" from (Rule 9). */
+  deadNodesCandidate: null;
+  /** Nodes the Analyzer has scored, sorted highest-`securityScore`-first; un-Analyzed nodes are omitted, never defaulted to 0 (Rule 9). */
+  securityRanking: SecurityRankEntry[];
+}

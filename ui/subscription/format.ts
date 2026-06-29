@@ -40,3 +40,16 @@ export function formatNodeSecurityScore(analysisByNodeId: AnalysisByNodeId, node
   const bundle = selectAnalysisByNodeId({ analysisByNodeId }, nodeId);
   return bundle ? formatScore(bundle.security.securityScore) : "N/A";
 }
+
+/**
+ * Dead Nodes Candidate (06-ANALYZER_ENGINE §2.5) has no real data source
+ * anywhere in UNM today (no liveness/connectivity field exists) — the Core
+ * module always returns `null` rather than guessing (Rule 9). Renders "N/A",
+ * mirroring `formatTriState`/`formatNodeSecurityScore`'s own null->"N/A"
+ * convention, never a fabricated count.
+ */
+export function formatDeadNodesCandidate(value: number | null): string {
+  return value === null ? "N/A" : String(value);
+}
+
+export { formatScore };

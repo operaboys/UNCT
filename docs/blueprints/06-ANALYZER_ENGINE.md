@@ -75,6 +75,8 @@ interface CompletenessResult {
 
 > 🔗 **تعریف دقیق Leak Risk (پیشنهاد بازبینی):** برای جلوگیری از برداشت متفاوت توسعه‌دهندگان، مقیاس از قبل در `AnalysisObject` (سند 05) به‌صورت Enum ثابت شده: `dnsLeakRisk: "none" | "low" | "medium" | "high"`. این Analyzer باید دقیقاً همین چهار مقدار را تولید کند، نه یک عدد یا مقیاس دیگر.
 
+> ⚠️ **یادداشت پیاده‌سازی (Phase 10، ثبت‌شده هنگام ساخت Subscription Analyzer §2.5):** این ماژول فعلاً **Blocked** به نظر می‌رسد، نه فقط «هنوز نساخته‌شده». `UNMNode` (سند 05) هیچ فیلد DNS‌ای ندارد — نه `localDns`، نه `remoteDns`، نه `doh`/`dot`، نه `fakeDns`. دلیل ساختاری: در فرمت‌های واقعی (Xray/Sing-box JSON)، تنظیمات DNS سطح **کل کانفیگ** هستند (یک بلاک `dns{}` مشترک برای همه‌ی Outboundها)، نه سطح هر Outbound/Node — در حالی‌که UNM یک شیء **per-node** است (هر VLESS/VMESS/... یک `UNMNode` مجزا). تا وقتی UNM یا Parser Engine راهی برای حمل/نگه‌داشتن این تنظیمات سطح-کانفیگ نداشته باشد (مثلاً یک شیء جدا در سطح Subscription، نه per-node)، این Analyzer داده‌ی واقعی برای تحلیل ندارد. این فقط یک یادداشت برای جلوگیری از فراموشی است؛ اقدامی برایش در فاز فعلی لازم نیست.
+
 ### 2.5 Subscription Analyzer
 Total Nodes, Protocol Distribution, Duplicate Nodes, Invalid Nodes, Dead Nodes Candidate, Security Ranking
 

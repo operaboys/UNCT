@@ -17,10 +17,12 @@
  * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  * @typedef {import("../types/errors").ErrorSeverity} ErrorSeverity
+ * @typedef {import("../analyzer/types").SubscriptionSummary} SubscriptionSummary
  */
 import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
 import { normalizeText } from "../i18n/normalize.js";
 import { getErrorDef, compareSeverity } from "../errors/index.js";
+import { analyzeSubscription } from "../analyzer/extended/subscription-analyzer.js";
 
 /**
  * @param {ParserState} state
@@ -388,4 +390,22 @@ export function selectDiagnosticsSortedBySeverity(state) {
     }
   }
   return entries.sort((a, b) => compareSeverity(b.severity, a.severity));
+}
+
+/**
+ * Subscription Center's Summary Panel (06-ANALYZER_ENGINE §2.5, Phase 10) —
+ * the one selector here that reads BOTH domain stores: `ParserState` (the
+ * node collection) and `AnalyzerState` (security scores — see
+ * `core/store/analyzer-state.js` for why those live separately from
+ * `node.analysis`). Unlike every selector above, the actual aggregation
+ * (duplicate grouping, ranking) is NOT computed here — that is Core analysis
+ * logic and belongs in `core/analyzer/extended/subscription-analyzer.js`
+ * (§2.5's own boundary: a whole-collection Analyzer module, not a per-node
+ * one). This selector only joins the two stores and forwards to it.
+ * @param {ParserState} state
+ * @param {AnalyzerState} [analyzerState]
+ * @returns {SubscriptionSummary}
+ */
+export function selectSubscriptionSummary(state, analyzerState = { analysisByNodeId: {} }) {
+  return analyzeSubscription(state.nodes, analyzerState.analysisByNodeId);
 }

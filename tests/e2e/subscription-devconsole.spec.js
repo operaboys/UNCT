@@ -40,16 +40,17 @@ test.describe("Subscription Center — Security Score sort/column (Orphan Check 
     await expect(page.locator("section[aria-label='Normalized Object'] table tbody tr")).toHaveCount(2);
 
     await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
-    await expect(page.locator("table tbody tr")).toHaveCount(2);
+    const nodeListTable = page.locator("section[aria-label='Node List'] table");
+    await expect(nodeListTable.locator("tbody tr")).toHaveCount(2);
     // Before Analyzing, the Analyzer hasn't scored anything yet (Rule 9: never a fabricated 0).
-    await expect(page.locator("table tbody tr td:nth-child(5)").first()).toHaveText("N/A");
+    await expect(nodeListTable.locator("tbody tr td:nth-child(5)").first()).toHaveText("N/A");
 
     await page.getByRole("button", { name: "Analyzer", exact: true }).click();
     await page.getByRole("button", { name: "Analyze", exact: true }).click();
     await expect(page.locator("section[aria-label='Security Analysis'] dd").first()).not.toHaveText("N/A");
 
     await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
-    const scoreCells = page.locator("table tbody tr td:nth-child(5)");
+    const scoreCells = nodeListTable.locator("tbody tr td:nth-child(5)");
     await expect(scoreCells.first()).toHaveText(/^\d+\/100$/);
     await expect(scoreCells.nth(1)).toHaveText(/^\d+\/100$/);
 
@@ -61,7 +62,7 @@ test.describe("Subscription Center — Security Score sort/column (Orphan Check 
     await expect(directionSelect).toBeDisabled();
     await expect(page.getByText("Security Score sort is always highest-first")).toBeVisible();
 
-    const scores = await page.locator("table tbody tr td:nth-child(5)").allTextContents();
+    const scores = await nodeListTable.locator("tbody tr td:nth-child(5)").allTextContents();
     const numericScores = scores.map((s) => Number(s.split("/")[0]));
     expect(numericScores).toEqual([...numericScores].sort((a, b) => b - a));
   });
