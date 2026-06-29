@@ -25,3 +25,14 @@ export function formatTriState(value: boolean | null): string {
 export function formatScore(score: number): string {
   return `${score}/100`;
 }
+
+/**
+ * Formats a tri-state Compatibility Analyzer verdict (06-ANALYZER_ENGINE
+ * §2.6) as a badge glyph. `null` ("نامشخص") means no confident data exists
+ * for that platform/client combination — it must render as its own distinct
+ * glyph, never collapsed onto the "No" glyph (Rule 9).
+ */
+export function formatBadge(value: boolean | null): string {
+  if (value === null) return "❓";
+  return value ? "✅" : "❌";
+}

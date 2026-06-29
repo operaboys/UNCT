@@ -1,18 +1,21 @@
 /**
  * AnalyzerWorker — REAL wrapper (09-DEVELOPMENT_ROADMAP Phase 6 Core complete;
- * worker wired in alongside Phase 7 Item 5). The Analyzer Engine's six
- * Spec-قطعی Core modules (Completeness/Protocol/Network/TLS/Reality/Security)
- * are complete and frozen since Phase 6; this file adds zero analysis logic
- * of its own (ADR-003) — it only calls `analyzeBatch` (`core/analyzer/
- * analyze-node.js`), exactly mirroring how `parser.worker.js` wraps
- * `parseWithFallback`/`normalizeAll` and `converter.worker.js` wraps
- * `convertBatch`.
+ * worker wired in alongside Phase 7 Item 5; Phase 10 adds the Compatibility
+ * Analyzer). The Analyzer Engine's six Spec-قطعی Core modules (Completeness/
+ * Protocol/Network/TLS/Reality/Security) plus the Phase 10 Compatibility
+ * Analyzer (06 §2.6, the first نیمه‌قطعی module) are wired in; this file adds
+ * zero analysis logic of its own (ADR-003) — it only calls `analyzeBatch`
+ * (`core/analyzer/analyze-node.js`), exactly mirroring how `parser.worker.js`
+ * wraps `parseWithFallback`/`normalizeAll` and `converter.worker.js` wraps
+ * `convertBatch`. Adding the Compatibility Analyzer required NO change here —
+ * `analyzeBatch` already threads through whatever `analyzeNode` returns.
  *
  * Input payload: `{ nodes: UNMNode[] }` — the parsed nodes to analyze.
  * Output result: `{ analyzed: { nodeId, analysis }[] }`, where `analysis` is
- * the six-module verdict bundle `analyzeNode` produces. (That bundle is NOT
- * yet a complete spec-05-§4 `AnalysisObject`: the six Core modules can fill
- * only `securityScore` today; the rest of `AnalysisObject` needs §2's
+ * the seven-module verdict bundle `analyzeNode` produces. (That bundle is NOT
+ * yet a complete spec-05-§4 `AnalysisObject`: today's modules can fill only
+ * `securityScore` directly; the rest of `AnalysisObject` (including
+ * `compatibilityScore` as a single 0-100 number) needs the rest of §2's
  * semi-definitive modules + Final Report aggregation — future phases — and
  * fabricating them would violate Rule 9. See `analyze-node.js`.)
  */

@@ -15,20 +15,28 @@
  * (`securityScore`), so the raw bundle must not be fabricated into that
  * frozen shape (Rule 9).
  *
- * Section mapping from doc 07 §4.3's list onto the six analyzer modules
+ * Section mapping from doc 07 §4.3's list onto the six Core analyzer modules
  * (`core/analyzer/types.d.ts`): Node Details = node fields + Completeness;
  * Protocol Analysis = ProtocolAnalysis; Security Analysis = Security +
  * TLS (doc 07 has no separate TLS section — TLS coherence is a security-
  * quality concern); Compatibility Analysis = NetworkAnalysis; Cloudflare
  * Analysis* = disabled placeholder (semi-definitive Phase 10 module, per
  * doc 07 §4.3's own footnote); Reality Analysis = RealityAnalysis.
+ *
+ * "Platform & Client Compatibility" (below, last section) is the seventh,
+ * Phase 10 Extended module (06-ANALYZER_ENGINE §2.6, `CompatibilityAnalysis`)
+ * — a NEW section, not a placeholder activation, since none existed for it.
+ * Deliberately named apart from "Compatibility Analysis" above: that section
+ * is the NetworkAnalysis module judging transport-vs-protocol compatibility;
+ * this one judges whether real client apps/platforms can use the node at
+ * all, an unrelated question that happens to share the word "Compatibility".
  */
 import { useMemo, useState } from "preact/hooks";
 import { selectAnalysisByNodeId } from "../../core/store/selectors.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { analyzerStore, useAnalyzerState } from "../store/use-analyzer-state.js";
 import { analyzeNodes, CancelledError } from "../store/analyzer-worker-client.js";
-import { formatStringList, formatTriState, formatScore } from "./format.js";
+import { formatStringList, formatTriState, formatScore, formatBadge } from "./format.js";
 
 export function AnalyzerScreen() {
   const nodes = useParserState();
@@ -157,6 +165,45 @@ export function AnalyzerScreen() {
               <dt>SID Plausible</dt><dd>{formatTriState(bundle.reality.sidPlausible)}</dd>
               <dt>Issues</dt><dd>{formatStringList(bundle.reality.issues)}</dd>
             </dl>
+          </section>
+
+          <section aria-label="Platform & Client Compatibility">
+            <h2>Platform &amp; Client Compatibility</h2>
+            <table aria-label="Platform Compatibility">
+              <caption>Platforms</caption>
+              <thead>
+                <tr>
+                  <th>Android</th><th>iOS</th><th>Windows</th><th>Linux</th><th>macOS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{formatBadge(bundle.compatibility.platforms.android)}</td>
+                  <td>{formatBadge(bundle.compatibility.platforms.ios)}</td>
+                  <td>{formatBadge(bundle.compatibility.platforms.windows)}</td>
+                  <td>{formatBadge(bundle.compatibility.platforms.linux)}</td>
+                  <td>{formatBadge(bundle.compatibility.platforms.macos)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <table aria-label="Client Compatibility">
+              <caption>Clients</caption>
+              <thead>
+                <tr>
+                  <th>Xray</th><th>sing-box</th><th>Clash Meta</th><th>NekoBox</th><th>v2rayNG</th><th>Hiddify</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{formatBadge(bundle.compatibility.clients.xray)}</td>
+                  <td>{formatBadge(bundle.compatibility.clients["sing-box"])}</td>
+                  <td>{formatBadge(bundle.compatibility.clients["clash-meta"])}</td>
+                  <td>{formatBadge(bundle.compatibility.clients.nekobox)}</td>
+                  <td>{formatBadge(bundle.compatibility.clients.v2rayng)}</td>
+                  <td>{formatBadge(bundle.compatibility.clients.hiddify)}</td>
+                </tr>
+              </tbody>
+            </table>
           </section>
         </>
       )}

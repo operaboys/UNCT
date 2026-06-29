@@ -67,6 +67,14 @@ export interface SecurityAnalysis {
   issues: string[];
 }
 
+export type Platform = "android" | "ios" | "windows" | "linux" | "macos";
+export type ClientApp = "xray" | "sing-box" | "clash-meta" | "nekobox" | "v2rayng" | "hiddify";
+
+export interface CompatibilityAnalysis {
+  platforms: Record<Platform, boolean | null>;
+  clients: Record<ClientApp, boolean | null>;
+}
+
 export interface AnalysisBundle {
   completeness: CompletenessResult;
   protocol: ProtocolAnalysis;
@@ -74,6 +82,7 @@ export interface AnalysisBundle {
   tls: TlsAnalysis;
   reality: RealityAnalysis;
   security: SecurityAnalysis;
+  compatibility: CompatibilityAnalysis;
 }
 
 export interface AnalyzeResult {

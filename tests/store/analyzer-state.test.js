@@ -22,6 +22,10 @@ function bundle(securityScore, issues = []) {
     tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
     reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
     security: { securityScore, issues },
+    compatibility: {
+      platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
+      clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
+    },
   };
 }
 

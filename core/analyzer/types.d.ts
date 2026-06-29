@@ -146,3 +146,45 @@ export interface SecurityAnalysis {
   /** Human-readable quality problems the score was deducted for. */
   issues: string[];
 }
+
+/** Operating-system row of the Compatibility Analyzer (§2.6). */
+export type Platform = "android" | "ios" | "windows" | "linux" | "macos";
+
+/** Client-app row of the Compatibility Analyzer (§2.6). */
+export type ClientApp = "xray" | "sing-box" | "clash-meta" | "nekobox" | "v2rayng" | "hiddify";
+
+/**
+ * Output of the Compatibility Analyzer (§2.6) — the first نیمه‌قطعی/semi-
+ * definitive (Extended) module, chosen first for being lowest-risk (a static
+ * lookup table, not multi-layer decoding like Cloudflare/Worker §2.1-§2.3).
+ *
+ * Question: would a real client on a real platform actually be able to USE
+ * this node? Two deliberately separate sub-questions per §2.6's own
+ * correction note (it used to conflate them):
+ *  - Client Compatibility: does a specific client app's core implement this
+ *    node's protocol/transport/security combination at all?
+ *  - Platform Compatibility: does ANY client app exist, on this OS, that is
+ *    Client-Compatible with this node? (so Platform is derived FROM Client,
+ *    via a static, node-independent platform->client availability table —
+ *    never re-derived from protocol/network/security directly.)
+ *
+ * NOT validity (Validation Engine, spec 04), NOT a quality score (Security
+ * Analyzer, §1.2), NOT Reality Compatibility (Reality Analyzer, §1.5 — that
+ * judges whether THIS node's own pbk/sid/fingerprint are usable at all,
+ * independent of any client; this module instead asks which of the six named
+ * clients support the Reality protocol layer in the first place).
+ *
+ * Tri-state per cell, never a coin-flip guess (Rule 9): `true`/`false` only
+ * when backed by a documented, citable fact about that client/platform
+ * (e.g. "Xray-core never implemented Hysteria2" or "v2rayNG is Android-only").
+ * `null` ("نامشخص") whenever the real fact is version-dependent or otherwise
+ * not knowable from a `UNMNode` alone (e.g. Reality support on v2rayNG
+ * depends on the installed app version, which UNM does not carry) — this is
+ * the boundary the task's own example points at, not a generic "don't know".
+ */
+export interface CompatibilityAnalysis {
+  /** Per-platform verdict: does any compatible client exist for this OS? */
+  platforms: Record<Platform, boolean | null>;
+  /** Per-client verdict: can this specific client app use this node? */
+  clients: Record<ClientApp, boolean | null>;
+}
