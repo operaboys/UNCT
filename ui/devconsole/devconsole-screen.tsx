@@ -5,10 +5,12 @@
  * Detection Logs / Detection Metadata Viewer.
  *
  * Five of the seven are built entirely on values Core already computed —
- * three of them on the pre-existing aggregate selectors
- * (`selectAggregatedWarnings`/`Errors`/`RecoveryActions`, already used by the
- * Converter Screen) with zero new Core logic, the other two on three new
- * thin projection selectors (`selectParserLog`, `selectDetectionLog`,
+ * Recovery Logs on the pre-existing `selectAggregatedRecoveryActions`
+ * (already used by the Converter Screen), Warnings/Errors merged into one
+ * severity-sorted view on `selectDiagnosticsSortedBySeverity` (recovers each
+ * line's real registered severity via `getErrorDef` and ranks with
+ * `compareSeverity`, `core/errors/`, Orphan Check item #4), and the other
+ * two on thin projection selectors (`selectParserLog`, `selectDetectionLog`,
  * `selectValidationFailureLog`, `core/store/selectors.js`) that only read
  * fields the Parser/Validation Engine already wrote onto every node.
  *
@@ -26,12 +28,11 @@
  */
 import { useMemo } from "preact/hooks";
 import {
-  selectAggregatedWarnings,
-  selectAggregatedErrors,
   selectAggregatedRecoveryActions,
   selectParserLog,
   selectDetectionLog,
   selectValidationFailureLog,
+  selectDiagnosticsSortedBySeverity,
 } from "../../core/store/selectors.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { formatScore } from "../analyzer/format.js";
@@ -40,8 +41,7 @@ export function DevConsoleScreen() {
   const nodes = useParserState();
 
   const parserLog = useMemo(() => selectParserLog({ nodes }), [nodes]);
-  const warnings = useMemo(() => selectAggregatedWarnings({ nodes }), [nodes]);
-  const errors = useMemo(() => selectAggregatedErrors({ nodes }), [nodes]);
+  const diagnostics = useMemo(() => selectDiagnosticsSortedBySeverity({ nodes }), [nodes]);
   const recoveryActions = useMemo(() => selectAggregatedRecoveryActions({ nodes }), [nodes]);
   const validationFailures = useMemo(() => selectValidationFailureLog({ nodes }), [nodes]);
   const detectionLog = useMemo(() => selectDetectionLog({ nodes }), [nodes]);
@@ -73,21 +73,26 @@ export function DevConsoleScreen() {
             </table>
           </section>
 
-          <section aria-label="Warnings">
-            <h2>Warnings</h2>
-            {warnings.length === 0 ? (
-              <p class="hint">No warnings recorded.</p>
+          <section aria-label="Warnings and Errors">
+            <h2>Warnings &amp; Errors</h2>
+            {diagnostics.length === 0 ? (
+              <p class="hint">No warnings or errors recorded.</p>
             ) : (
-              <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
-            )}
-          </section>
-
-          <section aria-label="Errors">
-            <h2>Errors</h2>
-            {errors.length === 0 ? (
-              <p class="hint">No errors recorded.</p>
-            ) : (
-              <ul>{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
+              <table>
+                <thead>
+                  <tr><th>Severity</th><th>Node ID</th><th>Code</th><th>Message</th></tr>
+                </thead>
+                <tbody>
+                  {diagnostics.map((d, i) => (
+                    <tr key={i}>
+                      <td>{d.severity}</td>
+                      <td>{d.nodeId}</td>
+                      <td>{d.code}</td>
+                      <td>{d.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </section>
 

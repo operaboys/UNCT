@@ -24,14 +24,18 @@ import {
 } from "../../core/store/selectors.js";
 import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { useParserState } from "../store/use-parser-state.js";
+import { useAnalyzerState } from "../store/use-analyzer-state.js";
+import { sortNodesBySecurityScore, formatNodeSecurityScore } from "./format.js";
 
 type ProtocolFilter = "all" | (typeof PROTOCOLS)[number];
 type ValidityFilter = "all" | "valid" | "invalid";
-type SortField = "protocol" | "address" | "port" | "createdAt";
+type SortField = "protocol" | "address" | "port" | "createdAt" | "securityScore";
 type SortDirection = "asc" | "desc";
+type AnalysisByNodeId = ReturnType<typeof useAnalyzerState>;
 
 export function SubscriptionScreen() {
   const nodes = useParserState();
+  const analysisByNodeId = useAnalyzerState();
   const [search, setSearch] = useState("");
   const [protocolFilter, setProtocolFilter] = useState<ProtocolFilter>("all");
   const [validityFilter, setValidityFilter] = useState<ValidityFilter>("all");
@@ -43,8 +47,11 @@ export function SubscriptionScreen() {
     const searched = selectNodesMatchingSearch({ nodes }, search);
     const byProtocol = selectNodesFilteredByProtocol({ nodes: searched }, protocolFilter);
     const byValidity = selectNodesFilteredByValidity({ nodes: byProtocol }, validityFilter);
+    if (sortField === "securityScore") {
+      return sortNodesBySecurityScore(byValidity, analysisByNodeId);
+    }
     return selectNodesSortedByField({ nodes: byValidity }, sortField, sortDirection);
-  }, [nodes, search, protocolFilter, validityFilter, sortField, sortDirection]);
+  }, [nodes, search, protocolFilter, validityFilter, sortField, sortDirection, analysisByNodeId]);
 
   const groupedNodes = useMemo(
     () => (grouped ? selectNodesGroupedByProtocol({ nodes: visibleNodes }) : null),
@@ -103,6 +110,7 @@ export function SubscriptionScreen() {
             <option value="protocol">Protocol</option>
             <option value="address">Address</option>
             <option value="port">Port</option>
+            <option value="securityScore">Security Score</option>
           </select>
         </label>
         {" "}
@@ -110,12 +118,16 @@ export function SubscriptionScreen() {
           Direction:{" "}
           <select
             value={sortDirection}
+            disabled={sortField === "securityScore"}
             onChange={(e) => setSortDirection((e.target as HTMLSelectElement).value as SortDirection)}
           >
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
           </select>
         </label>
+        {sortField === "securityScore" && (
+          <p class="hint">Security Score sort is always highest-first (unscored nodes last).</p>
+        )}
       </section>
 
       <section aria-label="Group">
@@ -143,23 +155,25 @@ export function SubscriptionScreen() {
           Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
             <div key={protocol}>
               <h3>{protocol} ({groupNodes.length})</h3>
-              <NodeTable nodes={groupNodes} />
+              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} />
+          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} />
         )}
       </section>
     </main>
   );
 }
 
-function NodeTable({ nodes }: { nodes: ReturnType<typeof useParserState> }) {
+function NodeTable(
+  { nodes, analysisByNodeId }: { nodes: ReturnType<typeof useParserState>; analysisByNodeId: AnalysisByNodeId },
+) {
   return (
     <table>
       <thead>
         <tr>
-          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Imported At</th>
+          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Imported At</th>
         </tr>
       </thead>
       <tbody>
@@ -169,6 +183,7 @@ function NodeTable({ nodes }: { nodes: ReturnType<typeof useParserState> }) {
             <td>{n.address}</td>
             <td>{n.port}</td>
             <td>{String(n.validation.overallValid)}</td>
+            <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
             <td>{n.createdAt}</td>
           </tr>
         ))}

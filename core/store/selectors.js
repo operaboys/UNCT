@@ -16,9 +16,11 @@
  * @typedef {import("./parser-state").ParserState} ParserState
  * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
+ * @typedef {import("../types/errors").ErrorSeverity} ErrorSeverity
  */
 import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
 import { normalizeText } from "../i18n/normalize.js";
+import { getErrorDef, compareSeverity } from "../errors/index.js";
 
 /**
  * @param {ParserState} state
@@ -358,4 +360,32 @@ export function selectValidationFailureLog(state) {
     }
   }
   return failures;
+}
+
+/**
+ * Diagnostics Log — Developer Console (doc 07 §4.7), sorted most-severe-first
+ * via the Error Code Registry's own `compareSeverity` (core/errors/). Every
+ * `metadata.warnings`/`metadata.errors` line is already written by its
+ * producer (Validation Engine's `apply-validation.js`, every parser's
+ * `recover.js`) as `"CODE: message"`; the CODE prefix is the registry's own
+ * error code, so the real severity is recovered via `getErrorDef` rather
+ * than re-derived or guessed. Lines that do not start with a registered code
+ * (none today, but a defensive boundary) are skipped rather than guessed at.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, code: string, severity: ErrorSeverity, message: string }[]}
+ */
+export function selectDiagnosticsSortedBySeverity(state) {
+  /** @type {{ nodeId: string, code: string, severity: ErrorSeverity, message: string }[]} */
+  const entries = [];
+  for (const n of state.nodes) {
+    for (const line of [...n.metadata.errors, ...n.metadata.warnings]) {
+      const separator = line.indexOf(": ");
+      if (separator === -1) continue;
+      const code = line.slice(0, separator);
+      const def = getErrorDef(code);
+      if (!def) continue;
+      entries.push({ nodeId: n.nodeId, code, severity: def.severity, message: line.slice(separator + 2) });
+    }
+  }
+  return entries.sort((a, b) => compareSeverity(b.severity, a.severity));
 }

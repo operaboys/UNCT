@@ -30,6 +30,7 @@ import {
   selectParserLog,
   selectDetectionLog,
   selectValidationFailureLog,
+  selectDiagnosticsSortedBySeverity,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -446,5 +447,61 @@ describe("selectValidationFailureLog", () => {
 
   it("returns an empty array for an empty collection", () => {
     expect(selectValidationFailureLog({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectDiagnosticsSortedBySeverity", () => {
+  it("ranks critical/error before warning/info, recovering each line's real registered severity via getErrorDef (Orphan Check item #4)", () => {
+    const n = node({
+      metadata: {
+        // Deliberately out of severity order in storage — the selector, not
+        // insertion order, must do the ranking.
+        warnings: ["VAL_TLS_NO_SNI: security=tls without an SNI may fail on SNI-strict servers."],
+        errors: ["VAL_ADDRESS_INVALID: Address is neither a valid domain nor a valid IP."],
+      },
+    });
+    const state = { nodes: [n] };
+
+    expect(selectDiagnosticsSortedBySeverity(state)).toEqual([
+      {
+        nodeId: n.nodeId,
+        code: "VAL_ADDRESS_INVALID",
+        severity: "error",
+        message: "Address is neither a valid domain nor a valid IP.",
+      },
+      {
+        nodeId: n.nodeId,
+        code: "VAL_TLS_NO_SNI",
+        severity: "warning",
+        message: "security=tls without an SNI may fail on SNI-strict servers.",
+      },
+    ]);
+  });
+
+  it("uses compareSeverity for the real registry ordering, not insertion order, across multiple nodes", () => {
+    const critical = node({ metadata: { errors: ["UNM_INVARIANT_VIOLATION: A UNM invariant was violated during node construction."] } });
+    const info = node({ metadata: { warnings: ["PARSE_UNKNOWN_FIELD: An unrecognized field was ignored."] } });
+    const warning = node({ metadata: { warnings: ["VAL_ALPN_INVALID: ALPN contains an unrecognized protocol identifier."] } });
+    const state = { nodes: [info, warning, critical] };
+
+    expect(selectDiagnosticsSortedBySeverity(state).map((d) => d.code)).toEqual([
+      "UNM_INVARIANT_VIOLATION",
+      "VAL_ALPN_INVALID",
+      "PARSE_UNKNOWN_FIELD",
+    ]);
+  });
+
+  it("skips a line that does not start with a registered error code rather than guessing its severity", () => {
+    const n = node({ metadata: { warnings: ["not a registered diagnostic line"] } });
+
+    expect(selectDiagnosticsSortedBySeverity({ nodes: [n] })).toEqual([]);
+  });
+
+  it("returns an empty array when no node has any diagnostics", () => {
+    expect(selectDiagnosticsSortedBySeverity({ nodes: [node(), node()] })).toEqual([]);
+  });
+
+  it("returns an empty array for an empty collection", () => {
+    expect(selectDiagnosticsSortedBySeverity({ nodes: [] })).toEqual([]);
   });
 });
