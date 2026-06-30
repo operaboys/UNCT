@@ -190,6 +190,65 @@ export interface CompatibilityAnalysis {
 }
 
 /**
+ * Confidence level for pattern-match analyzers that produce probabilistic
+ * verdicts rather than definitive boolean claims (Rule 9: never over-claim
+ * certainty that the data does not support). Used by CloudflareAnalysis and
+ * CleanIpAnalysis.
+ *
+ *  - "low"    — one weak structural signal only (e.g. port alone)
+ *  - "medium" — one medium signal without corroboration
+ *  - "high"   — strong or corroborated signals (e.g. .workers.dev domain)
+ */
+export type AnalysisConfidence = "low" | "medium" | "high";
+
+/**
+ * Output of the Cloudflare Analyzer (06-ANALYZER_ENGINE §2.1, Phase 10).
+ * Detects structural patterns associated with Cloudflare Worker endpoints —
+ * NEVER a definitive "yes this is a Worker" claim (no such header exists).
+ *
+ * Signals considered (in descending evidential weight):
+ *  - address/host/sni ends with .workers.dev or .pages.dev  → HIGH
+ *  - path contains ed=2048/2560 (Cloudflare early-data param)  → MEDIUM
+ *  - path contains UUID-shaped segment (common in Worker routing) → MEDIUM
+ *  - port is in the Cloudflare-known proxy port set  → LOW (alone)
+ *
+ * likelyCloudflareWorker is true when confidence reaches MEDIUM or HIGH.
+ * A single CF-port signal without anything else leaves it false (too weak).
+ */
+export interface CloudflareAnalysis {
+  /** Whether structural signals suggest this is a Cloudflare Worker endpoint. */
+  likelyCloudflareWorker: boolean;
+  /** How strongly the available signals support the verdict. */
+  confidence: AnalysisConfidence;
+  /** Human-readable list of every matched signal, for debugging/display. */
+  signals: string[];
+}
+
+/**
+ * Output of the Clean IP Analyzer (06-ANALYZER_ENGINE §2.3, Phase 10).
+ * Detects the "Clean IP" pattern: the connection target (`address`) is a raw
+ * IPv4/IPv6 while the TLS handshake domain (`host`/`sni`) is a separate,
+ * different domain.
+ *
+ * Structural rationale: in CDN-based proxying the IP is "clean" (not yet
+ * filtered per-IP) while SNI carries a CDN-hosted domain so traffic looks
+ * like normal CDN traffic. This analyzer ONLY recognises the structural
+ * pattern — it makes NO liveness claim (doc 01 Non-Goals: UNCT is not a
+ * Real-Time Connection Engine; "clean" does not mean "currently unblocked").
+ *
+ * No external IP lists are embedded (Rule 9 / task constraint): all judgement
+ * is derived from the UNMNode fields alone.
+ */
+export interface CleanIpAnalysis {
+  /** Whether the node exhibits the address-IP + host/sni-domain pattern. */
+  isCleanIpPattern: boolean;
+  /** Confidence in the verdict. */
+  confidence: AnalysisConfidence;
+  /** Human-readable list of matched signals. */
+  signals: string[];
+}
+
+/**
  * One identity-key collision group from the Subscription Analyzer's
  * duplicate detection (§2.5) — always length >= 2. See
  * `extended/subscription-analyzer.js`'s `duplicateKey` for the criterion

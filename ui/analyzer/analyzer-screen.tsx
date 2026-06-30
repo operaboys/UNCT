@@ -148,12 +148,24 @@ export function AnalyzerScreen() {
             </dl>
           </section>
 
-          <section aria-label="Cloudflare Analysis" aria-disabled="true">
+          <section aria-label="Cloudflare Analysis">
             <h2>Cloudflare Analysis</h2>
-            <p class="hint">
-              Deferred — per doc 07 §4.3, Cloudflare Analysis is a semi-definitive Phase 10
-              module (06-ANALYZER_ENGINE) and is shown as a placeholder until that module exists.
-            </p>
+            <dl>
+              <dt>Likely Cloudflare Worker</dt>
+              <dd>{formatTriState(bundle.cloudflare.likelyCloudflareWorker)}</dd>
+              <dt>Confidence</dt><dd>{bundle.cloudflare.confidence}</dd>
+              <dt>Signals</dt><dd>{formatStringList(bundle.cloudflare.signals)}</dd>
+            </dl>
+          </section>
+
+          <section aria-label="Clean IP Analysis">
+            <h2>Clean IP Analysis</h2>
+            <dl>
+              <dt>Clean IP Pattern</dt>
+              <dd>{formatTriState(bundle.cleanIp.isCleanIpPattern)}</dd>
+              <dt>Confidence</dt><dd>{bundle.cleanIp.confidence}</dd>
+              <dt>Signals</dt><dd>{formatStringList(bundle.cleanIp.signals)}</dd>
+            </dl>
           </section>
 
           <section aria-label="Reality Analysis">

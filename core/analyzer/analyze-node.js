@@ -38,7 +38,9 @@
  * @typedef {import("./types").RealityAnalysis} RealityAnalysis
  * @typedef {import("./types").SecurityAnalysis} SecurityAnalysis
  * @typedef {import("./types").CompatibilityAnalysis} CompatibilityAnalysis
- * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis }} AnalysisBundle
+ * @typedef {import("./types").CloudflareAnalysis} CloudflareAnalysis
+ * @typedef {import("./types").CleanIpAnalysis} CleanIpAnalysis
+ * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis, cloudflare: CloudflareAnalysis, cleanIp: CleanIpAnalysis }} AnalysisBundle
  */
 
 import { analyzeCompleteness } from "./core/data-completeness.js";
@@ -48,11 +50,13 @@ import { analyzeTls } from "./core/tls-analyzer.js";
 import { analyzeReality } from "./core/reality-analyzer.js";
 import { analyzeSecurity } from "./core/security-analyzer.js";
 import { analyzeCompatibility } from "./extended/compatibility-analyzer.js";
+import { analyzeCloudflare } from "./extended/cloudflare-analyzer.js";
+import { analyzeCleanIp } from "./extended/clean-ip-analyzer.js";
 
 /**
- * Run all six Phase 6 Core analyzers plus the Phase 10 Compatibility
- * Analyzer over one node, threading each upstream verdict into the next (no
- * redundant recomputation).
+ * Run all six Phase 6 Core analyzers plus the Phase 10 Extended analyzers
+ * (Compatibility, Cloudflare, Clean IP) over one node, threading each upstream
+ * verdict into the next (no redundant recomputation).
  * @param {UNMNode} node
  * @returns {AnalysisBundle}
  */
@@ -64,7 +68,9 @@ export function analyzeNode(node) {
   const reality = analyzeReality(node, completeness, tls);
   const security = analyzeSecurity(node, completeness, tls, reality);
   const compatibility = analyzeCompatibility(node);
-  return { completeness, protocol, network, tls, reality, security, compatibility };
+  const cloudflare = analyzeCloudflare(node);
+  const cleanIp = analyzeCleanIp(node);
+  return { completeness, protocol, network, tls, reality, security, compatibility, cloudflare, cleanIp };
 }
 
 /**

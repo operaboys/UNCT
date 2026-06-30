@@ -75,6 +75,20 @@ export interface CompatibilityAnalysis {
   clients: Record<ClientApp, boolean | null>;
 }
 
+export type AnalysisConfidence = "low" | "medium" | "high";
+
+export interface CloudflareAnalysis {
+  likelyCloudflareWorker: boolean;
+  confidence: AnalysisConfidence;
+  signals: string[];
+}
+
+export interface CleanIpAnalysis {
+  isCleanIpPattern: boolean;
+  confidence: AnalysisConfidence;
+  signals: string[];
+}
+
 export interface AnalysisBundle {
   completeness: CompletenessResult;
   protocol: ProtocolAnalysis;
@@ -83,6 +97,8 @@ export interface AnalysisBundle {
   reality: RealityAnalysis;
   security: SecurityAnalysis;
   compatibility: CompatibilityAnalysis;
+  cloudflare: CloudflareAnalysis;
+  cleanIp: CleanIpAnalysis;
 }
 
 export interface AnalyzeResult {

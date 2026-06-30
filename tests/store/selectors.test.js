@@ -174,6 +174,8 @@ function bundle(securityScore) {
       platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
       clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
     },
+    cloudflare: { likelyCloudflareWorker: false, confidence: "low", signals: [] },
+    cleanIp: { isCleanIpPattern: false, confidence: "low", signals: [] },
   };
 }
 
