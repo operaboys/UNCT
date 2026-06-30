@@ -14,17 +14,16 @@
  * `selectValidationFailureLog`, `core/store/selectors.js`) that only read
  * fields the Parser/Validation Engine already wrote onto every node.
  *
- * Two sub-parts have no real data source anywhere in the app today, and are
- * shown as disabled placeholders — the same pattern as the Analyzer
- * Screen's "Cloudflare Analysis" section:
- * - Performance Logs: no module records Worker Job Timing anywhere in
- *   `core/worker/` (no timing/duration field on any job result).
+ * One sub-part has no real data source anywhere in the app today:
  * - Alternative Candidates (the other half of "Detection Logs / Detection
  *   Metadata Viewer", doc 04 Stage 02): `core/parser/factory.js`'s
  *   `parseWithFallback` ranks candidate parsers transiently while choosing
  *   one, but `core/parser/parse-and-validate.js` never keeps that ranking
  *   past parser selection — only Confidence Score survives onto the node
  *   (`metadata.confidence`). Per Rule 9, this half is not fabricated.
+ *
+ * Performance Logs is now fully wired via `usePerformanceState()` (Phase 12
+ * P12-2 — ADR-021, `core/worker/worker-manager.js` getStats()).
  */
 import { useMemo } from "preact/hooks";
 import {
@@ -35,10 +34,19 @@ import {
   selectDiagnosticsSortedBySeverity,
 } from "../../core/store/selectors.js";
 import { useParserState } from "../store/use-parser-state.js";
+import { usePerformanceState } from "../store/use-performance-state.js";
 import { formatScore } from "../analyzer/format.js";
+
+function fmtMs(ms: number | null): string {
+  return ms === null ? "N/A" : `${ms.toFixed(1)} ms`;
+}
+function fmtNum(n: number | null | undefined): string {
+  return n == null ? "N/A" : String(n);
+}
 
 export function DevConsoleScreen() {
   const nodes = useParserState();
+  const pools = usePerformanceState();
 
   const parserLog = useMemo(() => selectParserLog({ nodes }), [nodes]);
   const diagnostics = useMemo(() => selectDiagnosticsSortedBySeverity({ nodes }), [nodes]);
@@ -123,14 +131,41 @@ export function DevConsoleScreen() {
             )}
           </section>
 
-          <section aria-label="Performance Logs" aria-disabled="true">
+          <section aria-label="Performance Logs">
             <h2>Performance Logs</h2>
-            <p class="hint">
-              Deferred — no module in `core/worker/` records Worker Job Timing (no
-              timing/duration field on any job result yet), so Performance Logs is shown
-              as a placeholder until that data exists, the same as the Analyzer Screen's
-              Cloudflare Analysis section.
-            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Pool</th><th>Size</th><th>Busy</th><th>Queued</th>
+                  <th>Completed</th><th>Cancelled</th><th>Failed</th>
+                  <th>Last Duration</th><th>Avg (last 10)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(["parser", "analyzer", "converter"] as const).map((name) => {
+                  const s = pools[name];
+                  return (
+                    <tr key={name}>
+                      <td>{name}</td>
+                      <td>{fmtNum(s?.poolSize)}</td>
+                      <td>{fmtNum(s?.busyCount)}</td>
+                      <td>{fmtNum(s?.pendingCount)}</td>
+                      <td>{fmtNum(s?.completedCount)}</td>
+                      <td>{fmtNum(s?.cancelledCount)}</td>
+                      <td>{fmtNum(s?.failedCount)}</td>
+                      <td>{fmtMs(s?.lastJobDurationMs ?? null)}</td>
+                      <td>{fmtMs(s?.avgRecentDurationMs ?? null)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {Object.values(pools).every((p) => p === null) && (
+              <p class="hint">
+                Running in main-thread fallback mode (file:// origin) — Worker pool
+                metrics unavailable. Parse something from an HTTP server to see live stats.
+              </p>
+            )}
           </section>
 
           <section aria-label="Detection Logs">

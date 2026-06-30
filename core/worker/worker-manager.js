@@ -32,7 +32,8 @@
  * @typedef {{ postMessage(data: unknown): void, addEventListener(type: "message"|"error", cb: (evt: { data?: unknown, message?: string }) => void): void, terminate?: () => void }} WorkerLike
  * @typedef {{ jobId: string, generationId: number, track: string, ok: boolean, result?: unknown, error?: { message?: string } }} WorkerResponseMessage
  * @typedef {{ worker: WorkerLike, busy: boolean, currentJobId: string|null }} PoolSlot
- * @typedef {{ jobId: string, track: string, generationId: number, payload: unknown, resolve: (value: unknown) => void, reject: (reason?: unknown) => void, settled: boolean }} Job
+ * @typedef {{ poolSize: number, busyCount: number, pendingCount: number, completedCount: number, cancelledCount: number, failedCount: number, lastJobDurationMs: number|null, avgRecentDurationMs: number|null, snapshotAt: number }} PoolStats
+ * @typedef {{ jobId: string, track: string, generationId: number, payload: unknown, resolve: (value: unknown) => void, reject: (reason?: unknown) => void, settled: boolean, enqueuedAt: number, startedAt: number|null }} Job
  */
 
 /**
@@ -87,6 +88,13 @@ export function createWorkerManager(options) {
   /** @type {Map<string, number>} track -> current (latest) generationId */
   const generationByTrack = new Map();
 
+  let completedCount = 0;
+  let cancelledCount = 0;
+  let failedCount = 0;
+  const RECENT_JOBS_MAX = 10;
+  /** @type {number[]} ring-buffer of completed-job durations (ms) */
+  const recentJobDurations = [];
+
   for (const slot of pool) {
     slot.worker.addEventListener("message", (evt) => handleMessage(slot, evt));
     slot.worker.addEventListener("error", (evt) => handleError(slot, evt));
@@ -112,12 +120,25 @@ export function createWorkerManager(options) {
 
   /**
    * @param {Job} job
+   * @param {"ok"|"cancelled"|"failed"} outcome
    * @param {() => void} run
    */
-  function settle(job, run) {
+  function settle(job, outcome, run) {
     if (job.settled) return;
     job.settled = true;
     jobs.delete(job.jobId);
+    if (outcome === "ok") {
+      completedCount++;
+      if (job.startedAt !== null) {
+        const durationMs = Date.now() - job.startedAt;
+        if (recentJobDurations.length >= RECENT_JOBS_MAX) recentJobDurations.shift();
+        recentJobDurations.push(durationMs);
+      }
+    } else if (outcome === "cancelled") {
+      cancelledCount++;
+    } else {
+      failedCount++;
+    }
     run();
   }
 
@@ -126,7 +147,7 @@ export function createWorkerManager(options) {
    * @returns {Job}
    */
   function makeJob({ jobId, track, generationId, payload, resolve, reject }) {
-    return { jobId, track, generationId, payload, resolve, reject, settled: false };
+    return { jobId, track, generationId, payload, resolve, reject, settled: false, enqueuedAt: Date.now(), startedAt: null };
   }
 
   /**
@@ -140,11 +161,11 @@ export function createWorkerManager(options) {
     const job = msg ? jobs.get(msg.jobId) : undefined;
     if (job) {
       if (isStale(job)) {
-        settle(job, () => job.reject(new CancelledError()));
+        settle(job, "cancelled", () => job.reject(new CancelledError()));
       } else if (msg && msg.ok) {
-        settle(job, () => job.resolve(msg.result));
+        settle(job, "ok", () => job.resolve(msg.result));
       } else {
-        settle(job, () => job.reject(new Error((msg && msg.error && msg.error.message) || "Worker job failed")));
+        settle(job, "failed", () => job.reject(new Error((msg && msg.error && msg.error.message) || "Worker job failed")));
       }
     }
     dispatchNext();
@@ -167,7 +188,8 @@ export function createWorkerManager(options) {
     slot.currentJobId = null;
     if (job) {
       const message = (evt && evt.message) || "Worker error";
-      settle(job, () => job.reject(isStale(job) ? new CancelledError() : new Error(message)));
+      const errorOutcome = isStale(job) ? "cancelled" : "failed";
+      settle(job, errorOutcome, () => job.reject(isStale(job) ? new CancelledError() : new Error(message)));
     }
     dispatchNext();
   }
@@ -179,12 +201,13 @@ export function createWorkerManager(options) {
     const job = queue.shift();
     if (!job) return;
     if (isStale(job)) {
-      settle(job, () => job.reject(new CancelledError()));
+      settle(job, "cancelled", () => job.reject(new CancelledError()));
       dispatchNext();
       return;
     }
     idle.busy = true;
     idle.currentJobId = job.jobId;
+    job.startedAt = Date.now();
     idle.worker.postMessage({
       jobId: job.jobId, generationId: job.generationId, track: job.track, payload: job.payload,
     });
@@ -216,7 +239,7 @@ export function createWorkerManager(options) {
       if (queue[i].track === effectiveTrack) {
         const stale = queue[i];
         queue.splice(i, 1);
-        settle(stale, () => stale.reject(new CancelledError()));
+        settle(stale, "cancelled", () => stale.reject(new CancelledError()));
       }
     }
 
@@ -238,7 +261,7 @@ export function createWorkerManager(options) {
       const idx = queue.indexOf(job);
       if (idx !== -1) {
         queue.splice(idx, 1);
-        settle(job, () => job.reject(new CancelledError()));
+        settle(job, "cancelled", () => job.reject(new CancelledError()));
       }
       // else: already in flight — its result is discarded as stale on arrival.
     }
@@ -258,10 +281,31 @@ export function createWorkerManager(options) {
     }
   }
 
+  /** @returns {PoolStats} */
+  function getStats() {
+    const durations = recentJobDurations.slice();
+    const avgRecentDurationMs = durations.length > 0
+      ? durations.reduce((a, b) => a + b, 0) / durations.length
+      : null;
+    return Object.freeze({
+      poolSize: size,
+      busyCount: pool.filter((s) => s.busy).length,
+      pendingCount: queue.length,
+      completedCount,
+      cancelledCount,
+      failedCount,
+      lastJobDurationMs: durations.length > 0 ? durations[durations.length - 1] : null,
+      avgRecentDurationMs,
+      snapshotAt: Date.now(),
+    });
+  }
+
   return {
     runJob,
     terminate,
+    getStats,
     get poolSize() { return size; },
+    get busyCount() { return pool.filter((s) => s.busy).length; },
     get pendingCount() { return queue.length; },
   };
 }

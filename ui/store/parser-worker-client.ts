@@ -98,3 +98,7 @@ export function parseRawConfigWith(manager: ParserWorkerManager | null, raw: str
 export function parseRawConfig(raw: string): Promise<ParseResult> {
   return parseRawConfigWith(workerManager, raw);
 }
+
+export function getParserPoolStats() {
+  return workerManager ? workerManager.getStats() : null;
+}

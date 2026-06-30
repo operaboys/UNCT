@@ -84,3 +84,7 @@ export function convertBatchInWorker(
 ): Promise<ConvertResult> {
   return convertBatchWith(workerManager, nodes, targetFormat);
 }
+
+export function getConverterPoolStats() {
+  return workerManager ? workerManager.getStats() : null;
+}

@@ -166,3 +166,7 @@ export function analyzeNodesWith(
 export function analyzeNodes(nodes: readonly Readonly<UNMNode>[]): Promise<AnalyzeResult> {
   return analyzeNodesWith(workerManager, nodes);
 }
+
+export function getAnalyzerPoolStats() {
+  return workerManager ? workerManager.getStats() : null;
+}
