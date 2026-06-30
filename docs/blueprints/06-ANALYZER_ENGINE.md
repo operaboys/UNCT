@@ -105,8 +105,97 @@ Android, iOS, Windows, Linux, MacOS
 **Client Compatibility** *(نرم‌افزار کلاینت)*
 Xray, Sing-box, Clash Meta, Nekobox, v2rayNG, Hiddify
 
-### 2.7 Performance Analyzer
-*(در نسخه‌ی اصلی فقط اسم برده شده بود — جزئیات این ماژول هنوز Spec ندارد و باید قبل از پیاده‌سازی نوشته شود.)*
+### 2.7 Performance Analyzer — Spec کامل (Phase 12، P12-2)
+
+> **ماهیت:** این Analyzer برخلاف سایر ماژول‌های §2 (که per-node کار می‌کنند)، یک **Worker Pool Monitor** است — متریک‌های عملیاتی زنده‌ی سه Worker Pool (Parser / Analyzer / Converter) را در یک Snapshot جمع می‌کند. هیچ فیلدی به `UNMNode` اضافه نمی‌شود.
+
+#### متریک‌های قابل استخراج از معماری موجود
+
+بر اساس تحقیق مستقیم در `core/worker/worker-manager.js`، Worker Manager در حال حاضر فقط دو getter عمومی دارد:
+- `poolSize` — اندازه‌ی pool (از `hardwareConcurrency`)
+- `pendingCount` — تعداد Job‌های در صف (`queue.length`)
+
+برای تأمین متریک‌های مفید، تغییرات **Additive** زیر به `worker-manager.js` اضافه می‌شوند (بدون تغییر در پروتکل پیام‌رسانی، منطق dispatch، یا رفتار Pool):
+
+| متریک | منبع | تغییر لازم |
+|---|---|---|
+| `poolSize` | getter موجود | بدون تغییر |
+| `pendingCount` | getter موجود | بدون تغییر |
+| `busyCount` | `pool.filter(s => s.busy).length` | یک getter جدید |
+| `completedCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `cancelledCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `failedCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `lastJobDurationMs` | `Date.now() - job.startedAt` | افزودن `enqueuedAt`/`startedAt` به Job struct — Additive |
+| `avgRecentDurationMs` | میانگین ۱۰ Job آخر | یک ring-buffer کوچک — Additive |
+| `snapshotAt` | `Date.now()` هنگام فراخوانی `getStats()` | — |
+
+تمام این تغییرات از نوع **Additive** هستند (فیلد جدید روی struct داخلی، getter/method جدید روی خروجی — بدون تغییر در پروتکل `postMessage` یا رفتار Pool). بنابراین به **Lightweight ADR** نیاز دارند، نه Full ADR.
+
+#### متریک حذف‌شده با دلیل (Rule 9)
+
+**Memory Usage:** Web Worker API هیچ مکانیزمی برای گزارش Heap Usage per-worker در اختیار نمی‌گذارد.
+- `performance.memory` فقط Chrome-only، deprecated، و process-level است (نه per-worker).
+- `performance.measureMemory()` به COOP/COEP origin isolation headers نیاز دارد که یک static-file zero-build app که از `file://` سرو می‌شود نمی‌تواند آن‌ها را تضمین کند (ADR-014).
+
+این متریک به‌جای فرض کردن یا جعل کردن، **صریحاً از Spec حذف شده** (Rule 9).
+
+#### خروجی — `PoolStats`
+
+```typescript
+interface PoolStats {
+  poolName: "parser" | "analyzer" | "converter";
+  poolSize: number;
+  busyCount: number;
+  pendingCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  failedCount: number;
+  lastJobDurationMs: number | null;
+  avgRecentDurationMs: number | null;
+  snapshotAt: number; // Date.now()
+}
+```
+
+#### جریان داده (Data Flow)
+
+```
+WorkerManager.getStats()
+    ↑ (Additive — جدید)
+    │
+[parser-worker-client.ts]    [analyzer-worker-client.ts]    [converter-worker-client.ts]
+    │ پس از هر batch          │ پس از هر batch              │ پس از هر batch
+    └─────────────────────────┴─────────────────────────────┘
+                              │
+                    core/store/performance-state.js
+                    (store جدید، همان الگوی analyzer-state.js)
+                    { pools: Record<PoolName, PoolStats> }
+                              │
+                    ui/store/use-performance-state.ts
+                    (hook جدید، همان الگوی use-analyzer-state.ts)
+                              │
+                    ui/devconsole/devconsole-screen.tsx
+                    (جایگزین section aria-disabled="true" موجود)
+```
+
+#### مصرف‌کننده‌ی UI
+
+سند ۰۷ §۴.۷ بخش **Performance Logs** در Developer Console. در حال حاضر به‌صورت `aria-disabled="true"` Placeholder است (`ui/devconsole/devconsole-screen.tsx` خط ۱۲۶). این Placeholder باید با یک جدول سه‌ردیفه (Parser / Analyzer / Converter) جایگزین شود:
+
+| Pool | Size | Busy | Queued | Completed | Cancelled | Failed | Avg Duration |
+|---|---|---|---|---|---|---|---|
+| Parser | ... | ... | ... | ... | ... | ... | ... ms |
+| Analyzer | ... | ... | ... | ... | ... | ... | ... ms |
+| Converter | ... | ... | ... | ... | ... | ... | ... ms |
+
+#### شرط کدنویسی
+
+پیش از نوشتن هر کد، یک **Lightweight ADR** (فرمت کوتاه طبق ULTIMATE_BLUEPRINT_INDEX §Architecture Freeze Scope) در `docs/adr/` ثبت می‌شود که تغییرات Additive به `worker-manager.js` را مستند کند — چون `core/worker/` در Architecture Freeze Scope است.
+
+#### تست‌های الزامی
+
+- `tests/worker/worker-manager.test.js`: افزودن Test Case برای `getStats()` (شمارنده‌ها، busyCount، timing)
+- `tests/store/performance-state.test.js`: الگوی `tests/store/analyzer-state.test.js`
+- `tests/ui/devconsole/performance-logs.test.js`: تست Vitest برای hook + render (نه Playwright — بدون side-effect شبکه)
 
 ### 2.8 ~~Normalization Analyzer~~ *(ترفیع‌یافته — بازبینی نهایی)*
 
