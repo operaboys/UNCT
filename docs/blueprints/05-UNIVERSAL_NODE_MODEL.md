@@ -154,7 +154,7 @@ interface AnalysisObject {
   realityDetected: boolean;
   workerDetected: boolean;
   cleanIPDetected: boolean;
-  dnsLeakRisk: "none" | "low" | "medium" | "high";
+  dnsLeakRisk: "none" | "low" | "medium" | "high" | "unknown"; // ADR-022
 }
 ```
 

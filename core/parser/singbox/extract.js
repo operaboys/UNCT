@@ -100,6 +100,26 @@ export function extractItem(ob) {
 }
 
 /**
+ * Extract config-level DNS settings from a parsed Sing-box config object (ADR-022).
+ * Returns undefined when no usable DNS data is found.
+ * @param {any} config
+ * @returns {import("../../types/dns").ConfigDns | undefined}
+ */
+export function extractSingBoxDns(config) {
+  const dns = config && typeof config === "object" ? config.dns : null;
+  if (!dns || typeof dns !== "object") return undefined;
+  const rawServers = Array.isArray(dns.servers) ? dns.servers : [];
+  const servers = rawServers.flatMap((/** @type {any} */ s) => {
+    if (typeof s === "string") return [s];
+    if (s && typeof s === "object" && typeof s.address === "string") return [s.address];
+    return [];
+  });
+  const fakeIp = Boolean(dns.fakeip && dns.fakeip.enabled);
+  if (servers.length === 0 && !fakeIp) return undefined;
+  return { servers, fakeIp };
+}
+
+/**
  * parse() — Stage 05 happy path. Strict JSON, collect all proxy items.
  * Throws (routing to recover()) on malformed JSON or no proxy item.
  * @param {string} input
@@ -120,5 +140,9 @@ export function parseSingBox(input) {
   if (items.length === 0) {
     throw new Error("SingBoxParser.parse: no proxy outbound/endpoint found (PARSE_MISSING_REQUIRED)");
   }
-  return { protocol: "singbox", fields: { items }, raw: input };
+  const configDns = extractSingBoxDns(config);
+  /** @type {Record<string, unknown>} */
+  const fields = { items };
+  if (configDns) fields.configDns = configDns;
+  return { protocol: "singbox", fields, raw: input };
 }

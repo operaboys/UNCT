@@ -43,11 +43,12 @@ export const PRIORITY_CHAINS = Object.freeze({
  * Build one UNMNode from a single extracted item (one outbound × endpoint × user).
  * @param {Record<string, unknown>} item
  * @param {{ warnings?: string[], recoveryActions?: string[] }} [context]
+ * @param {import("../../types/dns").ConfigDns | undefined} [configDns]
  * @returns {Readonly<UNMNode>}
  * @throws {Error} if protocol/address/port cannot be resolved (parser must
  *   recover BEFORE constructing — 04-PARSER_ENGINE).
  */
-export function normalizeItem(item, context = {}) {
+export function normalizeItem(item, context = {}, configDns = undefined) {
   /** @type {string[]} */
   const warnings = [...(context.warnings || [])];
   /** @type {string[]} */
@@ -132,6 +133,7 @@ export function normalizeItem(item, context = {}) {
   if (sid !== undefined) input.sid = sid;
   if (fingerprint !== undefined) input.fingerprint = fingerprint;
   if (alpn !== undefined) input.alpn = alpn;
+  if (configDns !== undefined) input.extensions = { configDns };
 
   return createNode(/** @type {any} */ (input));
 }
@@ -148,10 +150,11 @@ export function normalizeManyXray(extraction) {
     warnings: extraction.warnings,
     recoveryActions: extraction.recoveryActions,
   };
+  const configDns = /** @type {import("../../types/dns").ConfigDns | undefined} */ (extraction.fields?.configDns);
   /** @type {Readonly<UNMNode>[]} */
   const nodes = [];
   for (const item of items) {
-    try { nodes.push(normalizeItem(/** @type {any} */ (item), context)); }
+    try { nodes.push(normalizeItem(/** @type {any} */ (item), context, configDns)); }
     catch { /* skip un-buildable item; it simply produces no node */ }
   }
   return nodes;

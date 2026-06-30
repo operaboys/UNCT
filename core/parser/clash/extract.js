@@ -86,6 +86,27 @@ export function extractProxy(p) {
 }
 
 /**
+ * Extract config-level DNS settings from a Clash YAML document (ADR-022).
+ * Returns undefined when DNS is disabled, absent, or has no usable servers.
+ * @param {any} doc
+ * @returns {import("../../types/dns").ConfigDns | undefined}
+ */
+export function extractClashDns(doc) {
+  const dns = doc && typeof doc === "object" ? doc.dns : null;
+  if (!dns || typeof dns !== "object") return undefined;
+  if (dns.enable === false) return undefined;
+  const enhancedMode = typeof dns["enhanced-mode"] === "string" ? dns["enhanced-mode"] : undefined;
+  const fakeIp = enhancedMode === "fake-ip";
+  const pools = [dns.nameserver, dns.fallback, dns["default-nameserver"]].flat();
+  const servers = pools.filter((s) => typeof s === "string");
+  if (servers.length === 0 && !fakeIp) return undefined;
+  /** @type {import("../../types/dns").ConfigDns} */
+  const result = { servers, fakeIp };
+  if (enhancedMode !== undefined) result.strategy = enhancedMode;
+  return result;
+}
+
+/**
  * parse() — Stage 06 happy path. Load YAML, collect all proxies.
  * Throws (routing to recover()) on invalid YAML or no proxies.
  * @param {string} input
@@ -97,5 +118,9 @@ export function parseClash(input) {
   if (items.length === 0) {
     throw new Error("Clash parse: no proxies found (PARSE_MISSING_REQUIRED)");
   }
-  return { protocol: "clash", fields: { items }, raw: input };
+  const configDns = extractClashDns(doc);
+  /** @type {Record<string, unknown>} */
+  const fields = { items };
+  if (configDns) fields.configDns = configDns;
+  return { protocol: "clash", fields, raw: input };
 }

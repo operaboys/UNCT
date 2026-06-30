@@ -176,6 +176,31 @@ export function extractOutbound(ob) {
 }
 
 /**
+ * Extract config-level DNS settings from a parsed Xray config object (ADR-022).
+ * Returns undefined when the dns block is absent or has no usable server addresses.
+ * Called after JSON.parse — never on the raw string.
+ * @param {any} config
+ * @returns {import("../../types/dns").ConfigDns | undefined}
+ */
+export function extractXrayDns(config) {
+  const dns = config && typeof config === "object" ? config.dns : null;
+  if (!dns || typeof dns !== "object") return undefined;
+  const rawServers = Array.isArray(dns.servers) ? dns.servers : [];
+  const servers = rawServers.flatMap((/** @type {any} */ s) => {
+    if (typeof s === "string") return [s];
+    if (s && typeof s === "object" && typeof s.address === "string") return [s.address];
+    return [];
+  });
+  if (servers.length === 0) return undefined;
+  const fakeIp = Boolean(dns.fakeIp && dns.fakeIp.enabled);
+  const strategy = typeof dns.queryStrategy === "string" ? dns.queryStrategy : undefined;
+  /** @type {import("../../types/dns").ConfigDns} */
+  const result = { servers, fakeIp };
+  if (strategy !== undefined) result.strategy = strategy;
+  return result;
+}
+
+/**
  * parse() — the Stage 04 happy path: strict JSON, structured extraction of ALL
  * proxy outbounds (Multi-Outbound · Multi-User). Throws on malformed JSON or no
  * usable outbound so the ParserFactory can route to recover() / fallback (12 §5).
@@ -198,5 +223,9 @@ export function parseXray(input) {
     throw new Error("XrayParser.parse: no proxy outbound found (PARSE_MISSING_REQUIRED)");
   }
   const items = outbounds.flatMap(extractItemsFromOutbound);
-  return { protocol: "xray", fields: { items }, raw: input };
+  const configDns = extractXrayDns(config);
+  /** @type {Record<string, unknown>} */
+  const fields = { items };
+  if (configDns) fields.configDns = configDns;
+  return { protocol: "xray", fields, raw: input };
 }

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Status** | PROPOSED — awaiting Drive approval (mهدی) |
+| **Status** | ACCEPTED |
 | **Date** | 2026-06-30 |
 | **Deciders** | mehdi (مهدی), claude |
 | **Scope** | `core/types/unm.d.ts`, `core/parser/{xray,singbox,clash}/{extract,normalize}.js`, `core/analyzer/extended/dns-analyzer.js` |

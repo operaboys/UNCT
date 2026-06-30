@@ -25,7 +25,7 @@ export type NetworkType =
 export type SecurityType =
   | "none" | "tls" | "reality";
 
-export type DnsLeakRisk = "none" | "low" | "medium" | "high";
+export type DnsLeakRisk = "none" | "low" | "medium" | "high" | "unknown";
 
 // ===== Sub-objects =====
 

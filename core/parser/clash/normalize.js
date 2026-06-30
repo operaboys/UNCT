@@ -36,10 +36,11 @@ export const PRIORITY_CHAINS = Object.freeze({
 /**
  * Build one UNMNode from a single extracted Clash proxy.
  * @param {Record<string, unknown>} item
+ * @param {import("../../types/dns").ConfigDns | undefined} [configDns]
  * @returns {Readonly<UNMNode>}
  * @throws {Error} if protocol/server/port cannot be resolved.
  */
-export function normalizeItem(item) {
+export function normalizeItem(item, configDns = undefined) {
   /** @type {string[]} */
   const warnings = [];
   /** @type {Record<string, string>} */
@@ -124,14 +125,19 @@ export function normalizeItem(item) {
   if (alpn !== undefined) input.alpn = alpn;
 
   if (protocol === "wireguard") {
-    const ext = buildWireguardExtensions({
+    const wgExt = buildWireguardExtensions({
       privateKey: item.private_key,
       publicKey: item.peer_public_key,
       presharedKey: item.pre_shared_key,
       allowedIPs: item.allowed_ip,
       mtu: item.mtu,
     });
-    if (ext) input.extensions = ext;
+    /** @type {Record<string, unknown>} */
+    const ext = wgExt ? { ...wgExt } : {};
+    if (configDns !== undefined) ext.configDns = configDns;
+    if (Object.keys(ext).length > 0) input.extensions = ext;
+  } else if (configDns !== undefined) {
+    input.extensions = { configDns };
   }
 
   return createNode(/** @type {any} */ (input));
@@ -144,10 +150,11 @@ export function normalizeItem(item) {
  */
 export function normalizeManyClash(extraction) {
   const items = Array.isArray(extraction.fields?.items) ? extraction.fields.items : [];
+  const configDns = /** @type {import("../../types/dns").ConfigDns | undefined} */ (extraction.fields?.configDns);
   /** @type {Readonly<UNMNode>[]} */
   const nodes = [];
   for (const item of items) {
-    try { nodes.push(normalizeItem(/** @type {any} */ (item))); }
+    try { nodes.push(normalizeItem(/** @type {any} */ (item), configDns)); }
     catch { /* skip un-buildable proxy */ }
   }
   return nodes;
