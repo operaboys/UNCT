@@ -100,6 +100,25 @@ export function extractItem(ob) {
 }
 
 /**
+ * Extract config-level route rules from a parsed Sing-box config object.
+ * Returns undefined when the config carries no route.rules array.
+ * Each rule object is JSON-stringified so the analyzer can re-parse it
+ * independently — the extractor stores, the analyzer categorizes.
+ * @param {any} config
+ * @returns {import("../../types/rules").ConfigRules | undefined}
+ */
+export function extractSingBoxRules(config) {
+  const route = config && typeof config === "object" ? config.route : null;
+  if (!route || typeof route !== "object") return undefined;
+  const rawRules = Array.isArray(route.rules) ? route.rules : [];
+  const rules = rawRules
+    .filter((/** @type {any} */ r) => r && typeof r === "object")
+    .map((/** @type {any} */ r) => JSON.stringify(r));
+  if (rules.length === 0) return undefined;
+  return { source: "singbox", rules };
+}
+
+/**
  * Extract config-level DNS settings from a parsed Sing-box config object (ADR-022).
  * Returns undefined when no usable DNS data is found.
  * @param {any} config
@@ -141,8 +160,10 @@ export function parseSingBox(input) {
     throw new Error("SingBoxParser.parse: no proxy outbound/endpoint found (PARSE_MISSING_REQUIRED)");
   }
   const configDns = extractSingBoxDns(config);
+  const configRules = extractSingBoxRules(config);
   /** @type {Record<string, unknown>} */
   const fields = { items };
   if (configDns) fields.configDns = configDns;
+  if (configRules) fields.configRules = configRules;
   return { protocol: "singbox", fields, raw: input };
 }

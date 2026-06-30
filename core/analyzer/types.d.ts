@@ -290,6 +290,42 @@ export interface CleanIpAnalysis {
 }
 
 /**
+ * Output of the Rule Analyzer (P12-5) — reads config-level route rules stored
+ * at `extensions.configRules` (Clash and Sing-box nodes only).
+ *
+ * `applicable` is false for every source that carries no route table:
+ * Xray, URL, WireGuard, and subscription-derived nodes. This is Rule 9 —
+ * absent rules is "not applicable", not "zero rules" (which would imply the
+ * config was inspected and found to be empty).
+ *
+ * Categories are the concrete rule-type names the two formats actually use
+ * (not invented groupings):
+ *  - "domain"   — DOMAIN / DOMAIN-SUFFIX / DOMAIN-KEYWORD / DOMAIN-REGEX / GEOSITE (Clash);
+ *                 domain / domain_suffix / domain_regex / domain_keyword / geosite (Sing-box)
+ *  - "ip"       — IP-CIDR / IP-CIDR6 / GEOIP / IP-ASN / SRC-IP-CIDR (Clash);
+ *                 ip_cidr / geoip / source_ip_cidr (Sing-box)
+ *  - "process"  — PROCESS-NAME / PROCESS-PATH (Clash); process_name / process_path (Sing-box)
+ *  - "protocol" — (Sing-box only) protocol / network / inbound fields
+ *  - "port"     — DST-PORT / SRC-PORT (Clash); port / port_range / source_port (Sing-box)
+ *  - "other"    — RULE-SET / SCRIPT / MATCH / NETWORK (Clash); rule_set / logical rules / etc. (Sing-box)
+ */
+export interface RuleAnalysis {
+  /** False for Xray/URL/WireGuard/subscription nodes — no route table in those source formats. */
+  applicable: boolean;
+  /** Total number of route rules in the config's rule table. */
+  totalCount: number;
+  /**
+   * Rule count by category. Keys are present only when at least one rule falls into that category.
+   * Possible keys: "domain" | "ip" | "process" | "protocol" | "port" | "other".
+   */
+  byCategory: Record<string, number>;
+  /** Number of distinct rule strings that appear more than once in the table. */
+  duplicateCount: number;
+  /** The duplicate rule strings themselves (raw, as stored in ConfigRules.rules). For display. */
+  duplicates: string[];
+}
+
+/**
  * One identity-key collision group from the Subscription Analyzer's
  * duplicate detection (§2.5) — always length >= 2. See
  * `extended/subscription-analyzer.js`'s `duplicateKey` for the criterion

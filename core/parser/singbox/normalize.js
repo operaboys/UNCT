@@ -33,10 +33,11 @@ export const PRIORITY_CHAINS = Object.freeze({
  * Build one UNMNode from a single extracted sing-box item.
  * @param {Record<string, unknown>} item
  * @param {import("../../types/dns").ConfigDns | undefined} [configDns]
+ * @param {import("../../types/rules").ConfigRules | undefined} [configRules]
  * @returns {Readonly<UNMNode>}
  * @throws {Error} if protocol/server/server_port cannot be resolved.
  */
-export function normalizeItem(item, configDns = undefined) {
+export function normalizeItem(item, configDns = undefined, configRules = undefined) {
   /** @type {string[]} */
   const warnings = [];
   /** @type {Record<string, string>} */
@@ -125,9 +126,14 @@ export function normalizeItem(item, configDns = undefined) {
     /** @type {Record<string, unknown>} */
     const ext = wgExt ? { ...wgExt } : {};
     if (configDns !== undefined) ext.configDns = configDns;
+    if (configRules !== undefined) ext.configRules = configRules;
     if (Object.keys(ext).length > 0) input.extensions = ext;
-  } else if (configDns !== undefined) {
-    input.extensions = { configDns };
+  } else {
+    /** @type {Record<string, unknown>} */
+    const ext = {};
+    if (configDns !== undefined) ext.configDns = configDns;
+    if (configRules !== undefined) ext.configRules = configRules;
+    if (Object.keys(ext).length > 0) input.extensions = ext;
   }
 
   return createNode(/** @type {any} */ (input));
@@ -142,10 +148,11 @@ export function normalizeItem(item, configDns = undefined) {
 export function normalizeManySingBox(extraction) {
   const items = Array.isArray(extraction.fields?.items) ? extraction.fields.items : [];
   const configDns = /** @type {import("../../types/dns").ConfigDns | undefined} */ (extraction.fields?.configDns);
+  const configRules = /** @type {import("../../types/rules").ConfigRules | undefined} */ (extraction.fields?.configRules);
   /** @type {Readonly<UNMNode>[]} */
   const nodes = [];
   for (const item of items) {
-    try { nodes.push(normalizeItem(/** @type {any} */ (item), configDns)); }
+    try { nodes.push(normalizeItem(/** @type {any} */ (item), configDns, configRules)); }
     catch { /* skip un-buildable item; it simply produces no node */ }
   }
   return nodes;

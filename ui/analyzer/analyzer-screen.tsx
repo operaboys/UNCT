@@ -218,6 +218,36 @@ export function AnalyzerScreen() {
             </dl>
           </section>
 
+          <section aria-label="Route Rules Analysis">
+            <h2>Route Rules Analysis</h2>
+            {!bundle.rules.applicable ? (
+              <p class="hint">No route rules — this node's source format (Xray / URL / WireGuard / Subscription) does not carry a routing table.</p>
+            ) : (
+              <dl>
+                <dt>Total Rules</dt><dd>{bundle.rules.totalCount}</dd>
+                <dt>By Category</dt>
+                <dd>
+                  {Object.entries(bundle.rules.byCategory).length === 0
+                    ? "—"
+                    : Object.entries(bundle.rules.byCategory)
+                        .map(([cat, count]) => `${cat}: ${count}`)
+                        .join(", ")}
+                </dd>
+                <dt>Duplicate Rules</dt><dd>{bundle.rules.duplicateCount}</dd>
+                {bundle.rules.duplicates.length > 0 && (
+                  <>
+                    <dt>Duplicate Entries</dt>
+                    <dd>
+                      {bundle.rules.duplicates.map((d) => (
+                        <div key={d}><code>{d}</code></div>
+                      ))}
+                    </dd>
+                  </>
+                )}
+              </dl>
+            )}
+          </section>
+
           <section aria-label="Platform & Client Compatibility">
             <h2>Platform &amp; Client Compatibility</h2>
             <table aria-label="Platform Compatibility">

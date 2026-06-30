@@ -86,6 +86,21 @@ export function extractProxy(p) {
 }
 
 /**
+ * Extract config-level route rules from a Clash YAML document.
+ * Returns undefined when the config carries no `rules:` array or all entries
+ * are non-strings (Clash rules are always raw strings, e.g. "DOMAIN-SUFFIX,google.com,PROXY").
+ * @param {any} doc
+ * @returns {import("../../types/rules").ConfigRules | undefined}
+ */
+export function extractClashRules(doc) {
+  if (!doc || typeof doc !== "object") return undefined;
+  const rawRules = Array.isArray(doc.rules) ? doc.rules : [];
+  const rules = rawRules.filter((/** @type {any} */ r) => typeof r === "string");
+  if (rules.length === 0) return undefined;
+  return { source: "clash", rules };
+}
+
+/**
  * Extract config-level DNS settings from a Clash YAML document (ADR-022).
  * Returns undefined when DNS is disabled, absent, or has no usable servers.
  * @param {any} doc
@@ -119,8 +134,10 @@ export function parseClash(input) {
     throw new Error("Clash parse: no proxies found (PARSE_MISSING_REQUIRED)");
   }
   const configDns = extractClashDns(doc);
+  const configRules = extractClashRules(doc);
   /** @type {Record<string, unknown>} */
   const fields = { items };
   if (configDns) fields.configDns = configDns;
+  if (configRules) fields.configRules = configRules;
   return { protocol: "clash", fields, raw: input };
 }

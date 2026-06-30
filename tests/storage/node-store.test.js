@@ -146,7 +146,7 @@ describe("createNodeStore — no hardcoded shape (Rule 9)", () => {
     // The Bundle's actual keys — NOT spec-05 AnalysisObject's keys (riskScore,
     // compatibilityScore, ...) — proving nothing here assumed/coerced the type.
     expect(Object.keys(fetched?.analysis ?? {}).sort()).toEqual(
-      ["cleanIp", "cloudflare", "compatibility", "completeness", "network", "protocol", "reality", "security", "tls", "worker"].sort(),
+      ["cleanIp", "cloudflare", "compatibility", "completeness", "network", "protocol", "reality", "rules", "security", "tls", "worker"].sort(),
     );
     await store.close();
   });

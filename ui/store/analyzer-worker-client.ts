@@ -105,6 +105,14 @@ export interface WorkerAnalysis {
   encodedDataFindings: WorkerEncodedFinding[];
 }
 
+export interface RuleAnalysis {
+  applicable: boolean;
+  totalCount: number;
+  byCategory: Record<string, number>;
+  duplicateCount: number;
+  duplicates: string[];
+}
+
 export interface AnalysisBundle {
   completeness: CompletenessResult;
   protocol: ProtocolAnalysis;
@@ -116,6 +124,7 @@ export interface AnalysisBundle {
   cloudflare: CloudflareAnalysis;
   cleanIp: CleanIpAnalysis;
   worker: WorkerAnalysis;
+  rules: RuleAnalysis;
 }
 
 export interface AnalyzeResult {
