@@ -56,7 +56,7 @@ const FORBIDDEN = [
   },
 ];
 
-/** Recursively collect all .js files under a directory. */
+/** @param {string} dir */
 function collectJsFiles(dir) {
   /** @type {string[]} */
   const result = [];

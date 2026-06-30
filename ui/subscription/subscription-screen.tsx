@@ -27,6 +27,18 @@ import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
+import { measureLatency } from "../../core/network/latency.js";
+
+type LatencyResult =
+  | { status: "ok"; rtt: number }
+  | { status: "unreachable"; rtt: null }
+  | { status: "timeout"; rtt: null };
+
+function formatLatency(r: LatencyResult): string {
+  if (r.status === "ok") return `${r.rtt} ms`;
+  if (r.status === "timeout") return "Timeout";
+  return "Unreachable";
+}
 
 type ProtocolFilter = "all" | (typeof PROTOCOLS)[number];
 type ValidityFilter = "all" | "valid" | "invalid";
@@ -43,6 +55,15 @@ export function SubscriptionScreen() {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [grouped, setGrouped] = useState(false);
+  const [latencyByNodeId, setLatencyByNodeId] = useState<Record<string, LatencyResult>>({});
+  const [testingNodeId, setTestingNodeId] = useState<string | null>(null);
+
+  async function handleTestLatency(nodeId: string, address: string, port: number) {
+    setTestingNodeId(nodeId);
+    const result = await measureLatency({ address, port });
+    setLatencyByNodeId((prev) => ({ ...prev, [nodeId]: result }));
+    setTestingNodeId(null);
+  }
 
   const visibleNodes = useMemo(() => {
     const searched = selectNodesMatchingSearch({ nodes }, search);
@@ -205,38 +226,63 @@ export function SubscriptionScreen() {
           Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
             <div key={protocol}>
               <h3>{protocol} ({groupNodes.length})</h3>
-              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} />
+              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} />
+          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} />
         )}
       </section>
     </main>
   );
 }
 
-function NodeTable(
-  { nodes, analysisByNodeId }: { nodes: ReturnType<typeof useParserState>; analysisByNodeId: AnalysisByNodeId },
-) {
+function NodeTable({
+  nodes,
+  analysisByNodeId,
+  latencyByNodeId,
+  testingNodeId,
+  onTestLatency,
+}: {
+  nodes: ReturnType<typeof useParserState>;
+  analysisByNodeId: AnalysisByNodeId;
+  latencyByNodeId: Record<string, LatencyResult>;
+  testingNodeId: string | null;
+  onTestLatency: (nodeId: string, address: string, port: number) => void;
+}) {
   return (
     <table>
       <thead>
         <tr>
-          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Imported At</th>
+          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Imported At</th>
         </tr>
       </thead>
       <tbody>
-        {nodes.map((n) => (
-          <tr key={n.nodeId}>
-            <td>{n.protocol}</td>
-            <td>{n.address}</td>
-            <td>{n.port}</td>
-            <td>{String(n.validation.overallValid)}</td>
-            <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
-            <td>{n.createdAt}</td>
-          </tr>
-        ))}
+        {nodes.map((n) => {
+          const latency = latencyByNodeId[n.nodeId];
+          const isTesting = testingNodeId === n.nodeId;
+          return (
+            <tr key={n.nodeId}>
+              <td>{n.protocol}</td>
+              <td>{n.address}</td>
+              <td>{n.port}</td>
+              <td>{String(n.validation.overallValid)}</td>
+              <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
+              <td>
+                <button
+                  disabled={isTesting}
+                  onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
+                >
+                  {isTesting ? "Testing…" : "Test"}
+                </button>
+                {latency !== undefined && !isTesting && (
+                  <span>{" "}{formatLatency(latency)}</span>
+                )}
+              </td>
+              <td>{n.createdAt}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
