@@ -75,7 +75,20 @@ interface CompletenessResult {
 
 > 🔗 **تعریف دقیق Leak Risk (پیشنهاد بازبینی):** برای جلوگیری از برداشت متفاوت توسعه‌دهندگان، مقیاس از قبل در `AnalysisObject` (سند 05) به‌صورت Enum ثابت شده: `dnsLeakRisk: "none" | "low" | "medium" | "high"`. این Analyzer باید دقیقاً همین چهار مقدار را تولید کند، نه یک عدد یا مقیاس دیگر.
 
-> ⚠️ **یادداشت پیاده‌سازی (Phase 10، ثبت‌شده هنگام ساخت Subscription Analyzer §2.5):** این ماژول فعلاً **Blocked** به نظر می‌رسد، نه فقط «هنوز نساخته‌شده». `UNMNode` (سند 05) هیچ فیلد DNS‌ای ندارد — نه `localDns`، نه `remoteDns`، نه `doh`/`dot`، نه `fakeDns`. دلیل ساختاری: در فرمت‌های واقعی (Xray/Sing-box JSON)، تنظیمات DNS سطح **کل کانفیگ** هستند (یک بلاک `dns{}` مشترک برای همه‌ی Outboundها)، نه سطح هر Outbound/Node — در حالی‌که UNM یک شیء **per-node** است (هر VLESS/VMESS/... یک `UNMNode` مجزا). تا وقتی UNM یا Parser Engine راهی برای حمل/نگه‌داشتن این تنظیمات سطح-کانفیگ نداشته باشد (مثلاً یک شیء جدا در سطح Subscription، نه per-node)، این Analyzer داده‌ی واقعی برای تحلیل ندارد. این فقط یک یادداشت برای جلوگیری از فراموشی است؛ اقدامی برایش در فاز فعلی لازم نیست.
+> ⚠️ **یادداشت پیاده‌سازی — DNS Analyzer: Blocked با تعهد رسمی (آپدیت Phase 10)**
+>
+> این ماژول **Blocked** است، نه صرفاً «هنوز نساخته‌شده». دقت در تشخیص علت ریشه‌ای مهم است:
+>
+> **مشکل لایه‌ی اول — Parser‌ها عمداً بلاک `dns{}` را Skip می‌کنند:**
+> در هر شش Parser (`core/parser/*/extract.js`)، بلاک `dns{}` موجود در Xray/Sing-box JSON در مرحله‌ی استخراج به‌عمد رد می‌شود. این تصمیم طراحی آگاهانه بود تا از اشتباه گرفتن «DNS Address سطح-کانفیگ» با «Node Address (آدرس Outbound هر کانکشن)» جلوگیری شود (سند 04). نتیجه: هیچ داده‌ی DNS‌ای وارد `UNMNode` نمی‌شود.
+>
+> **مشکل لایه‌ی دوم — UNM هیچ جایگاهی برای داده‌ی سطح-کانفیگ ندارد:**
+> حتی اگر Parser‌ها داده‌ی DNS را استخراج می‌کردند، `UNMNode` (سند 05) یک شیء **per-node** است — هر VLESS/VMESS/... یک `UNMNode` مجزاست. اما تنظیمات DNS (بلاک `dns{}`) در فرمت‌های واقعی یک بار برای **کل کانفیگ** نوشته می‌شوند، مشترک بین همه‌ی Outboundها. UNM ساختاری برای حمل این اطلاعات ندارد.
+>
+> **راه‌حل واقعی — نیازمند Full ADR:**
+> رفع کامل این مشکل به دو تغییر هم‌زمان نیاز دارد: (الف) اضافه کردن استخراج `dns{}` به همه‌ی شش Parser، و (ب) طراحی یک ساختار `ConfigMetadata` جدید که در آن چند `UNMNode` از یک کانفیگ مشترک با یک `configId` مرتبط می‌شوند و DNS در سطح `ConfigMetadata` نگه داشته می‌شود — نه در `UNMNode`. این تغییر مستقیماً محدوده‌ی **Architecture Freeze** (UNM Schema + Parser Philosophy) را لمس می‌کند و نمی‌توان بدون یک ADR کامل اجرا کرد.
+>
+> **تعهد رسمی:** DNS Analyzer بلافاصله پس از تکمیل **Phase 12** ساخته می‌شود — نه Backlog نامحدود. ADR مربوطه قبل از شروع آن نوشته می‌شود.
 
 ### 2.5 Subscription Analyzer
 Total Nodes, Protocol Distribution, Duplicate Nodes, Invalid Nodes, Dead Nodes Candidate, Security Ranking
