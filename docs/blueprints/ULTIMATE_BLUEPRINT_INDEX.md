@@ -80,7 +80,7 @@
 
 | دسته | موارد |
 |---|---|
-| Extraction/Inspection پیشرفته | GeoIP Inspector, ASN Inspector, Latency Tester |
+| Extraction/Inspection پیشرفته | GeoIP Inspector, ASN Inspector, Latency Tester *(مرزبندی Privacy/Network حل‌شده — ADR-024: فقط address+port، کلیک صریح، core/network/ جدا)* |
 | Rule/Route Analysis | Rule Analyzer, Clash Rule Inspector, Sing-box Route Inspector |
 | Builder Tools | Template Builder, Subscription Builder |
 | Visualization | Visual Topology Mapper, Node Relationship Map, Subscription Visualizer, Cloudflare Topology View, Reality Visualizer |
@@ -130,7 +130,8 @@
 
 | Field | Value |
 |---|---|
-| نسخه | v2.2 |
+| نسخه | v2.3 |
+| اصلاحات نسبت به v2.2 | (ADR-024) به‌روزرسانی Backlog Latency Tester: مرزبندی Privacy/Network به‌صورت عمومی در سند ۰۱ و ADR-024 حل شد — نیازی به ADR جداگانه برای هر قابلیت آنلاین مشابه نیست |
 | اصلاحات نسبت به v2.1 | (بازبینی نهایی) افزودن Hard Rule برای جلوگیری از Limbo Trap در دسته‌ی نیمه‌قطعی؛ افزودن دو سطح ADR (Lightweight/Full)؛ ثبت رسمی Gap شناخته‌شده‌ی Build & Bundling Strategy (متصل به Flag موجود در IMPLEMENTATION_BLUEPRINT) |
 | 💭 یادآوری فرآیندی (خارج از محدوده‌ی محتوای بلوپرینت) | پیشنهاد شد نسخه‌ی این Index با Git Tag/Release Version پروژه همگام بماند (مثلاً همزمان با `v1.0.0-alpha`) — این یک Process Practice است، نه محتوای معماری؛ تصمیم اجرایی با مهدی |
 | اصلاحات نسبت به v2.0 | (بر اساس بازبینی مهدی) افزودن گروه‌بندی «Governance & Quality»؛ افزودن «Architecture Freeze Scope» |
