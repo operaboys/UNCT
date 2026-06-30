@@ -28,16 +28,28 @@ import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
 import { measureLatency } from "../../core/network/latency.js";
+import { lookupGeoIp } from "../../core/network/geoip.js";
 
 type LatencyResult =
   | { status: "ok"; rtt: number }
   | { status: "unreachable"; rtt: null }
   | { status: "timeout"; rtt: null };
 
+type GeoIpResult =
+  | { status: "ok"; country: string; region: string; asn: string; isp: string }
+  | { status: "private"; country: null; region: null; asn: null; isp: null }
+  | { status: "error"; country: null; region: null; asn: null; isp: null };
+
 function formatLatency(r: LatencyResult): string {
   if (r.status === "ok") return `${r.rtt} ms`;
   if (r.status === "timeout") return "Timeout";
   return "Unreachable";
+}
+
+function formatGeoIp(r: GeoIpResult): string {
+  if (r.status === "ok") return `${r.country} / ${r.region} · ${r.asn} ${r.isp}`.trim();
+  if (r.status === "private") return "Private";
+  return "Error";
 }
 
 type ProtocolFilter = "all" | (typeof PROTOCOLS)[number];
@@ -57,12 +69,21 @@ export function SubscriptionScreen() {
   const [grouped, setGrouped] = useState(false);
   const [latencyByNodeId, setLatencyByNodeId] = useState<Record<string, LatencyResult>>({});
   const [testingNodeId, setTestingNodeId] = useState<string | null>(null);
+  const [geoIpByNodeId, setGeoIpByNodeId] = useState<Record<string, GeoIpResult>>({});
+  const [geoIpLoadingNodeId, setGeoIpLoadingNodeId] = useState<string | null>(null);
 
   async function handleTestLatency(nodeId: string, address: string, port: number) {
     setTestingNodeId(nodeId);
     const result = await measureLatency({ address, port });
     setLatencyByNodeId((prev) => ({ ...prev, [nodeId]: result }));
     setTestingNodeId(null);
+  }
+
+  async function handleGeoIpLookup(nodeId: string, address: string) {
+    setGeoIpLoadingNodeId(nodeId);
+    const result = await lookupGeoIp({ address });
+    setGeoIpByNodeId((prev) => ({ ...prev, [nodeId]: result }));
+    setGeoIpLoadingNodeId(null);
   }
 
   const visibleNodes = useMemo(() => {
@@ -226,11 +247,11 @@ export function SubscriptionScreen() {
           Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
             <div key={protocol}>
               <h3>{protocol} ({groupNodes.length})</h3>
-              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} />
+              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} />
+          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} />
         )}
       </section>
     </main>
@@ -243,24 +264,32 @@ function NodeTable({
   latencyByNodeId,
   testingNodeId,
   onTestLatency,
+  geoIpByNodeId,
+  geoIpLoadingNodeId,
+  onGeoIpLookup,
 }: {
   nodes: ReturnType<typeof useParserState>;
   analysisByNodeId: AnalysisByNodeId;
   latencyByNodeId: Record<string, LatencyResult>;
   testingNodeId: string | null;
   onTestLatency: (nodeId: string, address: string, port: number) => void;
+  geoIpByNodeId: Record<string, GeoIpResult>;
+  geoIpLoadingNodeId: string | null;
+  onGeoIpLookup: (nodeId: string, address: string) => void;
 }) {
   return (
     <table>
       <thead>
         <tr>
-          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Imported At</th>
+          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>GeoIP</th><th>Imported At</th>
         </tr>
       </thead>
       <tbody>
         {nodes.map((n) => {
           const latency = latencyByNodeId[n.nodeId];
           const isTesting = testingNodeId === n.nodeId;
+          const geoIp = geoIpByNodeId[n.nodeId];
+          const isLookingUp = geoIpLoadingNodeId === n.nodeId;
           return (
             <tr key={n.nodeId}>
               <td>{n.protocol}</td>
@@ -277,6 +306,17 @@ function NodeTable({
                 </button>
                 {latency !== undefined && !isTesting && (
                   <span>{" "}{formatLatency(latency)}</span>
+                )}
+              </td>
+              <td>
+                <button
+                  disabled={isLookingUp}
+                  onClick={() => onGeoIpLookup(n.nodeId, n.address)}
+                >
+                  {isLookingUp ? "Loading…" : "Lookup"}
+                </button>
+                {geoIp !== undefined && !isLookingUp && (
+                  <span>{" "}{formatGeoIp(geoIp)}</span>
                 )}
               </td>
               <td>{n.createdAt}</td>
