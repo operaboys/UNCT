@@ -89,9 +89,58 @@ ADR جداگانه ندارد.
 
 ---
 
+## Addendum — Architecture Guard & No-Artificial-Limiting Rule
+
+### اجرای مکانیکی (Architecture Guard Test)
+
+قانون سه‌گانه‌ی بالا — به‌ویژه Architectural Separation — به‌صورت خودکار اجرا می‌شود.
+فایل `tests/architecture/no-network-in-core-pipeline.test.js` تمام فایل‌های `.js` در
+پوشه‌های زیر را اسکن می‌کند:
+
+```
+core/parser/
+core/analyzer/
+core/converter/
+core/validator/
+core/unm/
+```
+
+و شکست می‌خورد اگر هر کدام شامل موارد زیر باشد:
+
+| Pattern | توضیح |
+|---|---|
+| `fetch(` | Fetch API — هر نوع درخواست شبکه |
+| `XMLHttpRequest` | XHR — هر نوع درخواست شبکه |
+| `from "…/network/…"` | import از `core/network/` (ماژول قابلیت‌های آنلاین) |
+
+این تست به‌عنوان بخشی از CI اجرا می‌شود. هر Commit که Pipeline اصلی را آلوده کند،
+قبل از Merge رد می‌شود.
+
+**چطور یک قابلیت آنلاین درست پیاده‌سازی شود:**
+کد شبکه → `core/network/` ← فقط UI Layer (action صریح کاربر) صدا می‌زند.
+هرگز Parser/Analyzer/Converter/Validator به `core/network/` import نمی‌کند.
+
+### قانون «بدون محدودیت مصنوعی»
+
+قابلیت‌هایی که سه قانون بالا را رعایت کنند و توسط کاربر فعال می‌شوند باید **به‌درستی و بدون
+کاهش عمدی کیفیت** اجرا شوند. هیچ‌یک از موارد زیر برای قابلیت‌های مجاز مجاز نیست:
+
+| اقدام ممنوع | دلیل |
+|---|---|
+| اضافه کردن Confirmation Dialog اضافی بعد از کلیک کاربر | کاربر یک‌بار opt-in کرده؛ دوباره پرسیدن تجربه را خراب می‌کند |
+| Timeout کوتاه مصنوعی (کمتر از ۵ ثانیه) برای Latency Test | مقدار اندازه‌گیری‌شده باید واقعی باشد |
+| پنهان کردن نتیجه یا نمایش پیغام هشدار بی‌مورد | اگر کاربر صریح کلیک کرده، نتیجه باید مستقیم نمایش داده شود |
+| محدود کردن تعداد تست همزمان به شکل غیرفنی | اگر محدودیت فنی ندارد، مصنوعی نباشد |
+
+**خلاصه:** قوانین سه‌گانه مرز را تعریف می‌کنند. داخل آن مرز، قابلیت باید به‌اندازه‌ی نیاز و
+بدون دست‌وپاگیری اضافی کار کند.
+
+---
+
 ## References
 
 - سند ۰۱ §۲ (Core Principles — Offline First، اصلاح‌شده در v1.3)
 - سند ۰۱ §۷ (Non-Goals — بدون تغییر، با یادداشت تفسیری)
 - ULTIMATE_BLUEPRINT_INDEX.md v2.3 (Backlog Latency Tester به‌روز شد)
 - P12-10 (Latency Tester — آیتم Tier 2، پیش‌شرط ADR جداگانه حذف شد)
+- `tests/architecture/no-network-in-core-pipeline.test.js` (Architecture Guard)
