@@ -40,7 +40,8 @@
  * @typedef {import("./types").CompatibilityAnalysis} CompatibilityAnalysis
  * @typedef {import("./types").CloudflareAnalysis} CloudflareAnalysis
  * @typedef {import("./types").CleanIpAnalysis} CleanIpAnalysis
- * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis, cloudflare: CloudflareAnalysis, cleanIp: CleanIpAnalysis }} AnalysisBundle
+ * @typedef {import("./types").WorkerAnalysis} WorkerAnalysis
+ * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis, cloudflare: CloudflareAnalysis, cleanIp: CleanIpAnalysis, worker: WorkerAnalysis }} AnalysisBundle
  */
 
 import { analyzeCompleteness } from "./core/data-completeness.js";
@@ -52,6 +53,7 @@ import { analyzeSecurity } from "./core/security-analyzer.js";
 import { analyzeCompatibility } from "./extended/compatibility-analyzer.js";
 import { analyzeCloudflare } from "./extended/cloudflare-analyzer.js";
 import { analyzeCleanIp } from "./extended/clean-ip-analyzer.js";
+import { analyzeWorker } from "./extended/worker-analyzer.js";
 
 /**
  * Run all six Phase 6 Core analyzers plus the Phase 10 Extended analyzers
@@ -70,7 +72,8 @@ export function analyzeNode(node) {
   const compatibility = analyzeCompatibility(node);
   const cloudflare = analyzeCloudflare(node);
   const cleanIp = analyzeCleanIp(node);
-  return { completeness, protocol, network, tls, reality, security, compatibility, cloudflare, cleanIp };
+  const worker = analyzeWorker(node, cloudflare);
+  return { completeness, protocol, network, tls, reality, security, compatibility, cloudflare, cleanIp, worker };
 }
 
 /**

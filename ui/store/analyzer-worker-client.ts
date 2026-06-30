@@ -89,6 +89,22 @@ export interface CleanIpAnalysis {
   signals: string[];
 }
 
+export interface WorkerEncodedFinding {
+  source: string;
+  raw: string;
+  decoded: string | null;
+  rawBase64Detected: boolean;
+}
+
+export interface WorkerAnalysis {
+  applicable: boolean;
+  workerDomain: string | null;
+  pathSegments: string[];
+  uuidSegment: string | null;
+  parameters: Record<string, string>;
+  encodedDataFindings: WorkerEncodedFinding[];
+}
+
 export interface AnalysisBundle {
   completeness: CompletenessResult;
   protocol: ProtocolAnalysis;
@@ -99,6 +115,7 @@ export interface AnalysisBundle {
   compatibility: CompatibilityAnalysis;
   cloudflare: CloudflareAnalysis;
   cleanIp: CleanIpAnalysis;
+  worker: WorkerAnalysis;
 }
 
 export interface AnalyzeResult {

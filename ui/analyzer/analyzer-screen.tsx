@@ -168,6 +168,45 @@ export function AnalyzerScreen() {
             </dl>
           </section>
 
+          <section aria-label="Worker Analysis">
+            <h2>Worker Analysis</h2>
+            {bundle.worker.applicable ? (
+              <dl>
+                <dt>Worker Domain</dt>
+                <dd>{bundle.worker.workerDomain ?? "—"}</dd>
+                <dt>Path Segments</dt>
+                <dd>{formatStringList(bundle.worker.pathSegments)}</dd>
+                <dt>UUID Segment</dt>
+                <dd>{bundle.worker.uuidSegment ?? "—"}</dd>
+                <dt>Parameters</dt>
+                <dd>
+                  {Object.keys(bundle.worker.parameters).length === 0
+                    ? "—"
+                    : Object.entries(bundle.worker.parameters)
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join(", ")}
+                </dd>
+                {bundle.worker.encodedDataFindings.length > 0 && (
+                  <>
+                    <dt>Encoded Data</dt>
+                    <dd>
+                      {bundle.worker.encodedDataFindings.map((f, i) => (
+                        <div key={i}>
+                          <strong>{f.source}</strong>:{" "}
+                          {f.rawBase64Detected
+                            ? `[binary] ${f.raw}`
+                            : f.decoded}
+                        </div>
+                      ))}
+                    </dd>
+                  </>
+                )}
+              </dl>
+            ) : (
+              <p class="hint">Not a detected Cloudflare Worker — extraction did not run.</p>
+            )}
+          </section>
+
           <section aria-label="Reality Analysis">
             <h2>Reality Analysis</h2>
             <dl>

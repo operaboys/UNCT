@@ -176,6 +176,7 @@ function bundle(securityScore) {
     },
     cloudflare: { likelyCloudflareWorker: false, confidence: "low", signals: [] },
     cleanIp: { isCleanIpPattern: false, confidence: "low", signals: [] },
+    worker: { applicable: false, workerDomain: null, pathSegments: [], uuidSegment: null, parameters: {}, encodedDataFindings: [] },
   };
 }
 

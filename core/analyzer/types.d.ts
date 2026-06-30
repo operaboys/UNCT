@@ -202,6 +202,47 @@ export interface CompatibilityAnalysis {
 export type AnalysisConfidence = "low" | "medium" | "high";
 
 /**
+ * One entry produced by the Worker Analyzer's best-effort Base64 extraction
+ * (§2.2). Reports what was found and what decoding produced, without claiming
+ * to know WHAT the binary/text payload means (Rule 9).
+ */
+export interface WorkerEncodedFinding {
+  /** "path:<segment>" or "param:<key>" — locates the value in the node's path. */
+  source: string;
+  /** The raw (undecoded) value as it appeared in the path/query string. */
+  raw: string;
+  /** Printable decoded text, or null when decoded bytes are non-printable (binary). */
+  decoded: string | null;
+  /** True when the value matched the Base64 alphabet but its bytes were binary/unprintable. */
+  rawBase64Detected: boolean;
+}
+
+/**
+ * Output of the Worker Analyzer (06-ANALYZER_ENGINE §2.2, Phase 10).
+ * Extracts structured Worker details from a node that was already identified
+ * as `likelyCloudflareWorker=true` by the Cloudflare Analyzer (§2.1). When
+ * `applicable` is false (node was not a likely Worker), all other fields are
+ * empty/null — no extraction ran (Rule 9: no fabricated data on non-Workers).
+ *
+ * Deliberately NOT a re-detection: the `applicable` flag is read directly from
+ * the upstream `CloudflareAnalysis.likelyCloudflareWorker`, never recomputed.
+ */
+export interface WorkerAnalysis {
+  /** True when CloudflareAnalysis.likelyCloudflareWorker was true and extraction ran. */
+  applicable: boolean;
+  /** The address/host/sni field that matched a Worker/Pages domain suffix; null when not applicable or no such field found. */
+  workerDomain: string | null;
+  /** Non-empty path segments from node.path (before '?'), in order. */
+  pathSegments: string[];
+  /** First UUID-shaped path segment found (RFC 4122); null if none. */
+  uuidSegment: string | null;
+  /** Parsed query-string parameters as key→value strings. */
+  parameters: Record<string, string>;
+  /** Base64-shaped values found in path segments or parameter values, with decode attempts. */
+  encodedDataFindings: WorkerEncodedFinding[];
+}
+
+/**
  * Output of the Cloudflare Analyzer (06-ANALYZER_ENGINE §2.1, Phase 10).
  * Detects structural patterns associated with Cloudflare Worker endpoints —
  * NEVER a definitive "yes this is a Worker" claim (no such header exists).
