@@ -13,3 +13,4 @@ export { exportCsv } from "./to-csv.js";
 export { exportZip } from "./to-zip.js";
 export { exportQr } from "./to-qr.js";
 export { exportHtmlReport } from "./to-html.js";
+export { exportPortablePackage, importPortablePackage, PORTABLE_PACKAGE_VERSION } from "./portable-package.js";
