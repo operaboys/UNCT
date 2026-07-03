@@ -82,9 +82,37 @@
 |---|---|
 | Extraction/Inspection پیشرفته | GeoIP Inspector, ASN Inspector, Latency Tester *(مرزبندی Privacy/Network حل‌شده — ADR-024: فقط address+port، کلیک صریح، core/network/ جدا)* |
 | Rule/Route Analysis | Rule Analyzer, Clash Rule Inspector, Sing-box Route Inspector |
-| Builder Tools | Template Builder, Subscription Builder |
+| Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
 | Visualization | Visual Topology Mapper, Node Relationship Map, Subscription Visualizer, Cloudflare Topology View, Reality Visualizer |
-| Extensibility | Plugin System, Custom Parser API, Custom Export API |
+| Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
+
+> **اصلاح (P12-13):** ردیف «Extensibility» قبلاً «Plugin System» را هم همراه با API فهرست می‌کرد.
+> Plugin System خودش (Plugin Loader، Plugin Registry، Exporter Contract Checker) دیگر Backlog
+> نیست — در Phase 11 با Spec کامل (ADR-020) ساخته و تست شده و از این ردیف حذف شد. آنچه باقی
+> می‌ماند صرفاً **یک API عمومی/مستندشده‌ی سطح‌بالاتر** روی همان مکانیزم است — که طبق بررسی P12-13
+> زیر، هنوز Blocked است.
+
+### P12-13 — وضعیت Custom Parser/Export API *(بررسی جدید)*
+
+بررسی صورت گرفت: از پایان Phase 11 تا امروز، **هیچ Plugin واقعی اضافه نشده**. تنها چیزی که در
+`plugins/` وجود دارد `plugins/example-parser/index.js` است که در همان کامنت بالای فایلش صراحتاً
+نوشته «EXAMPLE/TEST-ONLY, not production» و روی یک فرمت خیالی («UNCT-CSV») کار می‌کند که به گفته‌ی
+خودش «در دنیای واقعی وجود ندارد — صرفاً نمایشی است». هیچ فراخوانی از `createPluginRegistry`/
+`createPluginLoader` در `ui/main.tsx` یا هر صفحه‌ی دیگر وجود ندارد — یعنی حتی خودِ مکانیزم هم در
+اپ واقعی هرگز اجرا نشده، فقط در تست واحد خودش.
+
+**تصمیم: این آیتم Blocked می‌ماند** (نه Already-Complete) — نوشتن یک API عمومی روی مکانیزم Loader/
+Registry موجود، بدون داشتن حداقل یک نمونه‌ی واقعی، حدس‌محور خواهد بود (همان ریسکی که یادداشت قبلی
+هشدار داده بود). شرط دقیق رفع Block:
+
+> این آیتم Blocked می‌ماند تا حداقل **دو Custom Parser واقعی** (نه لزوماً پروتکل‌های رسمی جدید —
+> می‌تواند برای فرمت‌های Community/کمتر رایج باشد) یا **یک Custom Exporter واقعی** نوشته شود؛ فقط
+> بعد از آن، الگوهای مشترک واقعی (نه فرضی) از آن پیاده‌سازی‌ها استخراج و به یک API عمومی/مستندشده
+> تبدیل می‌شوند.
+
+مکانیزم زیرین (`core/plugin/registry.js`, `core/plugin/loader.js`, `core/plugin/exporter-contract.js`)
+همچنان کاملاً کاربردی و پابرجاست — این تصمیم فقط درباره‌ی «آیا الان زمان تبدیل آن به یک API عمومی/
+مستند است» است، نه درباره‌ی خودِ مکانیزم.
 
 ---
 
