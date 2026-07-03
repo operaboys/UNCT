@@ -22,21 +22,113 @@ Professional · Modern · Fast · Minimal · Information Dense · Mobile First �
 
 ## 2. Visual Identity
 
-**Style:** Cyber Professional, Glassmorphism, Neumorphism Elements, Terminal Inspired, Developer Friendly
+> ⚠️ **جایگزینی هویت بصری (فاز نهایی، Checkpoint با مهدی):** توصیف قبلی این بخش ("Cyber
+> Professional, Glassmorphism, Neumorphism Elements, Terminal Inspired, Developer Friendly" —
+> یک تم تیره‌ی هکری) دیگر معتبر نیست. بعد از چند دور طراحی مستقیم با مهدی، هویت زیر
+> ("Liquid Glass") تأیید نهایی شد و جایگزین کامل آن است. Design Tokens دقیقاً همین‌ها هستند —
+> پیاده‌سازی مرجع در `assets/css/theme.css`.
 
-### Color System
+**Style Name:** Liquid Glass — روشن، گرم، مدرن (نه تیره/هکری). فلسفه‌ی طراحی سند (بخش ۱:
+Professional · Modern · Fast · Minimal · Information Dense) بدون تغییر می‌ماند؛ فقط اجرای
+بصری آن از تاریک/سایبری به روشن/شیشه‌ای تغییر کرد.
 
-| نقش | رنگ |
-|---|---|
-| Primary Accent | Electric Blue |
-| Secondary Accent | Purple |
-| Success | Green |
-| Warning | Amber |
-| Error | Red |
-| Neutral | Slate |
+### پس‌زمینه
+
+گرادیان روشن چندلایه، نه یک رنگ تخت:
+- یک Base Gradient روشن: بنفش خیلی کم‌رنگ → کرم → نعنایی کم‌رنگ.
+- روی آن، سه Radial Gradient بزرگ و محو (Blur شدید، اشباع کم) به‌عنوان لکه‌های نور: بنفش
+  در گوشه‌ی بالا-چپ، صورتی در گوشه‌ی بالا-راست، نعنایی در پایین-وسط.
+- `background-attachment: fixed` — لکه‌های نور با Scroll صفحه جابه‌جا نمی‌شوند، حس یک
+  فضای نورانی ثابت پشت محتوا را می‌دهند.
+
+### Design Tokens (پالت رنگ)
+
+| Token (CSS Custom Property) | مقدار | نقش |
+|---|---|---|
+| `--unct-purple` | `#7c5cfc` | رنگ اصلی برند، گرادیان‌های اولیه، لوگو |
+| `--unct-pink` | `#ff6b9d` | رنگ ثانویه، گرادیان‌های تکمیلی، لوگو |
+| `--unct-mint` | `#1fd1a6` | موفقیت / امنیت بالا (Signal Ring انتهای طیف، Security Score بالا) |
+| `--unct-amber` | `#ffb648` | هشدار |
+| `--unct-text` | `#211b3d` | متن اصلی روی پس‌زمینه‌ی روشن |
+| `--unct-text-muted` | `#6b6584` | متن کم‌رنگ/ثانویه |
+
+این توکن‌ها جایگزین کامل جدول قبلی «Color System» (Electric Blue/Purple/Green/Amber/Red/Slate)
+هستند — نه افزوده بر آن.
+
+### Glassmorphism — «Liquid Glass»
+
+هر پنل/کارت اصلی صفحات (نه هر عنصر کوچک) این مشخصات را دارد — پیاده‌سازی مرجع: Utility Class
+`.glass-panel` در `assets/css/theme.css`:
+
+- `background: rgba(255, 255, 255, 0.42)` — شفافیت جزئی، نه یک پس‌زمینه‌ی تخت.
+- `backdrop-filter: blur(28px) saturate(160%)` — تاری قوی به‌همراه اشباع رنگ بیشتر پشت شیشه
+  (حس واقعی «شیشه‌ی مایع»، نه فقط تاری خنثی).
+- یک لایه‌ی **Highlight نور از بالا** (`::before`): گرادیان سفید محو از بالا (نیمه‌شفاف) به
+  کاملاً شفاف — شبیه‌سازی بازتاب نور روی سطح شیشه.
+- یک **لکه‌ی نور بازتابی مورب** در گوشه‌ی بالا-چپ هر پنل (`::after`): یک Radial/Linear
+  Gradient کوچک‌تر و محوتر، جدا از Highlight بالا، برای عمق بصری بیشتر.
+- سایه‌ی نرم **چندلایه** (چند `box-shadow` هم‌زمان با شعاع/شفافیت متفاوت) — نه یک سایه‌ی
+  تخت ساده؛ حس شناور بودن پنل روی پس‌زمینه را می‌دهد.
+
+### تایپوگرافی
+
+- **متن عمومی:** `Plus Jakarta Sans` — وزن‌های ۴۰۰ (Regular) تا ۸۰۰ (ExtraBold)، بسته به
+  سلسله‌مراتب (بدنه‌ی متن سبک‌تر، عنوان‌ها سنگین‌تر).
+- **داده‌های فنی:** `JetBrains Mono` — برای هرچیزی که داده‌ی خام کانفیگ است: آدرس، پورت،
+  UUID، پروتکل، هش، و هر مقدار Monospace-حساس دیگر (خوانایی/تفکیک کاراکترها در این‌جا از
+  زیبایی مهم‌تر است).
+- هر دو فونت **Self-hosted**‌اند (`assets/fonts/*.woff2`)، نه از Google Fonts CDN — طبق
+  اصل Offline-First سند ۰۱ و ADR-014؛ جزئیات Subset/Bundle Size در کامنت بالای
+  `assets/css/theme.css`.
+
+### المان امضادار: Signal Ring
+
+**Signal Ring** یک نمودار حلقه‌ای گرادیانی (بنفش → نعنایی، بسته به مقدار امتیاز) است که
+Security Score را به‌صورت زنده و بصری نشان می‌دهد — نه فقط یک عدد متنی. این یک **المان
+هویتی سراسری** پروژه است، نه یک ویجت محلی یک صفحه:
+
+- هرجا Security Score نمایش داده می‌شود — Dashboard (Health Overview)، Subscription Center
+  (Security Ranking، هر ردیف نود)، و Node Detail (هر صفحه‌ای که جزئیات یک نود را نشان
+  می‌دهد) — باید همین Signal Ring تکرار شود، نه یک نمایش عددی ساده یا نموداری متفاوت.
+- پیاده‌سازی مرجع: Utility Class `.signal-ring` در `assets/css/theme.css` (یک `conic-gradient`
+  دایره‌ای با درصد پرشدگی متناظر با امتیاز، به‌همراه یک دایره‌ی داخلی برای نمایش عدد).
+- منطق محاسبه‌ی امتیاز از قبل در `core/analyzer/core/security-analyzer.js` وجود دارد
+  (ADR-011)؛ Signal Ring فقط **نمایش** آن است، نه محاسبه‌ی جدید (Rule 11's boundary).
+
+### لوگو
+
+حرف **U** ساخته‌شده از:
+- دو خط عمودی ممتد در بالا (دو بازوی حرف U).
+- یک دایره‌ی «گره» (Knot) در سر هر خط — نماد دو نقطه‌ی اتصال.
+- یک قوس خط‌چین (Dashed Arc) در پایین که دو گره را به‌هم وصل می‌کند — نماد مسیر تبدیل
+  (Conversion Path) بین دو فرمت کانفیگ، دقیقاً محور اصلی محصول.
+
+رنگ: گرادیان بنفش (`--unct-purple`) → صورتی (`--unct-pink`)، روی یک مربع گرد
+(`border-radius: 13px`). پیاده‌سازی: `ui/components/logo.tsx` (SVG قابل‌بازاستفاده، جزئیات
+در بخش بعدی همین سند).
+
+### آیکون پروتکل‌ها
+
+به‌جای نماد انتزاعی/آیکون عمومی، هر پروتکل یک **بج گرد گرادیانی** با حروف اختصاری
+Monospace می‌گیرد (مثلاً `VL` برای VLESS، `TR` برای Trojan، `VM` برای VMess، `SS` برای
+Shadowsocks، `HY` برای Hysteria2، `TU` برای TUIC، `WG` برای WireGuard) — هر پروتکل یک
+گرادیان رنگی مجزا از پالت بالا (نه یک رنگ ثابت برای همه).
+
+### Reference Mockup (معیار مرجع تأییدشده)
+
+مرجع بصری‌ای که مهدی و Claude مستقیماً بازبینی و تأیید کردند — هر صفحه‌ی آینده باید از نظر
+حس بصری (نه لزوماً چیدمان دقیق) با این مرجع هم‌خوان باشد: یک صفحه‌ی روشن با پس‌زمینه‌ی
+گرادیانی چندلایه‌ی بالا؛ چند پنل شیشه‌ای شناور (`.glass-panel`) روی آن با محتوای متنی
+`Plus Jakarta Sans` و مقادیر فنی `JetBrains Mono`؛ حداقل یک Signal Ring واقعی نمایش
+Security Score؛ لوگوی U در گوشه‌ی بالا؛ چند بج پروتکل گرادیانی در یک لیست نمونه. هیچ
+عنصر تیره/نئونی/سایبرپانک باقی نمی‌ماند.
 
 ### Theme Engine
-Dark Mode · Light Mode · Auto Mode · System Sync
+Dark Mode · Light Mode · Auto Mode · System Sync — مکانیزم بدون تغییر می‌ماند (سند
+`core/store/settings-state.js`)؛ فقط توکن‌های رنگی زیر آن از سیستم بالا می‌آیند، نه دو رنگ
+ساده‌ی قبلی (`--unct-bg`/`--unct-fg`). حالت Dark هنوز طراحی نشده در این Checkpoint — این
+مرحله فقط حالت Light/پیش‌فرض («Liquid Glass» روشن) را قطعی می‌کند؛ نگاشت این توکن‌ها به یک
+حالت Dark، تصمیم Checkpoint بعدی است.
 
 ---
 
@@ -234,7 +326,8 @@ Component، طبق `RTL-GUIDELINES.md`) عمداً به همان فاز نهای
 
 | Field | Value |
 |---|---|
-| نسخه | v1.4 |
+| نسخه | v1.5 |
+| اصلاحات نسبت به v1.4 | (فاز نهایی، مرحله ۱) جایگزینی کامل بخش ۲ — Visual Identity: حذف «Cyber Professional/تیره»، جایگزینی با هویت تأییدشده‌ی «Liquid Glass» (پس‌زمینه‌ی گرادیانی چندلایه، Design Tokens دقیق، Glassmorphism، تایپوگرافی Plus Jakarta Sans/JetBrains Mono Self-hosted، Signal Ring به‌عنوان المان امضادار سراسری، لوگوی SVG، بج‌های پروتکل، و توصیف Reference Mockup تأییدشده) |
 | اصلاحات نسبت به v1.3 | (دوزبانه‌سازی پروژه) افزودن بخش ۹ — Language Support (i18n + RTL): معماری Dictionary خودساخته، Persist هم‌الگو با Theme، تشخیص خودکار `navigator.language`، فونت Vazirmatn با `unicode-range`، مرز اعداد ASCII، مرز زبان فایل Export، مرز Code-only پیام خطای Core، `dir="auto"` محتوای کاربر، الزام تست تکمیل ترجمه و تست بصری RTL، و تصمیم Scope‌بندی زیرساخت/ترجمه‌ی کامل |
 | اصلاحات نسبت به v1.2 | (بازبینی نهایی) بستن Flag باز Event Bus — تصمیم نهایی: فقط Preact Context API، بدون کتابخانه‌ی جدا (بخش 8.1) |
 | اصلاحات نسبت به v1.1 | (بر اساس بازبینی مهدی) افزودن Sidebar Collapse Rule، Recovery Actions در Converter، Clipboard Export، Detection Logs در Developer Console |

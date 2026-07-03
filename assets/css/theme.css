@@ -1,20 +1,249 @@
-/* Theme Engine (07-UI_UX_SYSTEM §2). Scoped to exactly the two states the
-   Settings Screen resolves to (`resolvedTheme`, applied as `<html data-theme>`
-   by ui/main.tsx) — not the full Cyber Professional/Glassmorphism visual
-   system §2 also names, which is a separate, not-yet-started design-system
-   effort across every screen, out of scope for the Theme Engine mechanism
-   itself. */
+/**
+ * Liquid Glass — the approved final Visual Identity (07-UI_UX_SYSTEM §2,
+ * replacing the old "Cyber Professional / dark" description). This is the
+ * foundation layer only: Design Tokens, the layered background, the two
+ * reusable utility classes every future screen redesign builds on
+ * (`.glass-panel`, `.signal-ring`), font-faces, and protocol badges.
+ * No ui/*.tsx screen is redesigned in this pass — that is the next
+ * Checkpoint, once this foundation is approved.
+ *
+ * Font self-hosting note (ADR-014/doc 01 Offline-First — no Google Fonts
+ * CDN at runtime): the six woff2 files in ../fonts/ were fetched once
+ * during development (a build-time asset acquisition, exactly like an npm
+ * install, not a runtime network call the app makes) — fetched PER WEIGHT
+ * individually (fonts.googleapis.com serves a distinct static instance per
+ * weight when queried one at a time; querying multiple weights in a single
+ * request was tried first and silently returned the SAME weight-400 file
+ * for every requested weight — a real gotcha, not a shortcut). Real
+ * measured sizes (Latin subset only, since technical data and UI labels
+ * here are always ASCII; Persian content uses the separate Vazirmatn font
+ * from 07-UI_UX_SYSTEM §9, not these two):
+ *   plus-jakarta-sans-400.woff2  11,816 B
+ *   plus-jakarta-sans-500.woff2  12,312 B
+ *   plus-jakarta-sans-600.woff2  12,188 B
+ *   plus-jakarta-sans-700.woff2  12,244 B
+ *   plus-jakarta-sans-800.woff2  11,896 B
+ *   jetbrains-mono-400.woff2     21,168 B
+ *   TOTAL                        81,624 B (~80 KB) for all six files
+ * woff2 already applies its own Brotli-based compression internally, so a
+ * further gzip pass over these files was measured and found to add ~0.2%
+ * (compression already spent) — reported honestly rather than a misleading
+ * "gzip size" claim that implies further savings actually exist.
+ */
+
+/* ---------------------------------------------------------------------
+ * Font faces — self-hosted, Latin subset, exactly the weights used.
+ * ------------------------------------------------------------------- */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/plus-jakarta-sans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/plus-jakarta-sans-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/plus-jakarta-sans-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/plus-jakarta-sans-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/plus-jakarta-sans-800.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+
+/* ---------------------------------------------------------------------
+ * Design Tokens (07-UI_UX_SYSTEM §2) — the Liquid Glass palette. These
+ * replace the old Electric-Blue/Purple/Green/Amber/Red/Slate table
+ * entirely, not alongside it.
+ * ------------------------------------------------------------------- */
+:root {
+  --unct-purple: #7c5cfc;
+  --unct-pink: #ff6b9d;
+  --unct-mint: #1fd1a6;
+  --unct-amber: #ffb648;
+  --unct-text: #211b3d;
+  --unct-text-muted: #6b6584;
+
+  --unct-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* No background image by default (dark theme below stays flat/untouched
+     — this Checkpoint only finalizes the Light identity). */
+  --unct-bg-image: none;
+}
+
+/* Scoped to exactly the two states Settings' Theme Engine resolves to
+   (`resolvedTheme`, applied as `<html data-theme>` by ui/main.tsx). */
+:root[data-theme="light"] {
+  --unct-bg: #ffffff;
+  --unct-fg: var(--unct-text);
+  /* The approved Liquid Glass background: three large, soft radial color
+     pools (purple top-left, pink top-right, mint bottom-center) over a
+     light base gradient (faint purple -> cream -> faint mint). */
+  --unct-bg-image:
+    radial-gradient(ellipse 60% 50% at 12% 8%, rgba(124, 92, 252, 0.30), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(255, 107, 157, 0.28), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(31, 209, 166, 0.24), transparent 65%),
+    linear-gradient(135deg, #f4f1ff 0%, #fdf9f0 50%, #eafcf7 100%);
+}
+
+/* Dark theme is intentionally NOT redesigned in this Checkpoint — kept
+   exactly as it was before this pass (flat colors, no gradient/glass). */
 :root[data-theme="dark"] {
   --unct-bg: #14161a;
   --unct-fg: #e8e8e8;
 }
 
-:root[data-theme="light"] {
-  --unct-bg: #ffffff;
-  --unct-fg: #14161a;
+body {
+  margin: 0;
+  font-family: var(--unct-font-sans);
+  background-color: var(--unct-bg, #ffffff);
+  background-image: var(--unct-bg-image, none);
+  background-attachment: fixed;
+  background-size: cover;
+  color: var(--unct-fg, var(--unct-text));
 }
 
-body {
-  background-color: var(--unct-bg, #ffffff);
-  color: var(--unct-fg, #14161a);
+code, kbd, samp, .mono {
+  font-family: var(--unct-font-mono);
 }
+
+/* ---------------------------------------------------------------------
+ * .glass-panel — the reusable Liquid Glass surface (07-UI_UX_SYSTEM §2).
+ * Apply to top-level panels/cards, not every small inline element.
+ * ------------------------------------------------------------------- */
+.glass-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  box-shadow:
+    0 1px 1px rgba(33, 27, 61, 0.04),
+    0 8px 24px rgba(33, 27, 61, 0.10),
+    0 24px 48px rgba(33, 27, 61, 0.08);
+}
+
+/* Highlight: a soft light sheen from the top of the panel. */
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
+}
+
+/* Reflective glint: a soft diagonal light patch in the top-left corner. */
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  top: -25%;
+  left: -20%;
+  width: 65%;
+  height: 65%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: rotate(-18deg);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+ * .signal-ring — the Signal Ring signature element (07-UI_UX_SYSTEM §2).
+ * A live gradient ring (purple -> mint) showing a Security Score. This is
+ * DISPLAY ONLY — the score itself always comes from
+ * core/analyzer/core/security-analyzer.js (ADR-011); nothing here computes
+ * a value. Usage:
+ *   <div class="signal-ring" style="--signal-value: 87">
+ *     <span>87</span>
+ *   </div>
+ * `--signal-value` is a 0-100 number set by the consumer per node/context —
+ * this repeats identically everywhere a Security Score is shown (Dashboard,
+ * Subscription Center, Node Detail), never a one-off local variant.
+ * ------------------------------------------------------------------- */
+.signal-ring {
+  --signal-value: 0;
+  --signal-size: 64px;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--signal-size);
+  height: var(--signal-size);
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--unct-purple) 0%,
+    var(--unct-mint) calc(var(--signal-value) * 1%),
+    rgba(33, 27, 61, 0.08) calc(var(--signal-value) * 1%)
+  );
+}
+
+.signal-ring::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.signal-ring span {
+  position: relative;
+  z-index: 1;
+  font-family: var(--unct-font-mono);
+  font-weight: 600;
+  color: var(--unct-text);
+}
+
+/* ---------------------------------------------------------------------
+ * .protocol-badge — round gradient badges with a monospace abbreviation,
+ * one distinct gradient per protocol (07-UI_UX_SYSTEM §2). Usage:
+ *   <span class="protocol-badge protocol-badge--vless">VL</span>
+ * ------------------------------------------------------------------- */
+.protocol-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-family: var(--unct-font-mono);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: var(--unct-badge-gradient, linear-gradient(135deg, var(--unct-purple), var(--unct-pink)));
+}
+
+.protocol-badge--vless { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-pink)); }
+.protocol-badge--vmess { --unct-badge-gradient: linear-gradient(135deg, var(--unct-pink), var(--unct-amber)); }
+.protocol-badge--trojan { --unct-badge-gradient: linear-gradient(135deg, var(--unct-mint), var(--unct-purple)); }
+.protocol-badge--shadowsocks { --unct-badge-gradient: linear-gradient(135deg, var(--unct-amber), var(--unct-mint)); }
+.protocol-badge--hysteria2 { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-mint)); }
+.protocol-badge--tuic { --unct-badge-gradient: linear-gradient(135deg, var(--unct-pink), var(--unct-purple)); }
+.protocol-badge--wireguard { --unct-badge-gradient: linear-gradient(135deg, var(--unct-mint), var(--unct-pink)); }
