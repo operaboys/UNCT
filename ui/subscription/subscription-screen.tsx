@@ -27,6 +27,7 @@ import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
+import { buildProtocolBars } from "./chart.js";
 import { measureLatency } from "../../core/network/latency.js";
 import { lookupGeoIp } from "../../core/network/geoip.js";
 import { checkPort } from "../../core/network/port-check.js";
@@ -191,6 +192,8 @@ export function SubscriptionScreen() {
     [nodes, analysisByNodeId],
   );
 
+  const protocolBars = useMemo(() => buildProtocolBars(summary.protocolDistribution), [summary]);
+
   return (
     <main class="subscription-screen">
       <h1>Subscription Center</h1>
@@ -209,10 +212,22 @@ export function SubscriptionScreen() {
           <p class="hint">No nodes yet.</p>
         ) : (
           <table aria-label="Protocol Distribution">
-            <thead><tr><th>Protocol</th><th>Count</th></tr></thead>
+            <thead><tr><th>Protocol</th><th>Count</th><th>Share</th></tr></thead>
             <tbody>
-              {Object.entries(summary.protocolDistribution).map(([protocol, count]) => (
-                <tr key={protocol}><td>{protocol}</td><td>{count}</td></tr>
+              {protocolBars.map(({ protocol, count, percent }) => (
+                <tr key={protocol}>
+                  <td>{protocol}</td>
+                  <td>{count}</td>
+                  <td>
+                    <div style={{ background: "#ccc", width: "100px" }}>
+                      <div
+                        role="img"
+                        aria-label={`${protocol}: ${count}`}
+                        style={{ background: "#4a90d9", width: `${percent}%`, height: "10px" }}
+                      />
+                    </div>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

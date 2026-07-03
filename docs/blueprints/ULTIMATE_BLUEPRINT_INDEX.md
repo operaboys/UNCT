@@ -83,9 +83,29 @@
 | Extraction/Inspection پیشرفته | GeoIP Inspector, ASN Inspector, Latency Tester *(مرزبندی Privacy/Network حل‌شده — ADR-024: فقط address+port، کلیک صریح، core/network/ جدا)* |
 | Rule/Route Analysis | Rule Analyzer, Clash Rule Inspector, Sing-box Route Inspector |
 | Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
-| Visualization | Visual Topology Mapper, Node Relationship Map, Subscription Visualizer, Cloudflare Topology View, Reality Visualizer |
+| Visualization | Subscription Visualizer ✅ (P12-11, بدون Chart Library — ADR-026) *(بقیه‌ی چهار مورد حذف شدند — بند زیر)* |
 | Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
 | UX Scaling | Extractor Level System *(بررسی P12-12 — بند زیر؛ ۴ Extractor فعال از ۸-۱۰ آستانه‌ی پیشنهادی)* |
+
+### P12-11 — وضعیت گروه Visualization *(بررسی جدید — پیش از هر تحقیق Library)*
+
+بررسی داده‌ی واقعی موجود در `core/types/unm.d.ts` و `core/analyzer/types.d.ts` برای هر ۵ فیچر،
+قبل از هر تصمیم Library:
+
+| # | فیچر | برچسب | دلیل |
+|---|---|---|---|
+| 1 | Node Relationship Map | ❌ **حذف کامل از Backlog** | هیچ فیلدی در UNM رابطه‌ی بین دو Node را ثبت نمی‌کند. تنها کاندید ضعیف، `MetadataObject.sourceFile?` است که بررسی مستقیم (`grep` روی هر ۶ `normalize.js`) نشان داد **هیچ‌کدام از Parserها هرگز آن را واقعاً پر نمی‌کنند** — یعنی حتی این داده‌ی ضعیف هم عملاً مرده است، نه یک سیگنال واقعی. این «فیلد کم داریم» نیست؛ خودِ مفهوم «این Node به آن یکی مرتبط است» در فرمت‌های Config موجود اصلاً استخراج‌پذیر نیست. |
+| 2 | Cloudflare Topology View | ❌ **حذف کامل از Backlog** | `WorkerAnalysis` یک رکورد تخت تک‌نودی است (`workerDomain`, `pathSegments`, `uuidSegment`, `parameters`, `encodedDataFindings`) — چند مقدار Scalar برای **یک** Endpoint، نه یک شبکه‌ی چند-Hop. «Topology» یعنی یال بین چند موجودیت (Client→CDN→Origin)؛ UNM فقط یک Config پروکسی را مدل می‌کند، نه یک مسیر شبکه — چیزی جمع برای ترسیم Topology وجود ندارد. |
+| 3 | Reality Visualizer | ❌ **حذف کامل از Backlog** | همان دلیل شماره ۲: `RealityAnalysis` فقط `applicable`/`compatible`/`pbkPlausible`/`sidPlausible`/`issues[]` برای یک Node است — از قبل کاملاً خوانا به‌صورت متن (بخش Reality Analysis در Analyzer Screen، جدول Reality Extractor). نموداری برای ۴ Boolean و یک لیست کوتاه، اطلاعاتی بیش از جدول موجود اضافه نمی‌کند. |
+| 4 | Visual Topology Mapper | ❌ **حذف کامل از Backlog** | همان دلیل شماره ۱ — خودِ اسم فیچر فرض یک گراف اتصال بین Nodeها را دارد که وجود ندارد. |
+| 5 | Subscription Visualizer | ✅ **قابل ساخت با داده‌ی موجود** | `SubscriptionSummary.protocolDistribution` (`core/analyzer/extended/subscription-analyzer.js`, Phase 10) داده‌ی واقعی، تجمیعی، چند-دسته‌ای روی **کل** مجموعه‌ی Node است — واقعاً شایسته‌ی نمودار، برخلاف ۴ مورد بالا که تک‌نودی و Scalar بودند. |
+
+**تصمیم Library (مرحله ۳):** با فقط یک فیچر واقعی باقی‌مانده (نمودار میله‌ای حداکثر ۷ دسته —
+تعداد پروتکل‌ها)، حتی مقایسه‌ی Bundle Size یک Chart Library هم نامتناسب بود. تصمیم: **بدون
+کتابخانه** — `ui/subscription/chart.ts`'s `buildProtocolBars` یک تابع خالص ~۱۰ خطی است
+(درصد عرض میله = `count / max * 100`)، رندر شده به‌صورت `<div>` ساده با درصد `width` — دقیقاً
+همان الگویی که `ui/export/qr-render.ts` از قبل برای QR Code جا انداخته (SVG دستی، بدون
+Dependency). جزئیات کامل در `docs/adr/ADR-026-VISUALIZATION-GROUP-NO-CHART-LIBRARY.md`.
 
 ### P12-12 — وضعیت Extractor Level System *(بررسی جدید)*
 
