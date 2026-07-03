@@ -13,6 +13,21 @@
  * large-scale (10,000+ node) data to measure against (doc 14's "Actively
  * Maintained" requirement could not be cheaply verified for a library
  * picked speculatively now).
+ *
+ * Visual design (final visual design phase, Subscription Center step):
+ * restyled onto the same Liquid Glass system as Dashboard/Converter/
+ * Analyzer, reusing their exact classes (`.glass-panel`, `.panel-grid`,
+ * `.kv-list`/`.kv-row`, `.data-table`, `.tag`, `.btn`, `.select`,
+ * `.code-textarea`, `.hint`) plus Dashboard's `.dist-item`/`.dist-track`/
+ * `.dist-fill` bar-chart classes for Protocol Distribution (previously
+ * hand-rolled inline-style `<div>`s here — now the same bars Dashboard's
+ * Protocol Mix panel already draws, not a second implementation). Three
+ * small new classes were added to `assets/css/theme.css` for this step:
+ * `.input` (a styled text input; only `.select`/`.code-textarea` existed
+ * before), `.btn--sm` (compact per-row actions — this screen's Node List
+ * has four buttons per row), and `.field` (inline "Label: control"
+ * pairs). No logic/state/handlers changed — same selectors, same
+ * network-check handlers, same Template/Subscription Builder flow.
  */
 import { useMemo, useState } from "preact/hooks";
 import {
@@ -28,6 +43,7 @@ import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
 import { buildProtocolBars } from "./chart.js";
+import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
 import { measureLatency } from "../../core/network/latency.js";
 import { lookupGeoIp } from "../../core/network/geoip.js";
 import { checkPort } from "../../core/network/port-check.js";
@@ -196,167 +212,169 @@ export function SubscriptionScreen() {
 
   return (
     <main class="subscription-screen">
-      <h1>Subscription Center</h1>
+      <div class="screen-header">
+        <h1 class="screen-title">Subscription Center</h1>
+        <p class="screen-subtitle">
+          Search, filter, sort, and group the whole working Node List; save nodes as
+          cross-session Templates; and build a Subscription blob from any selection.
+        </p>
+      </div>
 
-      <section aria-label="Summary">
-        <h2>Summary</h2>
-        <dl>
-          <dt>Total Nodes</dt><dd>{summary.totalNodes}</dd>
-          <dt>Duplicate Nodes</dt><dd>{summary.duplicateNodeCount}</dd>
-          <dt>Invalid Nodes</dt><dd>{summary.invalidNodeIds.length}</dd>
-          <dt>Dead Nodes Candidate</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd>
-        </dl>
+      <div class="panel-grid" style={{ marginBlockEnd: "20px" }}>
+        <div class="panel glass-panel" aria-label="Overview">
+          <div class="panel-title">Overview</div>
+          <dl class="kv-list">
+            <div class="kv-row"><dt>Total Nodes</dt><dd><bdi>{summary.totalNodes}</bdi></dd></div>
+            <div class="kv-row"><dt>Duplicate Nodes</dt><dd><bdi>{summary.duplicateNodeCount}</bdi></dd></div>
+            <div class="kv-row"><dt>Invalid Nodes</dt><dd><bdi>{summary.invalidNodeIds.length}</bdi></dd></div>
+            <div class="kv-row"><dt>Dead Nodes Candidate</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd></div>
+          </dl>
+        </div>
 
-        <h3>Protocol Distribution</h3>
-        {summary.totalNodes === 0 ? (
-          <p class="hint">No nodes yet.</p>
-        ) : (
-          <table aria-label="Protocol Distribution">
-            <thead><tr><th>Protocol</th><th>Count</th><th>Share</th></tr></thead>
-            <tbody>
-              {protocolBars.map(({ protocol, count, percent }) => (
-                <tr key={protocol}>
-                  <td>{protocol}</td>
-                  <td>{count}</td>
-                  <td>
-                    <div style={{ background: "#ccc", width: "100px" }}>
-                      <div
-                        role="img"
-                        aria-label={`${protocol}: ${count}`}
-                        style={{ background: "#4a90d9", width: `${percent}%`, height: "10px" }}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div class="panel glass-panel" aria-label="Protocol Distribution">
+          <div class="panel-title">Protocol Distribution</div>
+          {summary.totalNodes === 0 ? (
+            <p class="hint">No nodes yet.</p>
+          ) : (
+            protocolBars.map(({ protocol, count, percent }) => (
+              <div class="dist-item" key={protocol}>
+                <div class="dist-head">
+                  <span>{protocol}</span>
+                  <span class="n"><bdi>{count}</bdi></span>
+                </div>
+                <div class="dist-track">
+                  <div class={`dist-fill protocol-badge--${protocol}`} style={{ width: `${percent}%` }} />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-        <h3>Security Ranking</h3>
-        {summary.securityRanking.length === 0 ? (
-          <p class="hint">No nodes analyzed yet — visit the Analyzer Screen to score nodes.</p>
-        ) : (
-          <table aria-label="Security Ranking">
-            <thead><tr><th>Address</th><th>Security Score</th></tr></thead>
-            <tbody>
-              {summary.securityRanking.map((entry) => {
-                const n = nodes.find((candidate) => candidate.nodeId === entry.nodeId);
-                return (
-                  <tr key={entry.nodeId}>
-                    <td>{n ? `${n.address}:${n.port}` : entry.nodeId}</td>
-                    <td>{formatScore(entry.securityScore)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+        <div class="panel glass-panel" aria-label="Security Ranking">
+          <div class="panel-title">Security Ranking</div>
+          {summary.securityRanking.length === 0 ? (
+            <p class="hint">No nodes analyzed yet — visit the Analyzer Screen to score nodes.</p>
+          ) : (
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr><th>Address</th><th>Security Score</th></tr></thead>
+                <tbody>
+                  {summary.securityRanking.map((entry) => {
+                    const n = nodes.find((candidate) => candidate.nodeId === entry.nodeId);
+                    return (
+                      <tr key={entry.nodeId}>
+                        <td class="mono">{n ? <>{n.address}:<bdi>{n.port}</bdi></> : entry.nodeId}</td>
+                        <td>{formatScore(entry.securityScore)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-      <section aria-label="Search">
-        <h2>Search</h2>
-        <input
-          type="text"
-          value={search}
-          onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
-          placeholder="Search by protocol, address, or port…"
-        />
-      </section>
-
-      <section aria-label="Filter">
-        <h2>Filter</h2>
-        <label>
-          Protocol:{" "}
-          <select
-            value={protocolFilter}
-            onChange={(e) => setProtocolFilter((e.target as HTMLSelectElement).value as ProtocolFilter)}
-          >
-            <option value="all">All</option>
-            {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </label>
-        {" "}
-        <label>
-          Validity:{" "}
-          <select
-            value={validityFilter}
-            onChange={(e) => setValidityFilter((e.target as HTMLSelectElement).value as ValidityFilter)}
-          >
-            <option value="all">All</option>
-            <option value="valid">Valid</option>
-            <option value="invalid">Invalid</option>
-          </select>
-        </label>
-      </section>
-
-      <section aria-label="Sort">
-        <h2>Sort</h2>
-        <label>
-          Field:{" "}
-          <select
-            value={sortField}
-            onChange={(e) => setSortField((e.target as HTMLSelectElement).value as SortField)}
-          >
-            <option value="createdAt">Imported At</option>
-            <option value="protocol">Protocol</option>
-            <option value="address">Address</option>
-            <option value="port">Port</option>
-            <option value="securityScore">Security Score</option>
-          </select>
-        </label>
-        {" "}
-        <label>
-          Direction:{" "}
-          <select
-            value={sortDirection}
-            disabled={sortField === "securityScore"}
-            onChange={(e) => setSortDirection((e.target as HTMLSelectElement).value as SortDirection)}
-          >
-            <option value="asc">Ascending</option>
-            <option value="desc">Descending</option>
-          </select>
-        </label>
-        {sortField === "securityScore" && (
-          <p class="hint">Security Score sort is always highest-first (unscored nodes last).</p>
-        )}
-      </section>
-
-      <section aria-label="Group">
-        <h2>Group</h2>
-        <label>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="List Controls">
+        <div class="panel-title">List Controls</div>
+        <div class="form-actions" style={{ marginBlockStart: 0 }}>
           <input
-            type="checkbox"
-            checked={grouped}
-            onChange={(e) => setGrouped((e.target as HTMLInputElement).checked)}
+            type="text"
+            class="input"
+            value={search}
+            onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+            placeholder="Search by protocol, address, or port…"
           />
-          {" "}Group by protocol
-        </label>
-      </section>
+          <label class="field">
+            Protocol
+            <select
+              class="select"
+              value={protocolFilter}
+              onChange={(e) => setProtocolFilter((e.target as HTMLSelectElement).value as ProtocolFilter)}
+            >
+              <option value="all">All</option>
+              {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </label>
+          <label class="field">
+            Validity
+            <select
+              class="select"
+              value={validityFilter}
+              onChange={(e) => setValidityFilter((e.target as HTMLSelectElement).value as ValidityFilter)}
+            >
+              <option value="all">All</option>
+              <option value="valid">Valid</option>
+              <option value="invalid">Invalid</option>
+            </select>
+          </label>
+          <label class="field">
+            Sort
+            <select
+              class="select"
+              value={sortField}
+              onChange={(e) => setSortField((e.target as HTMLSelectElement).value as SortField)}
+            >
+              <option value="createdAt">Imported At</option>
+              <option value="protocol">Protocol</option>
+              <option value="address">Address</option>
+              <option value="port">Port</option>
+              <option value="securityScore">Security Score</option>
+            </select>
+          </label>
+          <label class="field">
+            Direction
+            <select
+              class="select"
+              value={sortDirection}
+              disabled={sortField === "securityScore"}
+              onChange={(e) => setSortDirection((e.target as HTMLSelectElement).value as SortDirection)}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </label>
+          <label class="field">
+            <input
+              type="checkbox"
+              checked={grouped}
+              onChange={(e) => setGrouped((e.target as HTMLInputElement).checked)}
+            />
+            Group by protocol
+          </label>
+        </div>
+        {sortField === "securityScore" && (
+          <p class="hint" style={{ marginBlockStart: "12px" }}>Security Score sort is always highest-first (unscored nodes last).</p>
+        )}
+      </div>
 
-      <section aria-label="Node List">
-        <h2>Node List</h2>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Node List">
+        <div class="panel-title">Node List</div>
         <p class="hint">
-          Showing {visibleNodes.length} of {nodes.length} node{nodes.length === 1 ? "" : "s"}.
+          Showing <bdi>{visibleNodes.length}</bdi> of <bdi>{nodes.length}</bdi> node{nodes.length === 1 ? "" : "s"}.
         </p>
         {nodes.length === 0 ? (
           <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
         ) : visibleNodes.length === 0 ? (
           <p class="hint">No nodes match the current search/filter.</p>
         ) : groupedNodes ? (
-          Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
-            <div key={protocol}>
-              <h3>{protocol} ({groupNodes.length})</h3>
+          Object.entries(groupedNodes).map(([protocol, groupNodes], i) => (
+            <div key={protocol} style={{ marginBlockStart: i === 0 ? "14px" : "22px" }}>
+              <div style={{ fontWeight: 700, fontSize: "13px", marginBlockEnd: "8px" }}>
+                {protocol} (<bdi>{groupNodes.length}</bdi>)
+              </div>
               <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+          <div style={{ marginBlockStart: "14px" }}>
+            <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+          </div>
         )}
-      </section>
+      </div>
 
-      <section aria-label="Template Library">
-        <h2>Template Library</h2>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Template Library">
+        <div class="panel-title">Template Library</div>
         <p class="hint">
           A Template is exactly a saved node (doc 03 §6) — kept in its own cross-session
           library, separate from the working Node List above, so clearing/re-parsing never
@@ -366,80 +384,85 @@ export function SubscriptionScreen() {
         {templates.length === 0 ? (
           <p class="hint">No templates saved yet.</p>
         ) : (
-          <table aria-label="Template List">
-            <thead>
-              <tr><th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Remark</th><th></th></tr>
-            </thead>
-            <tbody>
-              {templates.map((t) => (
-                <tr key={t.nodeId}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedTemplateIds.has(t.nodeId)}
-                      onChange={() => toggleTemplateSelected(t.nodeId)}
-                    />
-                  </td>
-                  <td>{t.protocol}</td>
-                  <td>{t.address}</td>
-                  <td>{t.port}</td>
-                  <td>{t.remark ?? "—"}</td>
-                  <td>
-                    <button type="button" onClick={() => handleRemoveTemplate(t.nodeId)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div class="table-scroll" style={{ marginBlockStart: "12px" }}>
+            <table class="data-table">
+              <thead>
+                <tr><th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Remark</th><th></th></tr>
+              </thead>
+              <tbody>
+                {templates.map((t) => (
+                  <tr key={t.nodeId}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedTemplateIds.has(t.nodeId)}
+                        onChange={() => toggleTemplateSelected(t.nodeId)}
+                      />
+                    </td>
+                    <td><span class={`protocol-badge protocol-badge--${t.protocol}`}>{PROTOCOL_ABBREVIATION[t.protocol]}</span></td>
+                    <td class="mono">{t.address}</td>
+                    <td class="mono"><bdi>{t.port}</bdi></td>
+                    <td>{t.remark ?? "—"}</td>
+                    <td>
+                      <button type="button" class="btn btn--ghost btn--sm" onClick={() => handleRemoveTemplate(t.nodeId)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </div>
 
-      <section aria-label="Subscription Builder">
-        <h2>Subscription Builder</h2>
+      <div class="panel glass-panel" aria-label="Subscription Builder">
+        <div class="panel-title">Subscription Builder</div>
         <p class="hint">
           Builds one Subscription blob from the checked nodes/templates above — the exact
           inverse of the Subscription Parser (paste this back into the Converter Screen and
           it reproduces the same nodes).
         </p>
-        <p class="hint">
-          Selected: {selectedNodeIds.size} node{selectedNodeIds.size === 1 ? "" : "s"}
+        <p class="hint" style={{ marginBlockStart: "6px" }}>
+          Selected: <bdi>{selectedNodeIds.size}</bdi> node{selectedNodeIds.size === 1 ? "" : "s"}
           {" + "}
-          {selectedTemplateIds.size} template{selectedTemplateIds.size === 1 ? "" : "s"}.
+          <bdi>{selectedTemplateIds.size}</bdi> template{selectedTemplateIds.size === 1 ? "" : "s"}.
         </p>
-        <label>
-          Encoding:{" "}
-          <select
-            value={builderEncoding}
-            onChange={(e) => setBuilderEncoding((e.target as HTMLSelectElement).value as "base64" | "plain")}
+        <div class="form-actions">
+          <label class="field">
+            Encoding
+            <select
+              class="select"
+              value={builderEncoding}
+              onChange={(e) => setBuilderEncoding((e.target as HTMLSelectElement).value as "base64" | "plain")}
+            >
+              <option value="base64">Base64</option>
+              <option value="plain">Plain Text</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="btn btn--primary"
+            onClick={handleBuildSubscription}
+            disabled={selectedNodeIds.size === 0 && selectedTemplateIds.size === 0}
           >
-            <option value="base64">Base64</option>
-            <option value="plain">Plain Text</option>
-          </select>
-        </label>{" "}
-        <button
-          type="button"
-          onClick={handleBuildSubscription}
-          disabled={selectedNodeIds.size === 0 && selectedTemplateIds.size === 0}
-        >
-          Build Subscription
-        </button>
+            Build Subscription
+          </button>
+        </div>
 
         {builderResult && (
           <>
-            <div class="actions">
-              <button type="button" onClick={handleDownloadSubscription}>Download</button>
-              <button type="button" onClick={handleCopySubscription}>Copy to Clipboard</button>
+            <div class="form-actions">
+              <button type="button" class="btn btn--ghost" onClick={handleDownloadSubscription}>Download</button>
+              <button type="button" class="btn btn--ghost" onClick={handleCopySubscription}>Copy to Clipboard</button>
             </div>
-            <h3>Preview</h3>
-            <textarea readOnly rows={10} cols={80} value={builderResult.content} />
+            <textarea class="code-textarea" style={{ marginBlockStart: "14px" }} readOnly rows={10} value={builderResult.content} />
             {builderResult.skipped.length > 0 && (
-              <p class="hint">
+              <p class="hint" style={{ marginBlockStart: "10px" }}>
                 Skipped: {builderResult.skipped.map((s) => `${s.protocol} (${s.reason})`).join(", ")}
               </p>
             )}
           </>
         )}
-      </section>
+      </div>
     </main>
   );
 }
@@ -476,75 +499,89 @@ function NodeTable({
   onSaveAsTemplate: (node: ReturnType<typeof useParserState>[number]) => void;
 }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th><th>Template</th>
-        </tr>
-      </thead>
-      <tbody>
-        {nodes.map((n) => {
-          const latency = latencyByNodeId[n.nodeId];
-          const isTesting = testingNodeId === n.nodeId;
-          const geoIp = geoIpByNodeId[n.nodeId];
-          const isLookingUp = geoIpLoadingNodeId === n.nodeId;
-          const portCheck = portCheckByNodeId[n.nodeId];
-          const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
-          return (
-            <tr key={n.nodeId}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={selectedNodeIds.has(n.nodeId)}
-                  onChange={() => onToggleSelected(n.nodeId)}
-                />
-              </td>
-              <td>{n.protocol}</td>
-              <td>{n.address}</td>
-              <td>{n.port}</td>
-              <td>{String(n.validation.overallValid)}</td>
-              <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
-              <td>
-                <button
-                  disabled={isTesting}
-                  onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
-                >
-                  {isTesting ? "Testing…" : "Test"}
-                </button>
-                {latency !== undefined && !isTesting && (
-                  <span>{" "}{formatLatency(latency)}</span>
-                )}
-              </td>
-              <td>
-                <button
-                  disabled={isCheckingPort}
-                  onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
-                >
-                  {isCheckingPort ? "Checking…" : "Check"}
-                </button>
-                {portCheck !== undefined && !isCheckingPort && (
-                  <span>{" "}{formatPortCheck(portCheck)}</span>
-                )}
-              </td>
-              <td>
-                <button
-                  disabled={isLookingUp}
-                  onClick={() => onGeoIpLookup(n.nodeId, n.address)}
-                >
-                  {isLookingUp ? "Loading…" : "Lookup"}
-                </button>
-                {geoIp !== undefined && !isLookingUp && (
-                  <span>{" "}{formatGeoIp(geoIp)}</span>
-                )}
-              </td>
-              <td>{n.createdAt}</td>
-              <td>
-                <button type="button" onClick={() => onSaveAsTemplate(n)}>Save as Template</button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th><th>Template</th>
+          </tr>
+        </thead>
+        <tbody>
+          {nodes.map((n) => {
+            const latency = latencyByNodeId[n.nodeId];
+            const isTesting = testingNodeId === n.nodeId;
+            const geoIp = geoIpByNodeId[n.nodeId];
+            const isLookingUp = geoIpLoadingNodeId === n.nodeId;
+            const portCheck = portCheckByNodeId[n.nodeId];
+            const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
+            return (
+              <tr key={n.nodeId}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedNodeIds.has(n.nodeId)}
+                    onChange={() => onToggleSelected(n.nodeId)}
+                  />
+                </td>
+                <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                <td class="mono">{n.address}</td>
+                <td class="mono"><bdi>{n.port}</bdi></td>
+                <td>
+                  {n.validation.overallValid ? (
+                    <span class="tag tag--valid">Valid</span>
+                  ) : (
+                    <span class="tag tag--invalid">Invalid</span>
+                  )}
+                </td>
+                <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    disabled={isTesting}
+                    onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
+                  >
+                    {isTesting ? "Testing…" : "Test"}
+                  </button>
+                  {latency !== undefined && !isTesting && (
+                    <span class="hint">{" "}{formatLatency(latency)}</span>
+                  )}
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    disabled={isCheckingPort}
+                    onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
+                  >
+                    {isCheckingPort ? "Checking…" : "Check"}
+                  </button>
+                  {portCheck !== undefined && !isCheckingPort && (
+                    <span class="hint">{" "}{formatPortCheck(portCheck)}</span>
+                  )}
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    disabled={isLookingUp}
+                    onClick={() => onGeoIpLookup(n.nodeId, n.address)}
+                  >
+                    {isLookingUp ? "Loading…" : "Lookup"}
+                  </button>
+                  {geoIp !== undefined && !isLookingUp && (
+                    <span class="hint">{" "}{formatGeoIp(geoIp)}</span>
+                  )}
+                </td>
+                <td class="mono"><bdi>{n.createdAt}</bdi></td>
+                <td>
+                  <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>Save as Template</button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

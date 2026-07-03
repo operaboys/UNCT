@@ -891,3 +891,46 @@ code, kbd, samp, .mono {
 .data-table--center td {
   text-align: center;
 }
+
+/* ---------------------------------------------------------------------
+ * Subscription Center redesign additions — a text `.input` (Search had
+ * no styled text-input class yet, only `.select`/`.code-textarea`), a
+ * `.btn--sm` modifier for the many compact per-row actions this screen's
+ * Node List needs (Test/Check/Lookup/Save as Template), and `.field` for
+ * inline "Label: control" pairs (Filter/Sort's protocol+validity,
+ * field+direction). All three are generic enough for later screens to
+ * reuse rather than re-derive.
+ * ------------------------------------------------------------------- */
+.input {
+  padding-block: 9px;
+  padding-inline: 14px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  font-size: 13px;
+  color: var(--unct-text);
+}
+.input:focus {
+  outline: 2px solid var(--unct-purple);
+  outline-offset: -2px;
+}
+.input::placeholder {
+  color: var(--unct-text-muted);
+}
+
+.btn--sm {
+  padding-block: 6px;
+  padding-inline: 12px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--unct-text-muted);
+}
