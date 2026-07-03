@@ -115,7 +115,9 @@
 - Template Builder
 - Subscription Builder
 - Visual Topology Mapper
-- **Extractor Level System** *(جدید — بازبینی نهایی)*: تفکیک رسمی Extractorها به سطح Basic/Advanced/Deep با امکان انتخاب توسط کاربر — فعلاً بدون نیاز واقعی، چون «Extract Metadata» (بخش ۳) و Individual Extractorها روی فیلدهای متفاوتی کار می‌کنند و تداخلی ندارند. اگر تعداد Extractorها در آینده زیاد شد، این ایده بررسی می‌شود.
+- **Extractor Level System** *(بازبینی P12-12 — عدد دقیق جایگزین جمله‌ی کلی قبلی شد)*: تفکیک رسمی Extractorها به سطح Basic/Advanced/Deep با امکان انتخاب توسط کاربر.
+
+> ⚠️ **بازبینی P12-12 (شمارش واقعی):** شمارش مستقیم `ui/extractor/extractor-screen.tsx` (doc 07 §4.5) نشان می‌دهد **۴ Extractor کاملاً فعال** وجود دارد (UUID, IP, Domain, Reality) به‌علاوه **۲ Placeholder غیرفعال** (Worker, DNS — که Analyzerهای زیرینشان `core/analyzer/extended/worker-analyzer.js` و `dns-analyzer.js` ساخته شده‌اند ولی خودِ بخش Extractor Screen فعال نشده یا اصلاً به AnalysisBundle وصل نشده است). یعنی **۴ از ۶ کل**. هیچ Extractor مجزایی هم برای Password/SNI/Paths/Ports/Metadata عمومی (بالا، بخش ۳) هرگز ساخته نشده. با آستانه‌ی پیشنهادی ۸ تا ۱۰ Extractor مجزا، فاصله‌ی زیادی باقی است — **این آیتم Blocked می‌ماند** تا این عدد به آستانه برسد. جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX` بخش «P12-12».
 - **Plugin Extensions / Future Plugins** *(اصلاح‌شده — پیشنهاد بازبینی)*
 - **Custom Parser API / Custom Export API (عمومی/مستندشده)** *(بازبینی P12-13 — بند زیر)*
 
@@ -129,7 +131,8 @@
 
 | Field | Value |
 |---|---|
-| نسخه | v1.4 |
+| نسخه | v1.5 |
+| اصلاحات نسبت به v1.4 | (P12-12) شمارش دقیق Extractorهای واقعی (۴ فعال از ۶ کل) جایگزین جمله‌ی کلی «اگر تعداد زیاد شد» شد — همچنان Blocked تا رسیدن به آستانه‌ی ۸-۱۰ |
 | اصلاحات نسبت به v1.3 | (P12-13) تصحیح ادعای نسخه‌ی v1.1 درباره‌ی Custom Parser/Export API: مکانیزم زیرین (Loader/Registry) ساخته شده، اما API عمومی هنوز Blocked است تا حداقل دو Plugin واقعی نوشته شود — Template Builder/Subscription Builder به «تکمیل‌شده» علامت خوردند (P12-8/P12-9) |
 | اصلاحات نسبت به v1.2 | (بازبینی نهایی) افزودن ایده‌ی Extractor Level System به Backlog — بدون تداخل واقعی با ساختار فعلی، فقط برای آینده ثبت شد |
 | اصلاحات نسبت به v1.1 | (بر اساس بازبینی مهدی) افزودن Subscription Validation، Extract Metadata، Performance Monitor؛ رفع تناقض Plugin System بین این سند و Roadmap |

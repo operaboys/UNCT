@@ -85,6 +85,35 @@
 | Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
 | Visualization | Visual Topology Mapper, Node Relationship Map, Subscription Visualizer, Cloudflare Topology View, Reality Visualizer |
 | Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
+| UX Scaling | Extractor Level System *(بررسی P12-12 — بند زیر؛ ۴ Extractor فعال از ۸-۱۰ آستانه‌ی پیشنهادی)* |
+
+### P12-12 — وضعیت Extractor Level System *(بررسی جدید)*
+
+شمارش دقیق Extractorهای واقعی (`ui/extractor/extractor-screen.tsx`, doc 07 §4.5 — دقیقاً
+همان‌هایی که این آیتم به آن‌ها اشاره دارد، نه Analyzerهای دیگر مثل GeoIP/Latency/Rule Analyzer که
+در ردیف‌های بالای همین جدول، جدا دسته‌بندی شده‌اند):
+
+| # | Extractor | وضعیت |
+|---|---|---|
+| 1 | UUID Extractor | ✅ فعال (Phase 9) |
+| 2 | IP Extractor | ✅ فعال (Phase 9) |
+| 3 | Domain Extractor | ✅ فعال (Phase 9) |
+| 4 | Reality Extractor | ✅ فعال (Phase 9) |
+| 5 | Worker Extractor | ⏸️ Placeholder (`aria-disabled`) — Worker Analyzer (`core/analyzer/extended/worker-analyzer.js`) از قبل ساخته و به AnalysisBundle وصل شده، ولی خودِ بخش Extractor Screen هنوز فعال نشده (Orphan Check جدا، خارج از Scope این بررسی) |
+| 6 | DNS Extractor | ⏸️ Placeholder (`aria-disabled`) — `core/analyzer/extended/dns-analyzer.js` وجود دارد ولی حتی به AnalysisBundle (`analyze-node.js`) هم وصل نشده |
+
+**عدد واقعی: ۴ Extractor کاملاً فعال، ۶ مورد در مجموع** (شامل ۲ Placeholder). هیچ Extractor
+مجزای دیگری برای Password/SNI/Paths/Ports/Metadata عمومی (سند ۰۳ بخش ۳) هرگز ساخته نشده — این‌ها
+فقط اسم در Spec قطعی هستند، نه پیاده‌سازی واقعی.
+
+**آستانه‌ی پیشنهادی:** ۸ تا ۱۰ Extractor مجزا (معیاری که خودِ درخواست هم به آن اشاره کرد) — یعنی
+حتی با فرض فعال‌شدن هر دو Placeholder، عدد به ۶ می‌رسد، هنوز به آستانه نرسیده.
+
+**تصمیم: Blocked می‌ماند.** یادداشت مبهم قبلی («اگر تعداد Extractorها زیاد شد») با این عدد دقیق
+جایگزین شد:
+
+> این آیتم Blocked می‌ماند تا شمار Individual Extractorهای واقعی (فعال، نه Placeholder) به
+> **۸ تا ۱۰** برسد. وضعیت فعلی: **۴ فعال از ۶ کل** — فاصله‌ی زیادی تا آستانه.
 
 > **اصلاح (P12-13):** ردیف «Extensibility» قبلاً «Plugin System» را هم همراه با API فهرست می‌کرد.
 > Plugin System خودش (Plugin Loader، Plugin Registry، Exporter Contract Checker) دیگر Backlog
