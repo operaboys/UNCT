@@ -30,6 +30,8 @@ import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandi
 import { measureLatency } from "../../core/network/latency.js";
 import { lookupGeoIp } from "../../core/network/geoip.js";
 import { checkPort } from "../../core/network/port-check.js";
+import { buildSubscription } from "../../core/exporter/subscription-builder.js";
+import { useTemplateState, templateLibraryStore } from "../store/use-template-state.js";
 
 type LatencyResult =
   | { status: "ok"; rtt: number }
@@ -88,6 +90,11 @@ export function SubscriptionScreen() {
   const [geoIpLoadingNodeId, setGeoIpLoadingNodeId] = useState<string | null>(null);
   const [portCheckByNodeId, setPortCheckByNodeId] = useState<Record<string, PortCheckResult>>({});
   const [portCheckLoadingNodeId, setPortCheckLoadingNodeId] = useState<string | null>(null);
+  const templates = useTemplateState();
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set());
+  const [builderEncoding, setBuilderEncoding] = useState<"base64" | "plain">("base64");
+  const [builderResult, setBuilderResult] = useState<{ content: string; skipped: { nodeId: string; protocol: string; reason: string }[] } | null>(null);
 
   async function handleTestLatency(nodeId: string, address: string, port: number) {
     setTestingNodeId(nodeId);
@@ -108,6 +115,60 @@ export function SubscriptionScreen() {
     const result = await checkPort({ address, port });
     setPortCheckByNodeId((prev) => ({ ...prev, [nodeId]: result }));
     setPortCheckLoadingNodeId(null);
+  }
+
+  function toggleNodeSelected(nodeId: string) {
+    setSelectedNodeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  }
+
+  function toggleTemplateSelected(nodeId: string) {
+    setSelectedTemplateIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  }
+
+  function handleSaveAsTemplate(node: (typeof nodes)[number]) {
+    templateLibraryStore.addTemplate(node);
+  }
+
+  function handleRemoveTemplate(nodeId: string) {
+    templateLibraryStore.removeTemplate(nodeId);
+    setSelectedTemplateIds((prev) => {
+      if (!prev.has(nodeId)) return prev;
+      const next = new Set(prev);
+      next.delete(nodeId);
+      return next;
+    });
+  }
+
+  function handleBuildSubscription() {
+    const selectedNodes = nodes.filter((n) => selectedNodeIds.has(n.nodeId));
+    const selectedTemplates = templates.filter((t) => selectedTemplateIds.has(t.nodeId));
+    setBuilderResult(buildSubscription([...selectedNodes, ...selectedTemplates], { encoding: builderEncoding }));
+  }
+
+  function handleDownloadSubscription() {
+    if (!builderResult) return;
+    const blob = new Blob([builderResult.content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "subscription.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopySubscription() {
+    if (!builderResult) return;
+    await navigator.clipboard.writeText(builderResult.content);
   }
 
   const visibleNodes = useMemo(() => {
@@ -271,11 +332,97 @@ export function SubscriptionScreen() {
           Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
             <div key={protocol}>
               <h3>{protocol} ({groupNodes.length})</h3>
-              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} />
+              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} />
+          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+        )}
+      </section>
+
+      <section aria-label="Template Library">
+        <h2>Template Library</h2>
+        <p class="hint">
+          A Template is exactly a saved node (doc 03 §6) — kept in its own cross-session
+          library, separate from the working Node List above, so clearing/re-parsing never
+          loses it. Check a node above and click "Save as Template", or select templates
+          below to include them in the Subscription Builder.
+        </p>
+        {templates.length === 0 ? (
+          <p class="hint">No templates saved yet.</p>
+        ) : (
+          <table aria-label="Template List">
+            <thead>
+              <tr><th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Remark</th><th></th></tr>
+            </thead>
+            <tbody>
+              {templates.map((t) => (
+                <tr key={t.nodeId}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedTemplateIds.has(t.nodeId)}
+                      onChange={() => toggleTemplateSelected(t.nodeId)}
+                    />
+                  </td>
+                  <td>{t.protocol}</td>
+                  <td>{t.address}</td>
+                  <td>{t.port}</td>
+                  <td>{t.remark ?? "—"}</td>
+                  <td>
+                    <button type="button" onClick={() => handleRemoveTemplate(t.nodeId)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section aria-label="Subscription Builder">
+        <h2>Subscription Builder</h2>
+        <p class="hint">
+          Builds one Subscription blob from the checked nodes/templates above — the exact
+          inverse of the Subscription Parser (paste this back into the Converter Screen and
+          it reproduces the same nodes).
+        </p>
+        <p class="hint">
+          Selected: {selectedNodeIds.size} node{selectedNodeIds.size === 1 ? "" : "s"}
+          {" + "}
+          {selectedTemplateIds.size} template{selectedTemplateIds.size === 1 ? "" : "s"}.
+        </p>
+        <label>
+          Encoding:{" "}
+          <select
+            value={builderEncoding}
+            onChange={(e) => setBuilderEncoding((e.target as HTMLSelectElement).value as "base64" | "plain")}
+          >
+            <option value="base64">Base64</option>
+            <option value="plain">Plain Text</option>
+          </select>
+        </label>{" "}
+        <button
+          type="button"
+          onClick={handleBuildSubscription}
+          disabled={selectedNodeIds.size === 0 && selectedTemplateIds.size === 0}
+        >
+          Build Subscription
+        </button>
+
+        {builderResult && (
+          <>
+            <div class="actions">
+              <button type="button" onClick={handleDownloadSubscription}>Download</button>
+              <button type="button" onClick={handleCopySubscription}>Copy to Clipboard</button>
+            </div>
+            <h3>Preview</h3>
+            <textarea readOnly rows={10} cols={80} value={builderResult.content} />
+            {builderResult.skipped.length > 0 && (
+              <p class="hint">
+                Skipped: {builderResult.skipped.map((s) => `${s.protocol} (${s.reason})`).join(", ")}
+              </p>
+            )}
+          </>
         )}
       </section>
     </main>
@@ -294,6 +441,9 @@ function NodeTable({
   portCheckByNodeId,
   portCheckLoadingNodeId,
   onPortCheck,
+  selectedNodeIds,
+  onToggleSelected,
+  onSaveAsTemplate,
 }: {
   nodes: ReturnType<typeof useParserState>;
   analysisByNodeId: AnalysisByNodeId;
@@ -306,12 +456,15 @@ function NodeTable({
   portCheckByNodeId: Record<string, PortCheckResult>;
   portCheckLoadingNodeId: string | null;
   onPortCheck: (nodeId: string, address: string, port: number) => void;
+  selectedNodeIds: Set<string>;
+  onToggleSelected: (nodeId: string) => void;
+  onSaveAsTemplate: (node: ReturnType<typeof useParserState>[number]) => void;
 }) {
   return (
     <table>
       <thead>
         <tr>
-          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th>
+          <th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th><th>Template</th>
         </tr>
       </thead>
       <tbody>
@@ -324,6 +477,13 @@ function NodeTable({
           const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
           return (
             <tr key={n.nodeId}>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selectedNodeIds.has(n.nodeId)}
+                  onChange={() => onToggleSelected(n.nodeId)}
+                />
+              </td>
               <td>{n.protocol}</td>
               <td>{n.address}</td>
               <td>{n.port}</td>
@@ -363,6 +523,9 @@ function NodeTable({
                 )}
               </td>
               <td>{n.createdAt}</td>
+              <td>
+                <button type="button" onClick={() => onSaveAsTemplate(n)}>Save as Template</button>
+              </td>
             </tr>
           );
         })}

@@ -15,6 +15,7 @@
  * @typedef {import("../types/unm").Protocol} Protocol
  * @typedef {import("./parser-state").ParserState} ParserState
  * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
+ * @typedef {import("./template-state").TemplateState} TemplateState
  * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
  * @typedef {import("../types/errors").ErrorSeverity} ErrorSeverity
  * @typedef {import("../analyzer/types").SubscriptionSummary} SubscriptionSummary
@@ -30,6 +31,14 @@ import { analyzeSubscription } from "../analyzer/extended/subscription-analyzer.
  */
 export function selectAllNodes(state) {
   return state.nodes;
+}
+
+/**
+ * @param {TemplateState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectAllTemplates(state) {
+  return state.templates;
 }
 
 /**

@@ -36,11 +36,15 @@ export const URL_SUPPORTED_PROTOCOLS = Object.freeze(Object.keys(PROTOCOL_SCHEME
 
 /**
  * Base64-encode a UTF-8 string with `btoa` (browser-pure, symmetric to the
- * parser's `atob`-based `decodeBase64`). No Node Buffer dependency.
+ * parser's `atob`-based `decodeBase64`). No Node Buffer dependency. Exported
+ * (not just used internally for vmess/shadowsocks) because
+ * `core/exporter/subscription-builder.js` needs the exact same encode step
+ * to wrap a whole subscription blob — reusing it there instead of
+ * re-implementing the same three-line idiom under a second name.
  * @param {string} str
  * @returns {string}
  */
-function encodeBase64(str) {
+export function encodeBase64(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 

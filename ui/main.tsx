@@ -18,6 +18,7 @@ import { SettingsScreen } from "./settings/settings-screen.js";
 import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
 import { useSettingsState } from "./store/use-settings-state.js";
 import { parserStore } from "./store/use-parser-state.js";
+import { templateLibraryStore } from "./store/use-template-state.js";
 
 type Screen =
   | "dashboard" | "converter" | "analyzer" | "subscription" | "extractor"
@@ -51,6 +52,10 @@ function App() {
   // restart" Exit Condition).
   useEffect(() => {
     parserStore.hydrate();
+    // Same "load whatever was persisted last session" read-side counterpart
+    // as parserStore.hydrate() above, for the cross-session Template Library
+    // (P12-8) — its own IndexedDB database, independent of the working set.
+    templateLibraryStore.hydrate();
   }, []);
 
   return (

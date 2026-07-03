@@ -18,3 +18,4 @@ export { exportPortablePackage, importPortablePackage, PORTABLE_PACKAGE_VERSION 
 export { exportMarkdown } from "./to-markdown.js";
 export { exportPdf } from "./to-pdf.js";
 export { exportExcel } from "./to-excel.js";
+export { buildSubscription } from "./subscription-builder.js";
