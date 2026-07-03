@@ -569,3 +569,53 @@ code, kbd, samp, .mono {
   background: rgba(255, 255, 255, 0.5);
   color: var(--unct-text);
 }
+
+/* ---------------------------------------------------------------------
+ * App Navigation (07-UI_UX_SYSTEM §2) — shared tab bar across all Main
+ * Screens (ui/components/nav.tsx). See that file's header comment for the
+ * mobile horizontal-scroll decision and the edge-fade's RTL reasoning.
+ * ------------------------------------------------------------------- */
+.app-nav {
+  margin-block-end: 20px;
+  padding: 6px;
+}
+.app-nav__scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+}
+.app-nav__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: none;
+  border-radius: 100px;
+  padding-block: 10px;
+  padding-inline: 18px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--unct-text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-tab:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--unct-text);
+}
+.nav-tab:disabled {
+  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
+  color: #ffffff;
+  opacity: 1;
+  cursor: default;
+  box-shadow: 0 6px 14px -6px rgba(124, 92, 252, 0.5);
+}

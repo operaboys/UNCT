@@ -16,6 +16,7 @@ import { ExtractorScreen } from "./extractor/extractor-screen.js";
 import { ExportScreen } from "./export/export-screen.js";
 import { SettingsScreen } from "./settings/settings-screen.js";
 import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
+import { AppNav } from "./components/nav.js";
 import { useSettingsState } from "./store/use-settings-state.js";
 import { parserStore } from "./store/use-parser-state.js";
 import { templateLibraryStore } from "./store/use-template-state.js";
@@ -60,32 +61,7 @@ function App() {
 
   return (
     <div>
-      <nav aria-label="Screen Switcher">
-        <button type="button" onClick={() => setScreen("dashboard")} disabled={screen === "dashboard"}>
-          Dashboard
-        </button>
-        <button type="button" onClick={() => setScreen("converter")} disabled={screen === "converter"}>
-          Converter
-        </button>
-        <button type="button" onClick={() => setScreen("analyzer")} disabled={screen === "analyzer"}>
-          Analyzer
-        </button>
-        <button type="button" onClick={() => setScreen("subscription")} disabled={screen === "subscription"}>
-          Subscription Center
-        </button>
-        <button type="button" onClick={() => setScreen("extractor")} disabled={screen === "extractor"}>
-          Extractor
-        </button>
-        <button type="button" onClick={() => setScreen("export")} disabled={screen === "export"}>
-          Export Center
-        </button>
-        <button type="button" onClick={() => setScreen("settings")} disabled={screen === "settings"}>
-          Settings
-        </button>
-        <button type="button" onClick={() => setScreen("devconsole")} disabled={screen === "devconsole"}>
-          Developer Console
-        </button>
-      </nav>
+      <AppNav current={screen} onNavigate={(next) => setScreen(next as Screen)} />
       {screen === "dashboard" ? (
         <DashboardScreen onNavigate={(next) => setScreen(next as Screen)} />
       ) : screen === "converter" ? (
