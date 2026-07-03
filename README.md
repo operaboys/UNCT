@@ -2,15 +2,26 @@
 
 ابزار آفلاین و کلاینت‌ساید برای تبدیل، تحلیل، و مدیریت کانفیگ‌های شبکه (VLESS, VMESS, Trojan, Shadowsocks, Hysteria2, TUIC, WireGuard).
 
+> پروژه هر ۱۳ فاز Roadmap (`docs/blueprints/09-DEVELOPMENT_ROADMAP.md`) را — با چند استثنای صریح
+> و مستند که آگاهانه Blocked/حذف شده‌اند (پایین‌تر) — پشت سر گذاشته و اکنون آماده‌ی ورود به
+> **فاز نهایی: طراحی بصری کامل** (Glassmorphism/Cyber Professional طبق سند ۰۷ §۲، RTL کامل، و
+> ترجمه‌ی محتوای فارسی) است — همان فازی که از ابتدای پروژه عمداً به انتها موکول شده بود.
+
 ## وضعیت کلی
 
-**Phase 0 تا Phase 9 (طبق `docs/blueprints/09-DEVELOPMENT_ROADMAP.md`) کامل‌اند** — هسته‌ی UNM،
-شش Parser، Worker Engine، شش ماژول Analyzer، Converter Engine، Storage Engine (در سطح Core)،
-و کل ۸ صفحه‌ی UI به‌همراه Export Engine (هر هفت فرمت سند ۰۸). **Phase 10 تا 12 هنوز شروع
-نشده‌اند.** جزئیات دقیق هر فاز و محدودیت‌های واقعی هرکدام در ادامه — از جمله چند مورد که در
-سطح Core ساخته شده‌اند ولی هنوز به هیچ صفحه‌ی UI وصل نشده‌اند (بخش «محدودیت‌های شناخته‌شده»).
+**Phase 0 تا Phase 12 کامل‌اند**، با این استثناهای مستند و آگاهانه (نه نقص، نه فراموشی):
+- DNS Analyzer (Phase 10) عمداً به `AnalysisBundle` وصل نیست (ADR-022).
+- Custom Parser/Export API عمومی (Phase 11) عمداً Blocked است تا حداقل دو Plugin واقعی نوشته شود.
+- از گروه Visualization (Phase 12، ۵ فیچر)، ۴ تا به‌طور کامل از Backlog حذف شدند (داده‌ی واقعی
+  ندارند)؛ فقط Subscription Visualizer ساخته شد.
+- Extractor Level System (Phase 12) با عدد دقیق (۴ از ۶ Extractor فعال) همچنان Blocked است.
 
-تست: **۶۲۴ تست در ۵۹ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا.
+جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
+نه خوش‌بینانه.
+
+تست: **۱۰۹۱ تست در ۹۰ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+موفق (`app.js` ~۲۳۶kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
+--omit=dev` صفر آسیب‌پذیری.
 
 ---
 
@@ -26,11 +37,72 @@
 | Phase 5 — Web Worker Engine | ✅ کامل | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` + `converter.worker.js` واقعی‌اند و هر سه به Converter Screen وصل‌اند (Parse از طریق `parser.worker.js`، Convert از طریق `converter.worker.js`، هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016). **استثنا:** Export Center مسیر جدایی دارد و مستقیماً `core/exporter/` را روی Main Thread صدا می‌زند، نه از طریق این Worker Pool (بخش محدودیت‌ها) |
 | Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
-| Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store) به UI وصل است: نودهای Parser State (`core/store/parser-state.js`) با هر تغییر (`setNodes`/`addNode`/`updateNode`/`clearNodes`) به‌صورت Write-Through در پس‌زمینه در IndexedDB ذخیره می‌شوند و با `hydrate()` روی mount شدن UI بازخوانی می‌شوند — یعنی نودهای Parse‌شده با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). انتخاب Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
-| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته شده؛ Export Engine هر ۷ فرمت سند ۰۸ (TXT, JSON×4, CSV, Clash YAML, ZIP, QR, HTML Report) کامل. جزئیات محدودیت هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ تأیید نشده — فقط یک `<meta viewport>` در `index.html` هست، بدون CSS واکنش‌گرا/Media Query (عمداً در کنار Glassmorphism/Theme به فاز نهایی طراحی بصری، انتهای کل Roadmap، موکول شده — تصمیمی قطعی، نه سؤال باز) |
-| Phase 10 — Analyzer Extended | ❌ شروع نشده | Cloudflare/Worker/Clean IP/DNS/Subscription/Compatibility Analyzer |
-| Phase 11 — Plugin System | ❌ شروع نشده | `plugins/` فقط `.gitkeep` دارد |
-| Phase 12 — Advanced/Backlog | ❌ شروع نشده | `reports/` فقط `.gitkeep` دارد |
+| Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
+| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته شده؛ Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ هنوز تأیید نشده — فقط `<meta viewport>`، بدون CSS واکنش‌گرا (عمداً به همراه Glassmorphism به فاز نهایی طراحی بصری موکول شده) |
+| Phase 10 — Analyzer Extended | ✅ کامل (با یک استثنای مستند) | هر ۷ ماژول ساخته شده‌اند؛ ۶ تا به `AnalysisBundle`/UI وصل‌اند، یکی (DNS) عمداً نه — جزئیات در بخش جدا پایین‌تر |
+| Phase 11 — Plugin System | ✅ مکانیزم کامل / API عمومی Blocked | Loader/Registry/Exporter Contract (ADR-020) کامل و تست‌شده؛ Custom Parser/Export API عمومی Blocked با شرط دقیق — جزئیات پایین‌تر |
+| Phase 12 — Advanced/Backlog | ✅ کامل (۳ Tier) | هر ۳ Tier بررسی/پیاده‌سازی شدند؛ چند آیتم آگاهانه Blocked/حذف شدند نه ساخته — جزئیات پایین‌تر |
+
+---
+
+## Phase 10 — Analyzer Extended: وضعیت هر ۷ ماژول
+
+`core/analyzer/extended/` هفت ماژول دارد. شش‌تای اول از طریق `analyze-node.js` به
+`AnalysisBundle` وصل و در UI مصرف می‌شوند (تأییدشده با grep مستقیم):
+
+| ماژول | وضعیت | مصرف در UI |
+|---|---|---|
+| Compatibility Analyzer | ✅ کامل | Analyzer Screen — «Platform & Client Compatibility» |
+| Cloudflare Analyzer | ✅ کامل | Analyzer Screen — «Cloudflare Analysis» |
+| Clean IP Analyzer | ✅ کامل | Analyzer Screen — «Clean IP Analysis» |
+| Worker Analyzer | ✅ کامل | Analyzer Screen — «Worker Analysis» + Extractor Screen — «Worker Extractor» |
+| Rule Analyzer (P12-5) | ✅ کامل | Analyzer Screen — «Route Rules Analysis» |
+| Subscription Analyzer | ✅ کامل (سطح-مجموعه، نه AnalysisBundle) | Subscription Center — Summary + Protocol Distribution (نمودار میله‌ای، P12-11) |
+| **DNS Analyzer** | ✅ ساخته شده، **عمداً به `AnalysisBundle` وصل نیست** | هیچ (طبق ADR-022 بند «Explicit Non-Decisions» شماره ۵: تجمیع `dnsLeakRisk` در Score نهایی به یک گام آینده — Final Report aggregation — موکول شده؛ این یک محدودیت مستند است، نه نقص فراموش‌شده) |
+
+---
+
+## Phase 11 — Plugin System: وضعیت واقعی
+
+مکانیزم (`core/plugin/registry.js`, `loader.js`, `exporter-contract.js`، طبق ADR-020) **کامل
+ساخته و تست شده** — Plugin Loader با Validation و Context ایزوله، Plugin Registry با دو
+Namespace مجزا (Parser/Exporter). یک پلاگین نمونه (`plugins/example-parser/index.js`) وجود
+دارد که در کامنت خودش صراحتاً «EXAMPLE/TEST-ONLY, not production» است — روی یک فرمت خیالی کار
+می‌کند و در هیچ صفحه‌ی UI بارگذاری نمی‌شود.
+
+**Custom Parser/Export API عمومی/مستندشده** (یک لایه‌ی سطح‌بالاتر روی همین مکانیزم) عمداً
+Blocked است — بررسی مستقل (P12-13) نشان داد از پایان Phase 11 تا امروز هیچ Plugin واقعی نوشته
+نشده، پس استخراج یک API عمومی حدس‌محور می‌بود. شرط دقیق رفع Block (مستند در
+`ULTIMATE_BLUEPRINT_INDEX.md`): حداقل دو Custom Parser واقعی یا یک Custom Exporter واقعی.
+
+---
+
+## Phase 12 — Advanced/Backlog: خلاصه‌ی هر Tier
+
+**Tier 1 (آنلاین اختیاری + تکمیلی):** GeoIP + ASN Inspector (ADR-025)، Latency Tester + Port
+Availability Check (هر دو ADR-024، روی یک Probe مشترک `core/network/shared.js`)، DNS
+Config-Level Extraction + DnsLeakRisk Analyzer (ADR-022، جدول بالا)، Performance Analyzer
+(ADR-021 — Worker Pool Stats، در Developer Console)، PDF/Excel/Markdown Export (ADR-023)،
+Portable Project Package (Export/Import کامل پروژه)، Rule Analyzer (جدول بالا).
+
+**Tier 2 (Builder Tools):** Template Builder + Subscription Builder — Template دقیقاً یک
+UNMNode است که در یک IndexedDB جدا (`core/storage/template-store.js`) برای استفاده‌ی مجدد
+ذخیره می‌شود؛ Subscription Builder دقیقاً عکس Subscription Parser است (Round-Trip تأییدشده).
+هر دو در Subscription Center.
+
+**Tier 3 (بررسی صادقانه‌ی Backlog قدیمی، قبل از هر کد جدید):**
+- Custom Parser/Export API → Blocked (بالا).
+- Extractor Level System → شمارش دقیق نشان داد فقط ۴ از ۶ Extractor فعال‌اند (آستانه‌ی
+  پیشنهادی ۸-۱۰) — Blocked با عدد دقیق، نه حدس.
+- گروه Visualization (۵ فیچر) → ۴ تا (Node Relationship Map، Visual Topology Mapper،
+  Cloudflare Topology View، Reality Visualizer) **به‌طور کامل حذف شدند**، چون هیچ داده‌ی
+  واقعی چندموجودیتی/رابطه‌ای در UNM برایشان وجود ندارد (نه یک فیلد کم است، بلکه خودِ مفهوم
+  رابطه/توپولوژی در معماری فعلی بی‌معناست). فقط Subscription Visualizer با داده‌ی واقعی
+  (Protocol Distribution) ساخته شد — بدون هیچ Chart Library (ADR-026؛ نمودار میله‌ای دستی با
+  `<div>`، مثل الگوی SVG دستی `qr-render.ts`).
+
+جزئیات کامل هر بررسی در `docs/blueprints/ULTIMATE_BLUEPRINT_INDEX.md` (بخش‌های P12-11،
+P12-12، P12-13).
 
 ---
 
@@ -38,14 +110,14 @@
 
 | # | صفحه | وضعیت واقعی |
 |---|---|---|
-| 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، و «Recent Imports» همگی واقعی (از Session جاری). «Recent Exports» Placeholder غیرفعال است — هیچ صفحه‌ای هنوز Log فعالیت Export را ثبت نمی‌کند |
-| 2 | **Converter** | فقط **Paste Area** (textarea) — File Upload، Drag-Drop، Clipboard Import عمداً Deferred شده‌اند. Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016) |
-| 3 | **Analyzer** | ۵ بخش واقعی (Node Details، Protocol، Security+TLS، Compatibility/Network، Reality). «Cloudflare Analysis» Placeholder غیرفعال است (منتظر Phase 10) |
-| 4 | **Subscription Center** | Search/Filter (Protocol+Validity)/Sort/Group واقعی. Tag، Merge، Split، Deduplicate Deferred شده‌اند. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی برای انتخاب درست کتابخانه موجود شود) |
-| 5 | **Extractor** | UUID/IP/Domain/Reality Extractor واقعی. «Worker Extractor» و «DNS Extractor» Placeholder غیرفعال‌اند (وابسته به Phase 10) |
-| 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، ZIP (+ manifest.json)، QR (هر نود)، HTML Report (Escape + DOMPurify Sanitize، ADR-018)، Clipboard Quick Copy — همگی واقعی |
-| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) — طبق سند ۰۷ §۲ تنها محتوای مستندشده‌ی این صفحه. ظاهر کامل «Cyber Professional / Glassmorphism» سند ۰۷ §۲ هنوز شروع نشده (عمداً به انتهای کل Roadmap موکول شده) |
-| 8 | **Developer Console** | ۵ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs). «Performance Logs» و نیمه‌ی «Alternative Candidates» Placeholder غیرفعال‌اند — هیچ ماژولی این داده را هنوز ثبت نمی‌کند |
+| 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports» همگی واقعی. «Recent Exports» همچنان Placeholder غیرفعال — هیچ ماژولی هنوز Log فعالیت Export را ثبت نمی‌کند |
+| 2 | **Converter** | Paste Area + **File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل** (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
+| 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
+| 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
+| 5 | **Extractor** | UUID/IP/Domain/Reality/**Worker** Extractor واقعی. «DNS Extractor» تنها Placeholder باقی‌مانده (وابسته به تکمیل معماری DNS Analyzer، ADR-022) |
+| 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
+| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) + انتخاب زبان (بدون ترجمه‌ی محتوای صفحات — زیرساخت i18n آماده، محتوا هنوز ترجمه نشده). ظاهر کامل «Cyber Professional / Glassmorphism» هنوز شروع نشده (عمداً به فاز نهایی موکول شده) |
+| 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + **Performance Logs**، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
 
 ---
 
@@ -69,13 +141,13 @@ npm test                  # اجرای کل تست‌ها (Vitest)
 npm run test:watch
 npm run test:coverage
 npm run typecheck         # بررسی تایپ بدون خروجی (tsc --noEmit)
-npm run build             # بازساخت assets/js/app.js و assets/js/parser-worker.js
+npm run build             # بازساخت assets/js/app.js، assets/js/parser-worker.js، assets/js/converter-worker.js
 npm run test:e2e          # تست واقعی مرورگر (Playwright) — قبلش npm run build را خودش صدا می‌زند
 ```
 
-> بعد از هر تغییر در `ui/` یا `core/worker/parser.worker.js`، حتماً `npm run build` را اجرا و
-> خروجی (`assets/js/app.js*`, `assets/js/parser-worker.js*`) را در همان Commit وارد کنید — این
-> خروجی Commit می‌شود، نه Gitignore (بخش بعدی).
+> بعد از هر تغییر در `ui/` یا `core/worker/*.worker.js`، حتماً `npm run build` را اجرا و
+> خروجی (`assets/js/app.js*`, `assets/js/parser-worker.js*`, `assets/js/converter-worker.js*`)
+> را در همان Commit وارد کنید — این خروجی Commit می‌شود، نه Gitignore (بخش بعدی).
 
 ### قبل از هر کد: بخوان
 
@@ -88,9 +160,10 @@ npm run test:e2e          # تست واقعی مرورگر (Playwright) — قب
 5. `04-PARSER_ENGINE.md`
 6. `09-DEVELOPMENT_ROADMAP.md`
 7. `15-TESTING_FRAMEWORK.md`
+8. `ULTIMATE_BLUEPRINT_INDEX.md` — فهرست زنده‌ی هر تصمیم Backlog/Blocked با دلیل دقیق
 
 بقیه‌ی اسناد هم برای Context کلی موجودند؛ تصمیم‌های معماری مهم در `docs/adr/ADR-001` تا
-`ADR-018` ثبت شده‌اند.
+`ADR-026` ثبت شده‌اند.
 
 ### وضعیت npm audit (فقط Dev)
 
@@ -102,17 +175,15 @@ npm run test:e2e          # تست واقعی مرورگر (Playwright) — قب
 
 این آسیب‌پذیری‌ها منحصراً در زنجیره‌ی Dev/Build Tooling هستند، نه در محصول نهایی: «
 `npm audit --omit=dev` صفر آسیب‌پذیری نشان می‌دهد» (تأییدشده) — یعنی Dependencyهای واقعی که به
-کاربر نهایی می‌رسند (`preact`, `dompurify`, `fflate`, `js-yaml`, `uqr`) امن‌اند.
+کاربر نهایی می‌رسند (`preact`, `dompurify`, `fflate`, `js-yaml`, `uqr`, `write-excel-file`) امن‌اند.
 
 ### تست E2E با Playwright (فقط Dev)
 
 `@playwright/test` (و `@types/node` برای تایپ ماژول‌های Node داخل `tests/e2e/`) به‌عنوان
-Dependency صرفاً Dev اضافه شده — درخواست صریح کاربر در همین تسک، نه یک ADR جدا (طبق همان رویه‌ای
-که برای `npm audit` بالا استفاده شد: ابزار Dev-only با یک یادداشت کوتاه در README، نه یک ADR
-کامل؛ `14-DEPENDENCY_POLICY.md` هنوز ردیفی برای ابزار E2E ندارد). اپ نهایی (`assets/js/`) به آن
-وابسته نیست. `tests/e2e/*.spec.js` عمداً خارج از `vitest.config.js`'s include است؛ فقط با
-`npm run test:e2e` (که اول `npm run build` را اجرا می‌کند، چون این تست‌ها روی Bundle واقعی اجرا
-می‌شوند نه سورس) با Playwright اجرا می‌شود.
+Dependency صرفاً Dev اضافه شده — طبق همان رویه‌ای که برای `npm audit` بالا استفاده شد: ابزار
+Dev-only با یک یادداشت کوتاه در README، نه یک ADR کامل. اپ نهایی (`assets/js/`) به آن وابسته
+نیست. `tests/e2e/*.spec.js` عمداً خارج از `vitest.config.js`'s include است؛ فقط با
+`npm run test:e2e` (که اول `npm run build` را اجرا می‌کند) با Playwright اجرا می‌شود.
 
 ---
 
@@ -121,13 +192,13 @@ Dependency صرفاً Dev اضافه شده — درخواست صریح کارب
 تنش معماری بین «Single HTML Output / No Build Step» و نیازهای واقعی پروژه با
 `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` حل شد: یک Build Step محدود (esbuild)
 فقط برای `ui/` و Assembly نهایی مجاز است؛ `core/` همچنان Zero-Build و JS+JSDoc خام می‌ماند
-(ADR-005). `npm run build` خروجی را در `assets/js/app.js` و `assets/js/parser-worker.js` می‌سازد.
+(ADR-005). `npm run build` خروجی را در `assets/js/app.js`، `assets/js/parser-worker.js`، و
+`assets/js/converter-worker.js` می‌سازد.
 
-**اصلاح بحرانی (۲۰۲۶-۰۶-۲۸):** این خروجی‌ها دیگر Gitignore نیستند — قبلاً بودند، که یعنی هرکس
-ریپو را Clone/Download ZIP می‌کرد بدون اجرای `npm run build`، با یک صفحه‌ی غیرکارکننده مواجه
-می‌شد؛ این مستقیماً با هدف Offline-First پروژه (Deployment Mode 1) در تناقض بود. از این پس این
-چهار فایل Commit می‌شوند (هنوز هرگز دستی ویرایش نمی‌شوند — فقط `npm run build` آن‌ها را
-می‌سازد). جزئیات کامل در Addendum انتهای `ADR-014` و `ADR-016`.
+این خروجی‌ها Gitignore نیستند — Commit می‌شوند (هنوز هرگز دستی ویرایش نمی‌شوند — فقط
+`npm run build` آن‌ها را می‌سازد)، چون هدف Offline-First پروژه (Deployment Mode 1) یعنی
+Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کند. جزئیات کامل در Addendum انتهای `ADR-014`
+و `ADR-016`.
 
 ---
 
@@ -135,33 +206,39 @@ Dependency صرفاً Dev اضافه شده — درخواست صریح کارب
 
 این بخش صادقانه است — هرچیزی که در عمل ساخته نشده یا کامل وصل نیست، اینجاست:
 
-- **Drag-Drop Zone فقط Unit Test دارد، نه E2E** — تصمیم آگاهانه، نه کم‌کاری: شبیه‌سازی یک Drag
-  واقعی از خارج صفحه (File Manager سیستم‌عامل) در هیچ ابزار خودکارسازی مرورگری (Playwright هم)
-  ممکن نیست؛ تنها راه شبیه‌سازی داخل صفحه، ساخت دستی `DataTransfer`/`File` و Dispatch یک رویداد
-  `drop` ساختگی است — دقیقاً همان کاری که `tests/importer/from-drop-event.test.js` (Vitest/jsdom)
-  از قبل انجام می‌دهد؛ تکرارش در Playwright چیزی فراتر از همان مسیر را پوشش نمی‌دهد. جزئیات کامل
-  در کامنت پایانی `tests/e2e/file-upload.spec.js`.
+- **DNS Analyzer عمداً به `AnalysisBundle` وصل نیست** — ماژول (`core/analyzer/extended/dns-analyzer.js`)
+  کامل ساخته و تست شده، ولی طبق ADR-022's بند «Explicit Non-Decisions» شماره ۵، تجمیع
+  `dnsLeakRisk` در Score نهایی یک گام آینده (Final Report aggregation) است — نه این فاز.
+  «DNS Extractor» در Extractor Screen به همین دلیل همچنان Placeholder است.
+- **Custom Parser/Export API عمومی Blocked است** — مکانیزم Plugin System (Loader/Registry)
+  کامل کار می‌کند؛ فقط یک لایه‌ی API عمومی/مستندشده‌ی سطح‌بالاتر ساخته نشده، چون هیچ Plugin
+  واقعی (غیر از یک نمونه‌ی صریحاً Test-Only) برای استخراج الگوی مشترک واقعی وجود ندارد.
+- **Extractor Level System (Basic/Advanced/Deep) Blocked است** — فقط ۴ از ۶ Extractor واقعی
+  فعال‌اند (آستانه‌ی پیشنهادی ۸-۱۰)؛ عدد دقیق در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
+- **۴ از ۵ فیچر گروه Visualization به‌طور کامل حذف شدند** (Node Relationship Map، Visual
+  Topology Mapper، Cloudflare Topology View، Reality Visualizer) — نه Blocked، بلکه حذف کامل،
+  چون هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی در UNM برایشان وجود ندارد. جزئیات در
+  `docs/adr/ADR-026-VISUALIZATION-GROUP-NO-CHART-LIBRARY.md`.
 - **`core/worker/converter.worker.js` به Converter Screen وصل است، ولی نه به Export Center** —
-  در Converter Screen، هم Parse و هم Convert از طریق Worker واقعی انجام می‌شوند (Fallback به Main
-  Thread فقط زیر `file://`، ADR-016). Export Center (`ui/export/export-screen.tsx`) مسیر جدایی
-  دارد: مستقیماً `core/exporter/` → `convertBatch` را روی Main Thread صدا می‌زند؛ این یک تصمیم
-  Scope جداست (هنوز به این Worker Pool وصل نشده)، نه باگ.
+  Export Center (`ui/export/export-screen.tsx`) مستقیماً `core/exporter/` را روی Main Thread
+  صدا می‌زند؛ یک تصمیم Scope جداست، نه باگ.
 - **طراحی بصری حداقلی است** — فقط دو متغیر CSS (`--unct-bg`/`--unct-fg`) برای Dark/Light/Auto؛
-  سیستم کامل «Cyber Professional / Glassmorphism / Neumorphism» سند ۰۷ §۲، و به همراه آن CSS
-  واکنش‌گرا/Media Query برای معیار «Mobile Optimized» سند ۰۹ (فعلاً فقط یک `<meta viewport>` در
-  `index.html` هست، بدون هیچ `@media`)، عمداً هردو به انتهای کل Roadmap موکول شده‌اند — تصمیمی
-  قطعی، نه سؤال باز.
-- **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** (قبلاً فقط `.gitkeep` داشتند) —
-  این یک محدودیت واقعی نبود بلکه یک نتیجه‌ی معماری: منطق Detect/Normalize داخل خود هر Parser
-  (`detect()`/`normalize()`/`normalizeMany()`) و `core/unm/mapper/` پیاده شده، نه در ماژول جدا؛
-  توضیح کامل در `docs/blueprints/MASTER_FILE_STRUCTURE.md`.
-- **`plugins/` و `reports/` خالی‌اند** — طبق برنامه، چون Phase 11/12 هنوز شروع نشده‌اند.
-- چند بخش از صفحات اصلی Placeholder غیرفعال‌اند (جدول بالا) — همگی به‌خاطر نبود ماژول
-  Analyzer نیمه‌قطعی (Phase 10) یا نبود Log/Activity Source، نه باگ.
+  سیستم کامل «Cyber Professional / Glassmorphism»، RTL کامل، و ترجمه‌ی محتوای صفحات (زیرساخت
+  i18n آماده، محتوا ترجمه‌نشده)، و CSS واکنش‌گرا برای «Mobile Optimized» — همه عمداً به فاز نهایی
+  Roadmap موکول شده‌اند — تصمیمی قطعی، نه سؤال باز.
+- **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** — یک نتیجه‌ی معماری، نه محدودیت:
+  منطق Detect/Normalize داخل خود هر Parser و `core/unm/mapper/` پیاده شده.
+- **«Recent Exports» (Dashboard) و «Alternative Candidates» (Developer Console)** همچنان
+  Placeholder غیرفعال‌اند — هیچ ماژولی این داده را ثبت نمی‌کند (Rule 9: عدم جعل داده).
+- **Drag-Drop Zone فقط Unit Test دارد، نه E2E** — تصمیم آگاهانه: شبیه‌سازی یک Drag واقعی از
+  خارج صفحه در هیچ ابزار خودکارسازی مرورگری ممکن نیست؛ جزئیات کامل در کامنت پایانی
+  `tests/e2e/file-upload.spec.js`.
 
 ---
 
 ## گام بعدی واقعی
 
-طبق Roadmap، گام بعدی **Phase 10 (Analyzer Engine — Extended Modules: Cloudflare, Worker, Clean
-IP, DNS, Subscription, Compatibility Analyzer)** است.
+طبق تصمیمی که از ابتدای پروژه به انتهای کل Roadmap موکول شده بود، گام بعدی **فاز نهایی طراحی
+بصری** است: پیاده‌سازی کامل «Cyber Professional / Glassmorphism» (سند ۰۷ §۲)، RTL کامل، ترجمه‌ی
+محتوای فارسی صفحات (زیرساخت i18n از قبل آماده است)، و CSS واکنش‌گرا/Media Query برای معیار
+«Mobile Optimized» سند ۰۹.
