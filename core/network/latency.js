@@ -12,6 +12,18 @@
  *     accidentally passes a full UNMNode, only address and port reach the network.
  *   - uuid, password, keys, and every other credential field never leave the browser.
  *
+ * Shared mechanism (see shared.js's doc comment for the full reasoning): the
+ * actual fetch/timeout/URL-construction logic lives in `probeEndpoint`
+ * (shared.js), because the Port Availability Check (port-check.js) needs the
+ * exact same browser-level probe — a browser cannot open a raw TCP socket,
+ * so both features measure the same single HTTP round-trip attempt and only
+ * differ in how they label its outcome. This module maps that outcome onto
+ * an RTT-focused result:
+ *
+ *   responded   -> "ok" (+rtt)
+ *   failed-fast -> "unreachable"
+ *   timed-out   -> "timeout"
+ *
  * Browser limitation:
  *   Raw TCP sockets are not available in standard browser contexts. We use
  *   fetch() with mode:"no-cors" as a TCP-level probe. Most proxy servers
@@ -27,8 +39,7 @@
  *   "timeout" is returned when the AbortController fires (TIMEOUT_MS elapsed
  *   with no response at all — truly unreachable or packet-dropped firewall).
  */
-
-const TIMEOUT_MS = 5_000;
+import { buildNetworkTarget, probeEndpoint } from "./shared.js";
 
 /**
  * Data Minimization boundary (ADR-024 Rule 2).
@@ -39,12 +50,7 @@ const TIMEOUT_MS = 5_000;
  * @param {{ address: string | unknown, port: number | unknown }} target
  * @returns {{ address: string, port: number }}
  */
-export function buildPingTarget({ address, port }) {
-  return {
-    address: String(address),
-    port: Number(port),
-  };
-}
+export const buildPingTarget = buildNetworkTarget;
 
 /**
  * @typedef {{ status: "ok"; rtt: number }
@@ -62,32 +68,8 @@ export function buildPingTarget({ address, port }) {
  * @returns {Promise<LatencyResult>}
  */
 export async function measureLatency(target) {
-  const { address, port } = buildPingTarget(target);
-
-  // IPv6 addresses require brackets in URLs (RFC 2732).
-  const host = address.includes(":") ? `[${address}]` : address;
-  const url = `http://${host}:${port}/`;
-
-  const ctrl = new AbortController();
-  const timeoutId = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  const t0 = performance.now();
-
-  try {
-    await fetch(url, {
-      method: "HEAD",
-      mode: "no-cors",
-      cache: "no-store",
-      signal: ctrl.signal,
-    });
-    return { status: "ok", rtt: Math.round(performance.now() - t0) };
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
-      return { status: "timeout", rtt: null };
-    }
-    // TypeError: network error (connection refused, TLS failure, or
-    // proxy protocol mismatch — all are non-HTTP responses).
-    return { status: "unreachable", rtt: null };
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  const result = await probeEndpoint(target);
+  if (result.outcome === "responded") return { status: "ok", rtt: result.elapsedMs };
+  if (result.outcome === "timed-out") return { status: "timeout", rtt: null };
+  return { status: "unreachable", rtt: null };
 }

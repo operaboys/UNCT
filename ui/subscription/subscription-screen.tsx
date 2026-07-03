@@ -29,6 +29,7 @@ import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
 import { measureLatency } from "../../core/network/latency.js";
 import { lookupGeoIp } from "../../core/network/geoip.js";
+import { checkPort } from "../../core/network/port-check.js";
 
 type LatencyResult =
   | { status: "ok"; rtt: number }
@@ -40,10 +41,24 @@ type GeoIpResult =
   | { status: "private"; country: null; region: null; asn: null; isp: null }
   | { status: "error"; country: null; region: null; asn: null; isp: null };
 
+// Shares core/network/shared.js's probe with LatencyResult (see port-check.js's
+// module doc) — a separate presentation of the same underlying measurement,
+// not a second independent network mechanism.
+type PortCheckResult =
+  | { status: "open"; latencyMs: number }
+  | { status: "closed" }
+  | { status: "unknown" };
+
 function formatLatency(r: LatencyResult): string {
   if (r.status === "ok") return `${r.rtt} ms`;
   if (r.status === "timeout") return "Timeout";
   return "Unreachable";
+}
+
+function formatPortCheck(r: PortCheckResult): string {
+  if (r.status === "open") return `Open (${r.latencyMs} ms)`;
+  if (r.status === "closed") return "Closed";
+  return "Unknown";
 }
 
 function formatGeoIp(r: GeoIpResult): string {
@@ -71,6 +86,8 @@ export function SubscriptionScreen() {
   const [testingNodeId, setTestingNodeId] = useState<string | null>(null);
   const [geoIpByNodeId, setGeoIpByNodeId] = useState<Record<string, GeoIpResult>>({});
   const [geoIpLoadingNodeId, setGeoIpLoadingNodeId] = useState<string | null>(null);
+  const [portCheckByNodeId, setPortCheckByNodeId] = useState<Record<string, PortCheckResult>>({});
+  const [portCheckLoadingNodeId, setPortCheckLoadingNodeId] = useState<string | null>(null);
 
   async function handleTestLatency(nodeId: string, address: string, port: number) {
     setTestingNodeId(nodeId);
@@ -84,6 +101,13 @@ export function SubscriptionScreen() {
     const result = await lookupGeoIp({ address });
     setGeoIpByNodeId((prev) => ({ ...prev, [nodeId]: result }));
     setGeoIpLoadingNodeId(null);
+  }
+
+  async function handlePortCheck(nodeId: string, address: string, port: number) {
+    setPortCheckLoadingNodeId(nodeId);
+    const result = await checkPort({ address, port });
+    setPortCheckByNodeId((prev) => ({ ...prev, [nodeId]: result }));
+    setPortCheckLoadingNodeId(null);
   }
 
   const visibleNodes = useMemo(() => {
@@ -247,11 +271,11 @@ export function SubscriptionScreen() {
           Object.entries(groupedNodes).map(([protocol, groupNodes]) => (
             <div key={protocol}>
               <h3>{protocol} ({groupNodes.length})</h3>
-              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} />
+              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} />
             </div>
           ))
         ) : (
-          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} />
+          <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} />
         )}
       </section>
     </main>
@@ -267,6 +291,9 @@ function NodeTable({
   geoIpByNodeId,
   geoIpLoadingNodeId,
   onGeoIpLookup,
+  portCheckByNodeId,
+  portCheckLoadingNodeId,
+  onPortCheck,
 }: {
   nodes: ReturnType<typeof useParserState>;
   analysisByNodeId: AnalysisByNodeId;
@@ -276,12 +303,15 @@ function NodeTable({
   geoIpByNodeId: Record<string, GeoIpResult>;
   geoIpLoadingNodeId: string | null;
   onGeoIpLookup: (nodeId: string, address: string) => void;
+  portCheckByNodeId: Record<string, PortCheckResult>;
+  portCheckLoadingNodeId: string | null;
+  onPortCheck: (nodeId: string, address: string, port: number) => void;
 }) {
   return (
     <table>
       <thead>
         <tr>
-          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>GeoIP</th><th>Imported At</th>
+          <th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th>
         </tr>
       </thead>
       <tbody>
@@ -290,6 +320,8 @@ function NodeTable({
           const isTesting = testingNodeId === n.nodeId;
           const geoIp = geoIpByNodeId[n.nodeId];
           const isLookingUp = geoIpLoadingNodeId === n.nodeId;
+          const portCheck = portCheckByNodeId[n.nodeId];
+          const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
           return (
             <tr key={n.nodeId}>
               <td>{n.protocol}</td>
@@ -306,6 +338,17 @@ function NodeTable({
                 </button>
                 {latency !== undefined && !isTesting && (
                   <span>{" "}{formatLatency(latency)}</span>
+                )}
+              </td>
+              <td>
+                <button
+                  disabled={isCheckingPort}
+                  onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
+                >
+                  {isCheckingPort ? "Checking…" : "Check"}
+                </button>
+                {portCheck !== undefined && !isCheckingPort && (
+                  <span>{" "}{formatPortCheck(portCheck)}</span>
                 )}
               </td>
               <td>
