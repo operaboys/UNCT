@@ -89,6 +89,12 @@
   --unct-amber: #ffb648;
   --unct-text: #211b3d;
   --unct-text-muted: #6b6584;
+  /* Not part of the 07-UI_UX_SYSTEM §2 locked palette table (which has no
+     error/danger role) — added because form validation errors need a
+     distinct color; kept as muted/soft as the rest of the palette rather
+     than a jarring pure red. #e5484d == rgb(229, 72, 77), referenced below
+     as literal rgba() since CSS has no color-mix() fallback story yet. */
+  --unct-danger: #e5484d;
 
   --unct-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
@@ -619,3 +625,248 @@ code, kbd, samp, .mono {
   cursor: default;
   box-shadow: 0 6px 14px -6px rgba(124, 92, 252, 0.5);
 }
+
+/* ---------------------------------------------------------------------
+ * Screen Header + shared form chrome (07-UI_UX_SYSTEM §4.2, Converter
+ * Screen redesign) — a page title/subtitle plus a small set of controls
+ * (buttons, textareas, tables, alerts) every subsequent screen redesign
+ * will also need. Defined once here rather than per-screen, same
+ * reasoning as `.glass-panel`/`.protocol-badge`/`ui/components/nav.tsx`
+ * above. CSS Logical Properties throughout (RTL-GUIDELINES.md §4, no
+ * exceptions).
+ * ------------------------------------------------------------------- */
+.screen-header {
+  margin-block-end: 22px;
+}
+.screen-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-block-end: 6px;
+}
+.screen-subtitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--unct-text-muted);
+  max-width: 640px;
+}
+
+/* `.hint` had no rule anywhere before this pass (plain browser-default
+   text even inside the redesigned Dashboard's glass panels) — a muted tone
+   matching the rest of the palette instead of default black, used for
+   helper text and empty-state messages across every screen. `position:
+   relative; z-index: 1` (repeated on every class below that sits directly
+   inside a `.glass-panel`) is load-bearing, not decorative: `.glass-panel`'s
+   `::before`/`::after` are absolutely-positioned decorative overlays, and
+   per CSS stacking rules ANY positioned element paints above STATIC
+   in-flow content in the same stacking context regardless of DOM order —
+   so plain unpositioned text sitting in a glass panel silently renders
+   BENEATH that panel's own highlight sheen/glint, getting partially washed
+   out wherever the gradient happens to fall. Confirmed by rendering the
+   same text in isolation outside any `.glass-panel` (no artifact) vs. inside
+   one (visible partial wash) — this is why `.panel-title`/`.node-item`/
+   `.hero-text` etc. already did this same lift; every new content class
+   below needs the same treatment to actually sit on top of its panel. */
+.hint {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Buttons — inline-flex, unlike Dashboard's full-width block `.action-btn`
+   (a deliberately different shape for a deliberately different context:
+   a horizontal toolbar here vs. a vertical stacked action list there). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-block: 11px;
+  padding-inline: 20px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn--primary {
+  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
+  color: #ffffff;
+  box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
+}
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--unct-text);
+}
+.btn--ghost:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.dropzone {
+  position: relative;
+  z-index: 1;
+  border: 2px dashed rgba(124, 92, 252, 0.25);
+  border-radius: 16px;
+  padding: 4px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone--active {
+  border-color: var(--unct-purple);
+  background: rgba(124, 92, 252, 0.08);
+}
+
+.code-textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 13px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  font-family: var(--unct-font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--unct-text);
+  resize: vertical;
+}
+.code-textarea:focus {
+  outline: 2px solid var(--unct-purple);
+  outline-offset: -2px;
+}
+.code-textarea::placeholder {
+  color: var(--unct-text-muted);
+}
+
+.form-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 14px;
+}
+
+.alert {
+  position: relative;
+  z-index: 1;
+  margin-block-start: 14px;
+  padding-block: 12px;
+  padding-inline: 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.alert--error {
+  background: rgba(229, 72, 77, 0.12);
+  color: #b3211f;
+}
+
+.kv-list {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding-block-end: 10px;
+  border-block-end: 1px solid rgba(33, 27, 61, 0.08);
+}
+.kv-row:last-child {
+  border-block-end: none;
+  padding-block-end: 0;
+}
+.kv-row dt {
+  margin: 0;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+}
+.kv-row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+}
+
+.plain-list {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding-inline-start: 20px;
+  font-size: 13px;
+}
+.plain-list li {
+  margin-block-end: 6px;
+}
+
+.select {
+  padding-block: 9px;
+  padding-inline: 14px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--unct-text);
+  cursor: pointer;
+}
+
+.table-scroll {
+  position: relative;
+  z-index: 1;
+  overflow-x: auto;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  text-align: start;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--unct-text-muted);
+  padding-block: 10px;
+  padding-inline: 10px;
+  border-block-end: 1px solid rgba(33, 27, 61, 0.1);
+}
+.data-table td {
+  padding-block: 10px;
+  padding-inline: 10px;
+  border-block-end: 1px solid rgba(33, 27, 61, 0.06);
+  font-weight: 500;
+}
+.data-table tr:last-child td {
+  border-block-end: none;
+}
+.data-table tr:hover td {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding-block: 4px;
+  padding-inline: 10px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.tag--valid { background: rgba(31, 209, 166, 0.18); color: #0d8a6e; }
+.tag--invalid { background: rgba(229, 72, 77, 0.14); color: #b3211f; }
