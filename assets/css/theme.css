@@ -870,3 +870,24 @@ code, kbd, samp, .mono {
 }
 .tag--valid { background: rgba(31, 209, 166, 0.18); color: #0d8a6e; }
 .tag--invalid { background: rgba(229, 72, 77, 0.14); color: #b3211f; }
+
+/* ---------------------------------------------------------------------
+ * Panel Grid (07-UI_UX_SYSTEM §4.3, Analyzer Screen redesign) — a
+ * symmetric, wrapping grid for screens with many equal-weight panels
+ * (Analyzer's nine analysis sections), as opposed to `.content-grid`'s
+ * fixed 1.6fr/1fr master-detail shape (built for Dashboard's specific
+ * layout, not a general-purpose grid). Reused instead of re-derived by
+ * any future screen with the same "many small cards" shape.
+ * ------------------------------------------------------------------- */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* `.data-table` modifier: centers badge/glyph cells (Analyzer's Platform &
+   Client Compatibility tables) instead of the default start-aligned text. */
+.data-table--center th,
+.data-table--center td {
+  text-align: center;
+}

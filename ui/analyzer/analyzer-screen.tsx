@@ -30,6 +30,17 @@
  * is the NetworkAnalysis module judging transport-vs-protocol compatibility;
  * this one judges whether real client apps/platforms can use the node at
  * all, an unrelated question that happens to share the word "Compatibility".
+ *
+ * Visual design (final visual design phase, Analyzer step): restyled onto
+ * the same Liquid Glass system as Dashboard/Converter, reusing their exact
+ * classes (`.glass-panel`, `.panel-title`, `.kv-list`/`.kv-row`, `.btn`,
+ * `.select`, `.alert`, `.data-table`, `.hint`) rather than inventing new
+ * ones. The one new class this step adds, `.panel-grid` (a symmetric
+ * wrapping grid, in `assets/css/theme.css`), exists because this screen's
+ * nine analysis sections are equal-weight cards — a different shape from
+ * Dashboard's asymmetric master-detail `.content-grid`, not a duplicate of
+ * it. No logic/state/handlers changed here — same `handleAnalyze`, same
+ * selectors, same six-module bundle read-out as before this pass.
  */
 import { useMemo, useState } from "preact/hooks";
 import { selectAnalysisByNodeId } from "../../core/store/selectors.js";
@@ -73,185 +84,195 @@ export function AnalyzerScreen() {
 
   return (
     <main class="analyzer-screen">
-      <h1>Analyzer</h1>
+      <div class="screen-header">
+        <h1 class="screen-title">Analyzer</h1>
+        <p class="screen-subtitle">
+          Six-module verdict per node: protocol recognition, security score, TLS/Reality checks,
+          network compatibility, and Cloudflare Worker detection.
+        </p>
+      </div>
 
-      {nodes.length === 0 ? (
-        <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
-      ) : (
-        <section aria-label="Analyzer Controls">
-          <label>
-            Node:{" "}
-            <select
-              value={effectiveSelectedNodeId ?? ""}
-              onChange={(e) => setSelectedNodeId((e.target as HTMLSelectElement).value)}
-            >
-              {nodes.map((n) => (
-                <option key={n.nodeId} value={n.nodeId}>
-                  {n.protocol} — {n.address}:{n.port}
-                </option>
-              ))}
-            </select>
-          </label>{" "}
-          <button type="button" onClick={handleAnalyze} disabled={isAnalyzing}>
-            {isAnalyzing ? "Analyzing…" : "Analyze"}
-          </button>
-          {analyzeError && <p class="error" role="alert">{analyzeError}</p>}
-        </section>
-      )}
-
-      {selectedNode && !bundle && (
-        <p class="hint">Click Analyze to see results for this node.</p>
-      )}
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Analyzer Controls">
+        {nodes.length === 0 ? (
+          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        ) : (
+          <>
+            <div class="form-actions" style={{ marginBlockStart: 0 }}>
+              <select
+                class="select"
+                value={effectiveSelectedNodeId ?? ""}
+                onChange={(e) => setSelectedNodeId((e.target as HTMLSelectElement).value)}
+              >
+                {nodes.map((n) => (
+                  <option key={n.nodeId} value={n.nodeId}>
+                    {n.protocol} — {n.address}:{n.port}
+                  </option>
+                ))}
+              </select>
+              <button type="button" class="btn btn--primary" onClick={handleAnalyze} disabled={isAnalyzing}>
+                {isAnalyzing ? "Analyzing…" : "Analyze"}
+              </button>
+            </div>
+            {analyzeError && <div class="alert alert--error" role="alert">{analyzeError}</div>}
+            {selectedNode && !bundle && (
+              <p class="hint" style={{ marginBlockStart: "12px" }}>Click Analyze to see results for this node.</p>
+            )}
+          </>
+        )}
+      </div>
 
       {selectedNode && bundle && (
-        <>
-          <section aria-label="Node Details">
-            <h2>Node Details</h2>
-            <dl>
-              <dt>Protocol</dt><dd>{selectedNode.protocol}</dd>
-              <dt>Address</dt><dd>{selectedNode.address}</dd>
-              <dt>Port</dt><dd>{selectedNode.port}</dd>
-              <dt>Network</dt><dd>{selectedNode.network}</dd>
-              <dt>Security</dt><dd>{selectedNode.security}</dd>
-              <dt>Completeness Score</dt><dd>{formatScore(bundle.completeness.completenessScore)}</dd>
-              <dt>Present Optional Fields</dt><dd>{formatStringList(bundle.completeness.presentOptionalFields)}</dd>
-              <dt>Missing Fields</dt><dd>{formatStringList(bundle.completeness.missingFields)}</dd>
+        <div class="panel-grid">
+          <div class="panel glass-panel" aria-label="Node Details">
+            <div class="panel-title">Node Details</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Protocol</dt><dd>{selectedNode.protocol}</dd></div>
+              <div class="kv-row"><dt>Address</dt><dd class="mono">{selectedNode.address}</dd></div>
+              <div class="kv-row"><dt>Port</dt><dd class="mono"><bdi>{selectedNode.port}</bdi></dd></div>
+              <div class="kv-row"><dt>Network</dt><dd>{selectedNode.network}</dd></div>
+              <div class="kv-row"><dt>Security</dt><dd>{selectedNode.security}</dd></div>
+              <div class="kv-row"><dt>Completeness Score</dt><dd>{formatScore(bundle.completeness.completenessScore)}</dd></div>
+              <div class="kv-row"><dt>Present Optional Fields</dt><dd>{formatStringList(bundle.completeness.presentOptionalFields)}</dd></div>
+              <div class="kv-row"><dt>Missing Fields</dt><dd>{formatStringList(bundle.completeness.missingFields)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Protocol Analysis">
-            <h2>Protocol Analysis</h2>
-            <dl>
-              <dt>Protocol</dt><dd>{bundle.protocol.protocol}</dd>
-              <dt>Recognized</dt><dd>{formatTriState(bundle.protocol.recognized)}</dd>
+          <div class="panel glass-panel" aria-label="Protocol Analysis">
+            <div class="panel-title">Protocol Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Protocol</dt><dd>{bundle.protocol.protocol}</dd></div>
+              <div class="kv-row"><dt>Recognized</dt><dd>{formatTriState(bundle.protocol.recognized)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Security Analysis">
-            <h2>Security Analysis</h2>
-            <dl>
-              <dt>Security Score</dt><dd>{formatScore(bundle.security.securityScore)}</dd>
-              <dt>Issues</dt><dd>{formatStringList(bundle.security.issues)}</dd>
-              <dt>TLS Applicable</dt><dd>{formatTriState(bundle.tls.applicable)}</dd>
-              <dt>TLS Coherent</dt><dd>{formatTriState(bundle.tls.coherent)}</dd>
-              <dt>Known Fingerprint</dt><dd>{formatTriState(bundle.tls.knownFingerprint)}</dd>
-              <dt>TLS Issues</dt><dd>{formatStringList(bundle.tls.issues)}</dd>
+          <div class="panel glass-panel" aria-label="Security Analysis">
+            <div class="panel-title">Security Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Security Score</dt><dd>{formatScore(bundle.security.securityScore)}</dd></div>
+              <div class="kv-row"><dt>Issues</dt><dd>{formatStringList(bundle.security.issues)}</dd></div>
+              <div class="kv-row"><dt>TLS Applicable</dt><dd>{formatTriState(bundle.tls.applicable)}</dd></div>
+              <div class="kv-row"><dt>TLS Coherent</dt><dd>{formatTriState(bundle.tls.coherent)}</dd></div>
+              <div class="kv-row"><dt>Known Fingerprint</dt><dd>{formatTriState(bundle.tls.knownFingerprint)}</dd></div>
+              <div class="kv-row"><dt>TLS Issues</dt><dd>{formatStringList(bundle.tls.issues)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Compatibility Analysis">
-            <h2>Compatibility Analysis</h2>
-            <dl>
-              <dt>Network</dt><dd>{bundle.network.network}</dd>
-              <dt>Compatible</dt><dd>{formatTriState(bundle.network.compatible)}</dd>
-              <dt>Supported Networks</dt><dd>{formatStringList(bundle.network.supportedNetworks)}</dd>
+          <div class="panel glass-panel" aria-label="Compatibility Analysis">
+            <div class="panel-title">Compatibility Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Network</dt><dd>{bundle.network.network}</dd></div>
+              <div class="kv-row"><dt>Compatible</dt><dd>{formatTriState(bundle.network.compatible)}</dd></div>
+              <div class="kv-row"><dt>Supported Networks</dt><dd>{formatStringList(bundle.network.supportedNetworks)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Cloudflare Analysis">
-            <h2>Cloudflare Analysis</h2>
-            <dl>
-              <dt>Likely Cloudflare Worker</dt>
-              <dd>{formatTriState(bundle.cloudflare.likelyCloudflareWorker)}</dd>
-              <dt>Confidence</dt><dd>{bundle.cloudflare.confidence}</dd>
-              <dt>Signals</dt><dd>{formatStringList(bundle.cloudflare.signals)}</dd>
+          <div class="panel glass-panel" aria-label="Cloudflare Analysis">
+            <div class="panel-title">Cloudflare Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Likely Cloudflare Worker</dt><dd>{formatTriState(bundle.cloudflare.likelyCloudflareWorker)}</dd></div>
+              <div class="kv-row"><dt>Confidence</dt><dd><bdi>{bundle.cloudflare.confidence}</bdi></dd></div>
+              <div class="kv-row"><dt>Signals</dt><dd>{formatStringList(bundle.cloudflare.signals)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Clean IP Analysis">
-            <h2>Clean IP Analysis</h2>
-            <dl>
-              <dt>Clean IP Pattern</dt>
-              <dd>{formatTriState(bundle.cleanIp.isCleanIpPattern)}</dd>
-              <dt>Confidence</dt><dd>{bundle.cleanIp.confidence}</dd>
-              <dt>Signals</dt><dd>{formatStringList(bundle.cleanIp.signals)}</dd>
+          <div class="panel glass-panel" aria-label="Clean IP Analysis">
+            <div class="panel-title">Clean IP Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Clean IP Pattern</dt><dd>{formatTriState(bundle.cleanIp.isCleanIpPattern)}</dd></div>
+              <div class="kv-row"><dt>Confidence</dt><dd><bdi>{bundle.cleanIp.confidence}</bdi></dd></div>
+              <div class="kv-row"><dt>Signals</dt><dd>{formatStringList(bundle.cleanIp.signals)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Worker Analysis">
-            <h2>Worker Analysis</h2>
+          <div class="panel glass-panel" aria-label="Worker Analysis">
+            <div class="panel-title">Worker Analysis</div>
             {bundle.worker.applicable ? (
-              <dl>
-                <dt>Worker Domain</dt>
-                <dd>{bundle.worker.workerDomain ?? "—"}</dd>
-                <dt>Path Segments</dt>
-                <dd>{formatStringList(bundle.worker.pathSegments)}</dd>
-                <dt>UUID Segment</dt>
-                <dd>{bundle.worker.uuidSegment ?? "—"}</dd>
-                <dt>Parameters</dt>
-                <dd>
-                  {Object.keys(bundle.worker.parameters).length === 0
-                    ? "—"
-                    : Object.entries(bundle.worker.parameters)
-                        .map(([k, v]) => `${k}=${v}`)
-                        .join(", ")}
-                </dd>
+              <dl class="kv-list">
+                <div class="kv-row"><dt>Worker Domain</dt><dd class="mono">{bundle.worker.workerDomain ?? "—"}</dd></div>
+                <div class="kv-row"><dt>Path Segments</dt><dd>{formatStringList(bundle.worker.pathSegments)}</dd></div>
+                <div class="kv-row"><dt>UUID Segment</dt><dd class="mono">{bundle.worker.uuidSegment ?? "—"}</dd></div>
+                <div class="kv-row">
+                  <dt>Parameters</dt>
+                  <dd>
+                    {Object.keys(bundle.worker.parameters).length === 0
+                      ? "—"
+                      : Object.entries(bundle.worker.parameters)
+                          .map(([k, v]) => `${k}=${v}`)
+                          .join(", ")}
+                  </dd>
+                </div>
                 {bundle.worker.encodedDataFindings.length > 0 && (
-                  <>
+                  <div class="kv-row">
                     <dt>Encoded Data</dt>
                     <dd>
-                      {bundle.worker.encodedDataFindings.map((f, i) => (
-                        <div key={i}>
-                          <strong>{f.source}</strong>:{" "}
-                          {f.rawBase64Detected
-                            ? `[binary] ${f.raw}`
-                            : f.decoded}
-                        </div>
-                      ))}
+                      <ul class="plain-list">
+                        {bundle.worker.encodedDataFindings.map((f, i) => (
+                          <li key={i}>
+                            <strong>{f.source}</strong>:{" "}
+                            {f.rawBase64Detected ? `[binary] ${f.raw}` : f.decoded}
+                          </li>
+                        ))}
+                      </ul>
                     </dd>
-                  </>
+                  </div>
                 )}
               </dl>
             ) : (
               <p class="hint">Not a detected Cloudflare Worker — extraction did not run.</p>
             )}
-          </section>
+          </div>
 
-          <section aria-label="Reality Analysis">
-            <h2>Reality Analysis</h2>
-            <dl>
-              <dt>Applicable</dt><dd>{formatTriState(bundle.reality.applicable)}</dd>
-              <dt>Compatible</dt><dd>{formatTriState(bundle.reality.compatible)}</dd>
-              <dt>PBK Plausible</dt><dd>{formatTriState(bundle.reality.pbkPlausible)}</dd>
-              <dt>SID Plausible</dt><dd>{formatTriState(bundle.reality.sidPlausible)}</dd>
-              <dt>Issues</dt><dd>{formatStringList(bundle.reality.issues)}</dd>
+          <div class="panel glass-panel" aria-label="Reality Analysis">
+            <div class="panel-title">Reality Analysis</div>
+            <dl class="kv-list">
+              <div class="kv-row"><dt>Applicable</dt><dd>{formatTriState(bundle.reality.applicable)}</dd></div>
+              <div class="kv-row"><dt>Compatible</dt><dd>{formatTriState(bundle.reality.compatible)}</dd></div>
+              <div class="kv-row"><dt>PBK Plausible</dt><dd>{formatTriState(bundle.reality.pbkPlausible)}</dd></div>
+              <div class="kv-row"><dt>SID Plausible</dt><dd>{formatTriState(bundle.reality.sidPlausible)}</dd></div>
+              <div class="kv-row"><dt>Issues</dt><dd>{formatStringList(bundle.reality.issues)}</dd></div>
             </dl>
-          </section>
+          </div>
 
-          <section aria-label="Route Rules Analysis">
-            <h2>Route Rules Analysis</h2>
+          <div class="panel glass-panel" aria-label="Route Rules Analysis">
+            <div class="panel-title">Route Rules Analysis</div>
             {!bundle.rules.applicable ? (
               <p class="hint">No route rules — this node's source format (Xray / URL / WireGuard / Subscription) does not carry a routing table.</p>
             ) : (
-              <dl>
-                <dt>Total Rules</dt><dd>{bundle.rules.totalCount}</dd>
-                <dt>By Category</dt>
-                <dd>
-                  {Object.entries(bundle.rules.byCategory).length === 0
-                    ? "—"
-                    : Object.entries(bundle.rules.byCategory)
-                        .map(([cat, count]) => `${cat}: ${count}`)
-                        .join(", ")}
-                </dd>
-                <dt>Duplicate Rules</dt><dd>{bundle.rules.duplicateCount}</dd>
+              <dl class="kv-list">
+                <div class="kv-row"><dt>Total Rules</dt><dd><bdi>{bundle.rules.totalCount}</bdi></dd></div>
+                <div class="kv-row">
+                  <dt>By Category</dt>
+                  <dd>
+                    {Object.entries(bundle.rules.byCategory).length === 0
+                      ? "—"
+                      : Object.entries(bundle.rules.byCategory)
+                          .map(([cat, count]) => `${cat}: ${count}`)
+                          .join(", ")}
+                  </dd>
+                </div>
+                <div class="kv-row"><dt>Duplicate Rules</dt><dd><bdi>{bundle.rules.duplicateCount}</bdi></dd></div>
                 {bundle.rules.duplicates.length > 0 && (
-                  <>
+                  <div class="kv-row">
                     <dt>Duplicate Entries</dt>
                     <dd>
-                      {bundle.rules.duplicates.map((d) => (
-                        <div key={d}><code>{d}</code></div>
-                      ))}
+                      <ul class="plain-list">
+                        {bundle.rules.duplicates.map((d) => <li key={d} class="mono">{d}</li>)}
+                      </ul>
                     </dd>
-                  </>
+                  </div>
                 )}
               </dl>
             )}
-          </section>
+          </div>
+        </div>
+      )}
 
-          <section aria-label="Platform & Client Compatibility">
-            <h2>Platform &amp; Client Compatibility</h2>
-            <table aria-label="Platform Compatibility">
-              <caption>Platforms</caption>
+      {selectedNode && bundle && (
+        <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label="Platform & Client Compatibility">
+          <div class="panel-title">Platform &amp; Client Compatibility</div>
+          <div class="table-scroll">
+            <table class="data-table data-table--center" aria-label="Platform Compatibility">
+              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>Platforms</caption>
               <thead>
                 <tr>
                   <th>Android</th><th>iOS</th><th>Windows</th><th>Linux</th><th>macOS</th>
@@ -267,8 +288,10 @@ export function AnalyzerScreen() {
                 </tr>
               </tbody>
             </table>
-            <table aria-label="Client Compatibility">
-              <caption>Clients</caption>
+          </div>
+          <div class="table-scroll" style={{ marginBlockStart: "20px" }}>
+            <table class="data-table data-table--center" aria-label="Client Compatibility">
+              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>Clients</caption>
               <thead>
                 <tr>
                   <th>Xray</th><th>sing-box</th><th>Clash Meta</th><th>NekoBox</th><th>v2rayNG</th><th>Hiddify</th>
@@ -285,8 +308,8 @@ export function AnalyzerScreen() {
                 </tr>
               </tbody>
             </table>
-          </section>
-        </>
+          </div>
+        </div>
       )}
     </main>
   );
