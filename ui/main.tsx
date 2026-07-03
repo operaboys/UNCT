@@ -87,7 +87,7 @@ function App() {
         </button>
       </nav>
       {screen === "dashboard" ? (
-        <DashboardScreen />
+        <DashboardScreen onNavigate={(next) => setScreen(next as Screen)} />
       ) : screen === "converter" ? (
         <ConverterScreen />
       ) : screen === "analyzer" ? (

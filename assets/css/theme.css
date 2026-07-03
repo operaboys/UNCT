@@ -122,6 +122,8 @@
 
 body {
   margin: 0;
+  padding-block: 28px;
+  padding-inline: 36px;
   font-family: var(--unct-font-sans);
   background-color: var(--unct-bg, #ffffff);
   background-image: var(--unct-bg-image, none);
@@ -221,23 +223,52 @@ code, kbd, samp, .mono {
 }
 
 /* ---------------------------------------------------------------------
- * .protocol-badge — round gradient badges with a monospace abbreviation,
- * one distinct gradient per protocol (07-UI_UX_SYSTEM §2). Usage:
+ * .protocol-badge — gradient badges with a monospace abbreviation, one
+ * distinct gradient per protocol (07-UI_UX_SYSTEM §2). Rounded SQUARE
+ * (12px radius), not a circle — corrected against the approved Dashboard
+ * reference mockup (docs/design/dashboard-reference.html), which echoes
+ * the logo's own rounded-square language; this class had not yet been
+ * used in any real screen, so the correction has zero regression risk.
+ * Usage:
  *   <span class="protocol-badge protocol-badge--vless">VL</span>
+ *   <span class="protocol-badge protocol-badge--lg protocol-badge--vless">VL</span>
  * ------------------------------------------------------------------- */
 .protocol-badge {
   display: inline-flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 10px;
   font-family: var(--unct-font-mono);
   font-weight: 700;
   font-size: 0.65rem;
   letter-spacing: 0.02em;
   color: #ffffff;
   background: var(--unct-badge-gradient, linear-gradient(135deg, var(--unct-purple), var(--unct-pink)));
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  flex-shrink: 0;
+}
+
+/* Larger context (Dashboard's Recent Imports list) — a small decorative
+   "signal bar" underline reinforces the network/connection theme. */
+.protocol-badge--lg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+.protocol-badge--lg::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 5px;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .protocol-badge--vless { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-pink)); }
@@ -247,3 +278,294 @@ code, kbd, samp, .mono {
 .protocol-badge--hysteria2 { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-mint)); }
 .protocol-badge--tuic { --unct-badge-gradient: linear-gradient(135deg, var(--unct-pink), var(--unct-purple)); }
 .protocol-badge--wireguard { --unct-badge-gradient: linear-gradient(135deg, var(--unct-mint), var(--unct-pink)); }
+
+/* ---------------------------------------------------------------------
+ * Dashboard reusable classes (07-UI_UX_SYSTEM §4.1, approved reference
+ * docs/design/dashboard-reference.html). Added here, not a per-screen
+ * stylesheet, because a stat card / list row / action button is a shared
+ * pattern future screen redesigns will reuse — same reasoning as
+ * `.glass-panel`/`.signal-ring`/`.protocol-badge` above. Every spacing/
+ * position value below uses CSS Logical Properties (RTL-GUIDELINES.md §4,
+ * no exceptions) so this layout mirrors correctly under `dir="rtl"` with
+ * zero structural changes later.
+ * ------------------------------------------------------------------- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: 24px;
+}
+
+.logo-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-text {
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.3px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  color: var(--unct-text-muted);
+  font-weight: 500;
+}
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  padding-inline: 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.status-chip .pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--unct-mint);
+  box-shadow: 0 0 0 4px rgba(31, 209, 166, 0.25);
+  flex-shrink: 0;
+}
+
+/* Hero band — deliberately combined with .glass-panel in markup
+   (class="hero-band glass-panel") so it inherits the blur/highlight/
+   glint/shadow machinery while overriding only background + padding;
+   this rule must be defined AFTER .glass-panel in this file so its
+   `background` wins the cascade at equal specificity. */
+.hero-band {
+  position: relative;
+  background: linear-gradient(120deg, rgba(124, 92, 252, 0.88) 0%, rgba(155, 123, 255, 0.85) 50%, rgba(255, 107, 157, 0.85) 100%);
+  padding-block: 30px;
+  padding-inline: 34px;
+  margin-block-end: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.hero-band::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -110px;
+  inset-inline-end: -50px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-text {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+.hero-text .eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  opacity: 0.9;
+  margin-block-end: 6px;
+}
+.hero-text h1 {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-block-end: 4px;
+}
+.hero-text p {
+  font-size: 13px;
+  opacity: 0.92;
+  font-weight: 500;
+}
+.hero-cta {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--unct-purple);
+  padding-block: 13px;
+  padding-inline: 24px;
+  border-radius: 16px;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-block-end: 22px;
+}
+.stat-card {
+  padding: 20px;
+}
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-end: 12px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.stat-icon--nodes { background: rgba(124, 92, 252, 0.16); }
+.stat-icon--valid { background: rgba(255, 107, 157, 0.16); }
+.stat-icon--protocols { background: rgba(255, 182, 72, 0.2); }
+
+.stat-label {
+  font-size: 12px;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+  margin-block-end: 4px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.stat-value--mint { color: #12a483; }
+.stat-value small {
+  font-size: 13px;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+.panel {
+  padding: 22px;
+}
+.panel-title {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 700;
+  margin-block-end: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-title .see-all {
+  font: inherit;
+  font-size: 12px;
+  color: var(--unct-purple);
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.node-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-block: 12px;
+  padding-inline: 8px;
+  border-radius: 14px;
+  transition: background 0.15s;
+}
+.node-item:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+.node-info {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.node-addr {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.node-meta {
+  font-size: 11.5px;
+  color: var(--unct-text-muted);
+  font-weight: 500;
+  margin-block-start: 2px;
+}
+.node-score {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 800;
+  padding-block: 6px;
+  padding-inline: 12px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.node-score.high { background: rgba(31, 209, 166, 0.2); color: #0d8a6e; }
+.node-score.mid { background: rgba(255, 182, 72, 0.25); color: #a8690f; }
+
+.dist-item {
+  position: relative;
+  z-index: 1;
+  margin-block-end: 14px;
+}
+.dist-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-block-end: 6px;
+}
+.dist-head .n { color: var(--unct-text-muted); }
+.dist-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.dist-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: var(--unct-badge-gradient, linear-gradient(90deg, var(--unct-purple), var(--unct-pink)));
+}
+
+.action-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-block: 14px;
+  padding-inline: 16px;
+  border-radius: 15px;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  margin-block-end: 10px;
+  cursor: pointer;
+}
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
+  color: #ffffff;
+  box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
+}
+.action-btn.secondary {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--unct-text);
+}
