@@ -980,3 +980,38 @@ code, kbd, samp, .mono {
   border: 1px solid rgba(33, 27, 61, 0.12);
   border-radius: 16px;
 }
+
+/* ---------------------------------------------------------------------
+ * Radio Card group (07-UI_UX_SYSTEM §2, Settings Screen redesign) — a
+ * clickable "pill" wrapping a native radio input, for small mutually-
+ * exclusive choice sets (currently just Theme; reusable by any future
+ * settings-like control). `:has(input:checked)` reacts to the native
+ * input's own state declaratively — no JS-computed class string needed,
+ * so this stays a pure visual restyle with zero new logic.
+ * ------------------------------------------------------------------- */
+/* A plain reset, not `display: flex` — a `<legend>` inside a flex-formatted
+   `<fieldset>` becomes a flex item itself in most engines and sits inline
+   with the options instead of above them, so the actual options row is a
+   separate child (`.form-actions`, already flex/wrap/gap) instead. */
+.radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.radio-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  padding-inline: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.radio-card:has(input:checked) {
+  background: rgba(124, 92, 252, 0.14);
+  box-shadow: 0 0 0 1.5px var(--unct-purple) inset;
+}

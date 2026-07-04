@@ -11,6 +11,16 @@
  * The actual `data-theme` DOM application happens once, app-wide, in
  * `main.tsx` — not here — so the theme stays applied/live-synced regardless
  * of which screen is currently mounted.
+ *
+ * Visual design (final visual design phase, Settings step): restyled onto
+ * the same Liquid Glass system as the other redesigned screens, reusing
+ * `.glass-panel`/`.panel-title`/`.hint` as-is. The one new class this step
+ * adds, `.radio-group`/`.radio-card` (assets/css/theme.css), turns the
+ * plain `<fieldset>` radio list into clickable pill cards using
+ * `:has(input:checked)` for the active-state highlight — a CSS-only
+ * reaction to the native input's own state, so this stays a pure visual
+ * pass with no new JS logic. Same `useSettingsState()`/`settingsStore`
+ * read/write as before.
  */
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 
@@ -27,28 +37,37 @@ export function SettingsScreen() {
 
   return (
     <main class="settings-screen">
-      <h1>Settings</h1>
+      <div class="screen-header">
+        <h1 class="screen-title">Settings</h1>
+        <p class="screen-subtitle">
+          App-wide preferences — currently just the Theme Engine (07-UI_UX_SYSTEM §2);
+          nothing else is spec'd here yet.
+        </p>
+      </div>
 
-      <section aria-label="Theme Engine">
-        <h2>Theme Engine</h2>
-        <fieldset>
-          <legend>Theme</legend>
-          {CHOICES.map(({ value, label }) => (
-            <label key={value}>
-              <input
-                type="radio"
-                name="theme-choice"
-                value={value}
-                checked={themeChoice === value}
-                onChange={() => settingsStore.setThemeChoice(value)}
-              />
-              {" "}
-              {label}
-            </label>
-          ))}
+      <div class="panel glass-panel" aria-label="Theme Engine">
+        <div class="panel-title">Theme Engine</div>
+        <fieldset class="radio-group">
+          <legend class="hint" style={{ marginBlockEnd: "10px" }}>Theme</legend>
+          <div class="form-actions" style={{ marginBlockStart: 0 }}>
+            {CHOICES.map(({ value, label }) => (
+              <label key={value} class="radio-card">
+                <input
+                  type="radio"
+                  name="theme-choice"
+                  value={value}
+                  checked={themeChoice === value}
+                  onChange={() => settingsStore.setThemeChoice(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
         </fieldset>
-        <p class="hint">Currently applied: {resolvedTheme === "dark" ? "Dark" : "Light"}</p>
-      </section>
+        <p class="hint" style={{ marginBlockStart: "14px" }}>
+          Currently applied: {resolvedTheme === "dark" ? "Dark" : "Light"}
+        </p>
+      </div>
     </main>
   );
 }
