@@ -38,9 +38,11 @@ import {
   selectNodesGroupedByProtocol,
   selectSubscriptionSummary,
 } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
 import { buildProtocolBars } from "./chart.js";
 import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
@@ -95,6 +97,8 @@ type AnalysisByNodeId = ReturnType<typeof useAnalyzerState>;
 export function SubscriptionScreen() {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
   const [search, setSearch] = useState("");
   const [protocolFilter, setProtocolFilter] = useState<ProtocolFilter>("all");
   const [validityFilter, setValidityFilter] = useState<ValidityFilter>("all");
@@ -213,28 +217,27 @@ export function SubscriptionScreen() {
   return (
     <main class="subscription-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Subscription Center</h1>
+        <h1 class="screen-title">{t("subscription.title")}</h1>
         <p class="screen-subtitle">
-          Search, filter, sort, and group the whole working Node List; save nodes as
-          cross-session Templates; and build a Subscription blob from any selection.
+          {t("subscription.subtitle")}
         </p>
       </div>
 
       <div class="panel-grid" style={{ marginBlockEnd: "20px" }}>
-        <div class="panel glass-panel" aria-label="Overview">
-          <div class="panel-title">Overview</div>
+        <div class="panel glass-panel" aria-label={t("subscription.overview.title")}>
+          <div class="panel-title">{t("subscription.overview.title")}</div>
           <dl class="kv-list">
-            <div class="kv-row"><dt>Total Nodes</dt><dd><bdi>{summary.totalNodes}</bdi></dd></div>
-            <div class="kv-row"><dt>Duplicate Nodes</dt><dd><bdi>{summary.duplicateNodeCount}</bdi></dd></div>
-            <div class="kv-row"><dt>Invalid Nodes</dt><dd><bdi>{summary.invalidNodeIds.length}</bdi></dd></div>
-            <div class="kv-row"><dt>Dead Nodes Candidate</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd></div>
+            <div class="kv-row"><dt>{t("subscription.overview.totalNodes")}</dt><dd><bdi>{summary.totalNodes}</bdi></dd></div>
+            <div class="kv-row"><dt>{t("subscription.overview.duplicateNodes")}</dt><dd><bdi>{summary.duplicateNodeCount}</bdi></dd></div>
+            <div class="kv-row"><dt>{t("subscription.overview.invalidNodes")}</dt><dd><bdi>{summary.invalidNodeIds.length}</bdi></dd></div>
+            <div class="kv-row"><dt>{t("subscription.overview.deadNodesCandidate")}</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd></div>
           </dl>
         </div>
 
-        <div class="panel glass-panel" aria-label="Protocol Distribution">
-          <div class="panel-title">Protocol Distribution</div>
+        <div class="panel glass-panel" aria-label={t("subscription.protocolDistribution.title")}>
+          <div class="panel-title">{t("subscription.protocolDistribution.title")}</div>
           {summary.totalNodes === 0 ? (
-            <p class="hint">No nodes yet.</p>
+            <p class="hint">{t("common.noNodesYetShort")}</p>
           ) : (
             protocolBars.map(({ protocol, count, percent }) => (
               <div class="dist-item" key={protocol}>
@@ -250,14 +253,14 @@ export function SubscriptionScreen() {
           )}
         </div>
 
-        <div class="panel glass-panel" aria-label="Security Ranking">
-          <div class="panel-title">Security Ranking</div>
+        <div class="panel glass-panel" aria-label={t("subscription.securityRanking.title")}>
+          <div class="panel-title">{t("subscription.securityRanking.title")}</div>
           {summary.securityRanking.length === 0 ? (
-            <p class="hint">No nodes analyzed yet — visit the Analyzer Screen to score nodes.</p>
+            <p class="hint">{t("subscription.securityRanking.emptyHint")}</p>
           ) : (
             <div class="table-scroll">
               <table class="data-table">
-                <thead><tr><th>Address</th><th>Security Score</th></tr></thead>
+                <thead><tr><th>{t("common.fields.address")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th></tr></thead>
                 <tbody>
                   {summary.securityRanking.map((entry) => {
                     const n = nodes.find((candidate) => candidate.nodeId === entry.nodeId);
@@ -275,63 +278,63 @@ export function SubscriptionScreen() {
         </div>
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="List Controls">
-        <div class="panel-title">List Controls</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.listControls.title")}>
+        <div class="panel-title">{t("subscription.listControls.title")}</div>
         <div class="form-actions" style={{ marginBlockStart: 0 }}>
           <input
             type="text"
             class="input"
             value={search}
             onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
-            placeholder="Search by protocol, address, or port…"
+            placeholder={t("subscription.search.placeholder")}
           />
           <label class="field">
-            Protocol
+            {t("subscription.filter.protocolLabel")}
             <select
               class="select"
               value={protocolFilter}
               onChange={(e) => setProtocolFilter((e.target as HTMLSelectElement).value as ProtocolFilter)}
             >
-              <option value="all">All</option>
+              <option value="all">{t("common.all")}</option>
               {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </label>
           <label class="field">
-            Validity
+            {t("subscription.filter.validityLabel")}
             <select
               class="select"
               value={validityFilter}
               onChange={(e) => setValidityFilter((e.target as HTMLSelectElement).value as ValidityFilter)}
             >
-              <option value="all">All</option>
-              <option value="valid">Valid</option>
-              <option value="invalid">Invalid</option>
+              <option value="all">{t("common.all")}</option>
+              <option value="valid">{t("subscription.filter.valid")}</option>
+              <option value="invalid">{t("subscription.filter.invalid")}</option>
             </select>
           </label>
           <label class="field">
-            Sort
+            {t("subscription.sort.label")}
             <select
               class="select"
               value={sortField}
               onChange={(e) => setSortField((e.target as HTMLSelectElement).value as SortField)}
             >
-              <option value="createdAt">Imported At</option>
-              <option value="protocol">Protocol</option>
-              <option value="address">Address</option>
-              <option value="port">Port</option>
-              <option value="securityScore">Security Score</option>
+              <option value="createdAt">{t("subscription.sort.optionImportedAt")}</option>
+              <option value="protocol">{t("common.fields.protocol")}</option>
+              <option value="address">{t("common.fields.address")}</option>
+              <option value="port">{t("common.fields.port")}</option>
+              <option value="securityScore">{t("subscription.sort.optionSecurityScore")}</option>
             </select>
           </label>
           <label class="field">
-            Direction
+            {t("subscription.sort.directionLabel")}
             <select
               class="select"
               value={sortDirection}
               disabled={sortField === "securityScore"}
               onChange={(e) => setSortDirection((e.target as HTMLSelectElement).value as SortDirection)}
             >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
+              <option value="asc">{t("subscription.sort.ascending")}</option>
+              <option value="desc">{t("subscription.sort.descending")}</option>
             </select>
           </label>
           <label class="field">
@@ -340,71 +343,68 @@ export function SubscriptionScreen() {
               checked={grouped}
               onChange={(e) => setGrouped((e.target as HTMLInputElement).checked)}
             />
-            Group by protocol
+            {t("subscription.group.byProtocol")}
           </label>
         </div>
         {sortField === "securityScore" && (
-          <p class="hint" style={{ marginBlockStart: "12px" }}>Security Score sort is always highest-first (unscored nodes last).</p>
+          <p class="hint" style={{ marginBlockStart: "12px" }}>{t("subscription.sort.hint")}</p>
         )}
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Node List">
-        <div class="panel-title">Node List</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.nodeList.title")}>
+        <div class="panel-title">{t("subscription.nodeList.title")}</div>
         <p class="hint">
-          Showing <bdi>{visibleNodes.length}</bdi> of <bdi>{nodes.length}</bdi> node{nodes.length === 1 ? "" : "s"}.
+          {t("subscription.nodeList.showing")} <bdi>{visibleNodes.length}</bdi> {t("subscription.nodeList.of")} <bdi>{nodes.length}</bdi> {t(nodes.length === 1 ? "subscription.nodeList.nodeSingular" : "subscription.nodeList.nodePlural")}
         </p>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : visibleNodes.length === 0 ? (
-          <p class="hint">No nodes match the current search/filter.</p>
+          <p class="hint">{t("subscription.nodeList.noMatch")}</p>
         ) : groupedNodes ? (
           Object.entries(groupedNodes).map(([protocol, groupNodes], i) => (
             <div key={protocol} style={{ marginBlockStart: i === 0 ? "14px" : "22px" }}>
               <div style={{ fontWeight: 700, fontSize: "13px", marginBlockEnd: "8px" }}>
                 {protocol} (<bdi>{groupNodes.length}</bdi>)
               </div>
-              <NodeTable nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+              <NodeTable t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
             </div>
           ))
         ) : (
           <div style={{ marginBlockStart: "14px" }}>
-            <NodeTable nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+            <NodeTable t={t} nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
           </div>
         )}
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Template Library">
-        <div class="panel-title">Template Library</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.templateLibrary.title")}>
+        <div class="panel-title">{t("subscription.templateLibrary.title")}</div>
         <p class="hint">
-          A Template is exactly a saved node (doc 03 §6) — kept in its own cross-session
-          library, separate from the working Node List above, so clearing/re-parsing never
-          loses it. Check a node above and click "Save as Template", or select templates
-          below to include them in the Subscription Builder.
+          {t("subscription.templateLibrary.hint")}
         </p>
         {templates.length === 0 ? (
-          <p class="hint">No templates saved yet.</p>
+          <p class="hint">{t("subscription.templateLibrary.empty")}</p>
         ) : (
           <div class="table-scroll" style={{ marginBlockStart: "12px" }}>
             <table class="data-table">
               <thead>
-                <tr><th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Remark</th><th></th></tr>
+                <tr><th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("subscription.templateLibrary.remarkColumn")}</th><th></th></tr>
               </thead>
               <tbody>
-                {templates.map((t) => (
-                  <tr key={t.nodeId}>
+                {templates.map((tpl) => (
+                  <tr key={tpl.nodeId}>
                     <td>
                       <input
                         type="checkbox"
-                        checked={selectedTemplateIds.has(t.nodeId)}
-                        onChange={() => toggleTemplateSelected(t.nodeId)}
+                        checked={selectedTemplateIds.has(tpl.nodeId)}
+                        onChange={() => toggleTemplateSelected(tpl.nodeId)}
                       />
                     </td>
-                    <td><span class={`protocol-badge protocol-badge--${t.protocol}`}>{PROTOCOL_ABBREVIATION[t.protocol]}</span></td>
-                    <td class="mono">{t.address}</td>
-                    <td class="mono"><bdi>{t.port}</bdi></td>
-                    <td>{t.remark ?? "—"}</td>
+                    <td><span class={`protocol-badge protocol-badge--${tpl.protocol}`}>{PROTOCOL_ABBREVIATION[tpl.protocol]}</span></td>
+                    <td class="mono">{tpl.address}</td>
+                    <td class="mono"><bdi>{tpl.port}</bdi></td>
+                    <td>{tpl.remark ?? "—"}</td>
                     <td>
-                      <button type="button" class="btn btn--ghost btn--sm" onClick={() => handleRemoveTemplate(t.nodeId)}>Delete</button>
+                      <button type="button" class="btn btn--ghost btn--sm" onClick={() => handleRemoveTemplate(tpl.nodeId)}>{t("subscription.templateLibrary.delete")}</button>
                     </td>
                   </tr>
                 ))}
@@ -414,28 +414,26 @@ export function SubscriptionScreen() {
         )}
       </div>
 
-      <div class="panel glass-panel" aria-label="Subscription Builder">
-        <div class="panel-title">Subscription Builder</div>
+      <div class="panel glass-panel" aria-label={t("subscription.builder.title")}>
+        <div class="panel-title">{t("subscription.builder.title")}</div>
         <p class="hint">
-          Builds one Subscription blob from the checked nodes/templates above — the exact
-          inverse of the Subscription Parser (paste this back into the Converter Screen and
-          it reproduces the same nodes).
+          {t("subscription.builder.hint")}
         </p>
         <p class="hint" style={{ marginBlockStart: "6px" }}>
-          Selected: <bdi>{selectedNodeIds.size}</bdi> node{selectedNodeIds.size === 1 ? "" : "s"}
+          {t("subscription.builder.selectedPrefix")} <bdi>{selectedNodeIds.size}</bdi> {t(selectedNodeIds.size === 1 ? "subscription.builder.nodeSingular" : "subscription.builder.nodePlural")}
           {" + "}
-          <bdi>{selectedTemplateIds.size}</bdi> template{selectedTemplateIds.size === 1 ? "" : "s"}.
+          <bdi>{selectedTemplateIds.size}</bdi> {t(selectedTemplateIds.size === 1 ? "subscription.builder.templateSingular" : "subscription.builder.templatePlural")}.
         </p>
         <div class="form-actions">
           <label class="field">
-            Encoding
+            {t("subscription.builder.encodingLabel")}
             <select
               class="select"
               value={builderEncoding}
               onChange={(e) => setBuilderEncoding((e.target as HTMLSelectElement).value as "base64" | "plain")}
             >
-              <option value="base64">Base64</option>
-              <option value="plain">Plain Text</option>
+              <option value="base64">{t("subscription.builder.base64")}</option>
+              <option value="plain">{t("subscription.builder.plainText")}</option>
             </select>
           </label>
           <button
@@ -444,20 +442,20 @@ export function SubscriptionScreen() {
             onClick={handleBuildSubscription}
             disabled={selectedNodeIds.size === 0 && selectedTemplateIds.size === 0}
           >
-            Build Subscription
+            {t("subscription.builder.build")}
           </button>
         </div>
 
         {builderResult && (
           <>
             <div class="form-actions">
-              <button type="button" class="btn btn--ghost" onClick={handleDownloadSubscription}>Download</button>
-              <button type="button" class="btn btn--ghost" onClick={handleCopySubscription}>Copy to Clipboard</button>
+              <button type="button" class="btn btn--ghost" onClick={handleDownloadSubscription}>{t("common.actions.download")}</button>
+              <button type="button" class="btn btn--ghost" onClick={handleCopySubscription}>{t("common.actions.copyToClipboard")}</button>
             </div>
             <textarea class="code-textarea" style={{ marginBlockStart: "14px" }} readOnly rows={10} value={builderResult.content} />
             {builderResult.skipped.length > 0 && (
               <p class="hint" style={{ marginBlockStart: "10px" }}>
-                Skipped: {builderResult.skipped.map((s) => `${s.protocol} (${s.reason})`).join(", ")}
+                {t("common.skippedPrefix")}{builderResult.skipped.map((s) => `${s.protocol} (${s.reason})`).join(", ")}
               </p>
             )}
           </>
@@ -468,6 +466,7 @@ export function SubscriptionScreen() {
 }
 
 function NodeTable({
+  t,
   nodes,
   analysisByNodeId,
   latencyByNodeId,
@@ -483,6 +482,7 @@ function NodeTable({
   onToggleSelected,
   onSaveAsTemplate,
 }: {
+  t: (key: string) => string;
   nodes: ReturnType<typeof useParserState>;
   analysisByNodeId: AnalysisByNodeId;
   latencyByNodeId: Record<string, LatencyResult>;
@@ -503,7 +503,7 @@ function NodeTable({
       <table class="data-table">
         <thead>
           <tr>
-            <th>Include</th><th>Protocol</th><th>Address</th><th>Port</th><th>Valid</th><th>Security Score</th><th>Latency</th><th>Port Check</th><th>GeoIP</th><th>Imported At</th><th>Template</th>
+            <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th>
           </tr>
         </thead>
         <tbody>
@@ -528,9 +528,9 @@ function NodeTable({
                 <td class="mono"><bdi>{n.port}</bdi></td>
                 <td>
                   {n.validation.overallValid ? (
-                    <span class="tag tag--valid">Valid</span>
+                    <span class="tag tag--valid">{t("common.fields.valid")}</span>
                   ) : (
-                    <span class="tag tag--invalid">Invalid</span>
+                    <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
                   )}
                 </td>
                 <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
@@ -541,7 +541,7 @@ function NodeTable({
                     disabled={isTesting}
                     onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
                   >
-                    {isTesting ? "Testing…" : "Test"}
+                    {isTesting ? t("subscription.nodeList.testing") : t("subscription.nodeList.test")}
                   </button>
                   {latency !== undefined && !isTesting && (
                     <span class="hint">{" "}{formatLatency(latency)}</span>
@@ -554,7 +554,7 @@ function NodeTable({
                     disabled={isCheckingPort}
                     onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
                   >
-                    {isCheckingPort ? "Checking…" : "Check"}
+                    {isCheckingPort ? t("subscription.nodeList.checking") : t("subscription.nodeList.check")}
                   </button>
                   {portCheck !== undefined && !isCheckingPort && (
                     <span class="hint">{" "}{formatPortCheck(portCheck)}</span>
@@ -567,7 +567,7 @@ function NodeTable({
                     disabled={isLookingUp}
                     onClick={() => onGeoIpLookup(n.nodeId, n.address)}
                   >
-                    {isLookingUp ? "Loading…" : "Lookup"}
+                    {isLookingUp ? t("subscription.nodeList.loading") : t("subscription.nodeList.lookup")}
                   </button>
                   {geoIp !== undefined && !isLookingUp && (
                     <span class="hint">{" "}{formatGeoIp(geoIp)}</span>
@@ -575,7 +575,7 @@ function NodeTable({
                 </td>
                 <td class="mono"><bdi>{n.createdAt}</bdi></td>
                 <td>
-                  <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>Save as Template</button>
+                  <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>{t("subscription.nodeList.saveAsTemplate")}</button>
                 </td>
               </tr>
             );

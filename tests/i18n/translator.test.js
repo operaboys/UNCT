@@ -20,7 +20,7 @@ describe("createTranslator", () => {
 
   it("looks up a key in the Persian dictionary when resolvedLanguage is \"fa\"", () => {
     const t = createTranslator(fakeSettingsStore("fa"));
-    expect(t("converter.title")).toBe("Converter"); // fa.js placeholder value, per ADR-019 Decision 6
+    expect(t("converter.title")).toBe("مبدل"); // real Persian translation, per the i18n content pass
   });
 
   it("re-reads the settings store on every call, not just at creation", () => {
@@ -31,7 +31,7 @@ describe("createTranslator", () => {
 
     expect(t("converter.title")).toBe("Converter");
     resolvedLanguage = "fa";
-    expect(t("converter.title")).toBe("Converter");
+    expect(t("converter.title")).toBe("مبدل");
   });
 
   it("falls back to the key itself when it exists in neither dictionary", () => {

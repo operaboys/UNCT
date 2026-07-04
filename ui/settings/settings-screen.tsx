@@ -22,35 +22,36 @@
  * pass with no new JS logic. Same `useSettingsState()`/`settingsStore`
  * read/write as before.
  */
+import { createTranslator } from "../../core/i18n/translator.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 
 type ThemeChoice = "dark" | "light" | "auto";
 
-const CHOICES: { value: ThemeChoice; label: string }[] = [
-  { value: "dark", label: "Dark Mode" },
-  { value: "light", label: "Light Mode" },
-  { value: "auto", label: "Auto Mode (System Sync)" },
+const CHOICE_KEYS: { value: ThemeChoice; labelKey: string }[] = [
+  { value: "dark", labelKey: "settings.themeEngine.dark" },
+  { value: "light", labelKey: "settings.themeEngine.light" },
+  { value: "auto", labelKey: "settings.themeEngine.auto" },
 ];
 
 export function SettingsScreen() {
   const { themeChoice, resolvedTheme } = useSettingsState();
+  const t = createTranslator(settingsStore);
 
   return (
     <main class="settings-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Settings</h1>
+        <h1 class="screen-title">{t("settings.title")}</h1>
         <p class="screen-subtitle">
-          App-wide preferences — currently just the Theme Engine (07-UI_UX_SYSTEM §2);
-          nothing else is spec'd here yet.
+          {t("settings.subtitle")}
         </p>
       </div>
 
-      <div class="panel glass-panel" aria-label="Theme Engine">
-        <div class="panel-title">Theme Engine</div>
+      <div class="panel glass-panel" aria-label={t("settings.themeEngine.title")}>
+        <div class="panel-title">{t("settings.themeEngine.title")}</div>
         <fieldset class="radio-group">
-          <legend class="hint" style={{ marginBlockEnd: "10px" }}>Theme</legend>
+          <legend class="hint" style={{ marginBlockEnd: "10px" }}>{t("settings.themeEngine.legend")}</legend>
           <div class="form-actions" style={{ marginBlockStart: 0 }}>
-            {CHOICES.map(({ value, label }) => (
+            {CHOICE_KEYS.map(({ value, labelKey }) => (
               <label key={value} class="radio-card">
                 <input
                   type="radio"
@@ -59,13 +60,13 @@ export function SettingsScreen() {
                   checked={themeChoice === value}
                   onChange={() => settingsStore.setThemeChoice(value)}
                 />
-                {label}
+                {t(labelKey)}
               </label>
             ))}
           </div>
         </fieldset>
         <p class="hint" style={{ marginBlockStart: "14px" }}>
-          Currently applied: {resolvedTheme === "dark" ? "Dark" : "Light"}
+          {t("settings.themeEngine.currentlyAppliedPrefix")}{resolvedTheme === "dark" ? t("settings.themeEngine.currentlyAppliedDark") : t("settings.themeEngine.currentlyAppliedLight")}
         </p>
       </div>
     </main>

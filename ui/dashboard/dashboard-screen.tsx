@@ -33,8 +33,10 @@ import {
   selectAverageSecurityScore,
   selectAnalysisByNodeId,
 } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { Logo } from "../components/logo.js";
 import {
   formatAverageScore,
@@ -51,6 +53,8 @@ const RECENT_IMPORTS_LIMIT = 5;
 export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
 
   const validCount = useMemo(() => selectValidNodeIds({ nodes }).length, [nodes]);
   const protocolCounts = useMemo(() => selectProtocolCounts({ nodes }), [nodes]);
@@ -75,34 +79,38 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
           <Logo size={42} />
           <div>
             <div class="logo-text">UNCT</div>
-            <div class="logo-sub">Universal Network Config Toolkit</div>
+            <div class="logo-sub">{t("dashboard.header.subtitle")}</div>
           </div>
         </div>
         <div class="status-chip glass-panel">
           <span class="pulse" />
-          {nodes.length === 0 ? "No nodes yet" : <><bdi>{nodes.length}</bdi> node{nodes.length === 1 ? "" : "s"} ready</>}
+          {nodes.length === 0 ? (
+            t("dashboard.header.noNodesYet")
+          ) : (
+            <><bdi>{nodes.length}</bdi> {t(nodes.length === 1 ? "dashboard.header.nodeReadySingular" : "dashboard.header.nodeReadyPlural")}</>
+          )}
         </div>
       </header>
 
-      <section class="hero-band glass-panel" aria-label="Overview">
+      <section class="hero-band glass-panel" aria-label={t("dashboard.hero.ariaLabel")}>
         <div class="hero-text">
-          <div class="eyebrow">Dashboard Overview</div>
+          <div class="eyebrow">{t("dashboard.hero.eyebrow")}</div>
           <h1>
-            {nodes.length === 0 ? "Import your first config to get started" : "Your config library is looking sharp ✨"}
+            {nodes.length === 0 ? t("dashboard.hero.titleEmpty") : t("dashboard.hero.titleReady")}
           </h1>
           <p>
             {nodes.length === 0 ? (
-              "No nodes parsed yet."
+              t("dashboard.hero.noNodesParsed")
             ) : (
               <>
-                {formatAverageScore(averageSecurityScore)} avg security score across <bdi>{nodes.length}</bdi> nodes
-                {lastUpdatedAt && <> &middot; updated {formatRelativeTime(lastUpdatedAt)}</>}
+                {formatAverageScore(averageSecurityScore)} {t("dashboard.hero.statsAcross")} <bdi>{nodes.length}</bdi> {t("dashboard.hero.statsNodes")}
+                {lastUpdatedAt && <> &middot; {t("dashboard.hero.statsUpdatedPrefix")} {formatRelativeTime(lastUpdatedAt)}</>}
               </>
             )}
           </p>
         </div>
         <button type="button" class="hero-cta" onClick={() => onNavigate?.("converter")}>
-          + Import Config
+          {t("dashboard.hero.importCta")}
         </button>
       </section>
 
@@ -114,7 +122,7 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
               <path d="M4 7L12 11L20 7M12 11V21" stroke="var(--unct-purple)" stroke-width="1.8" stroke-linejoin="round" />
             </svg>
           </div>
-          <div class="stat-label">Total Nodes</div>
+          <div class="stat-label">{t("dashboard.stats.totalNodes")}</div>
           <div class="stat-value"><bdi>{nodes.length}</bdi></div>
         </div>
 
@@ -123,9 +131,9 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
             class="signal-ring"
             style={{ "--signal-size": "36px", "--signal-value": String(averageSecurityScore ?? 0) } as Record<string, string>}
           />
-          <div class="stat-label">Avg Security</div>
+          <div class="stat-label">{t("dashboard.stats.avgSecurity")}</div>
           <div class="stat-value stat-value--mint">
-            {averageSecurityScore === null ? "N/A" : <><bdi>{Math.round(averageSecurityScore)}</bdi><small>/100</small></>}
+            {averageSecurityScore === null ? t("common.na") : <><bdi>{Math.round(averageSecurityScore)}</bdi><small>/100</small></>}
           </div>
         </div>
 
@@ -136,7 +144,7 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
               <path d="M8.5 12.5L10.8 15L15.5 9" stroke="var(--unct-pink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <div class="stat-label">Valid Nodes</div>
+          <div class="stat-label">{t("dashboard.stats.validNodes")}</div>
           <div class="stat-value"><bdi>{validCount}</bdi><small>/<bdi>{nodes.length}</bdi></small></div>
         </div>
 
@@ -147,19 +155,19 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
               <path d="M3 12H21M12 3C14.5 5.5 15.8 8.6 15.8 12C15.8 15.4 14.5 18.5 12 21C9.5 18.5 8.2 15.4 8.2 12C8.2 8.6 9.5 5.5 12 3Z" stroke="var(--unct-amber)" stroke-width="1.8" />
             </svg>
           </div>
-          <div class="stat-label">Protocols</div>
+          <div class="stat-label">{t("dashboard.stats.protocols")}</div>
           <div class="stat-value"><bdi>{distinctProtocolCount}</bdi></div>
         </div>
       </div>
 
       <div class="content-grid">
-        <div class="panel glass-panel" aria-label="Recent Imports">
+        <div class="panel glass-panel" aria-label={t("dashboard.recentImports.title")}>
           <div class="panel-title">
-            Recent Imports
-            <button type="button" class="see-all" onClick={() => onNavigate?.("subscription")}>See all &rarr;</button>
+            {t("dashboard.recentImports.title")}
+            <button type="button" class="see-all" onClick={() => onNavigate?.("subscription")}>{t("dashboard.recentImports.seeAll")} &rarr;</button>
           </div>
           {recentImports.length === 0 ? (
-            <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+            <p class="hint">{t("common.noNodesYet")}</p>
           ) : (
             recentImports.map((n) => {
               const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
@@ -186,10 +194,10 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
         </div>
 
         <div>
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Protocol Mix">
-            <div class="panel-title">Protocol Mix</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("dashboard.protocolMix.title")}>
+            <div class="panel-title">{t("dashboard.protocolMix.title")}</div>
             {protocolShareBars.length === 0 ? (
-              <p class="hint">No nodes yet.</p>
+              <p class="hint">{t("common.noNodesYetShort")}</p>
             ) : (
               protocolShareBars.map((bar) => (
                 <div class="dist-item" key={bar.protocol}>
@@ -205,24 +213,24 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label="Quick Actions">
-            <div class="panel-title">Quick Actions</div>
+          <div class="panel glass-panel" aria-label={t("dashboard.quickActions.title")}>
+            <div class="panel-title">{t("dashboard.quickActions.title")}</div>
             <button type="button" class="action-btn primary" onClick={() => onNavigate?.("converter")}>
-              <span>Import Config</span><span>+</span>
+              <span>{t("dashboard.quickActions.importConfig")}</span><span>+</span>
             </button>
             <button type="button" class="action-btn secondary" onClick={() => onNavigate?.("export")}>
-              <span>Export All</span><span>&rarr;</span>
+              <span>{t("dashboard.quickActions.exportAll")}</span><span>&rarr;</span>
             </button>
             <button type="button" class="action-btn secondary" onClick={() => onNavigate?.("devconsole")}>
-              <span>Run Diagnostics</span><span>&rarr;</span>
+              <span>{t("dashboard.quickActions.runDiagnostics")}</span><span>&rarr;</span>
             </button>
           </div>
         </div>
       </div>
 
       {warnings.length > 0 && (
-        <section class="panel glass-panel" aria-label="Warnings" style={{ marginBlockStart: "20px" }}>
-          <div class="panel-title">Warnings</div>
+        <section class="panel glass-panel" aria-label={t("dashboard.warnings.title")} style={{ marginBlockStart: "20px" }}>
+          <div class="panel-title">{t("dashboard.warnings.title")}</div>
           <ul>
             {warnings.map((w, i) => <li key={i}>{w}</li>)}
           </ul>

@@ -44,8 +44,10 @@ import {
   selectValidationFailureLog,
   selectDiagnosticsSortedBySeverity,
 } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { usePerformanceState } from "../store/use-performance-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { formatScore } from "../analyzer/format.js";
 
 function fmtMs(ms: number | null): string {
@@ -65,6 +67,8 @@ const SEVERITY_TAG_CLASS: Record<string, string> = {
 export function DevConsoleScreen() {
   const nodes = useParserState();
   const pools = usePerformanceState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
 
   const parserLog = useMemo(() => selectParserLog({ nodes }), [nodes]);
   const diagnostics = useMemo(() => selectDiagnosticsSortedBySeverity({ nodes }), [nodes]);
@@ -75,25 +79,24 @@ export function DevConsoleScreen() {
   return (
     <main class="devconsole-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Developer Console</h1>
+        <h1 class="screen-title">{t("devconsole.title")}</h1>
         <p class="screen-subtitle">
-          Raw Parser/Validation/Recovery/Detection logs and live Worker pool performance
-          stats for the working Node List.
+          {t("devconsole.subtitle")}
         </p>
       </div>
 
       {nodes.length === 0 ? (
-        <div class="panel glass-panel" aria-label="Developer Console">
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        <div class="panel glass-panel" aria-label={t("devconsole.title")}>
+          <p class="hint">{t("common.noNodesYet")}</p>
         </div>
       ) : (
         <>
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Parser Logs">
-            <div class="panel-title">Parser Logs</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("devconsole.parserLogs.title")}>
+            <div class="panel-title">{t("devconsole.parserLogs.title")}</div>
             <div class="table-scroll">
               <table class="data-table">
                 <thead>
-                  <tr><th>Node ID</th><th>Parser</th><th>Source Type</th><th>Created At</th></tr>
+                  <tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.sourceType")}</th><th>{t("common.fields.createdAt")}</th></tr>
                 </thead>
                 <tbody>
                   {parserLog.map((entry) => (
@@ -109,15 +112,15 @@ export function DevConsoleScreen() {
             </div>
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Warnings and Errors">
-            <div class="panel-title">Warnings &amp; Errors</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("devconsole.diagnostics.title")}>
+            <div class="panel-title">{t("devconsole.diagnostics.title")}</div>
             {diagnostics.length === 0 ? (
-              <p class="hint">No warnings or errors recorded.</p>
+              <p class="hint">{t("devconsole.diagnostics.empty")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Severity</th><th>Node ID</th><th>Code</th><th>Message</th></tr>
+                    <tr><th>{t("devconsole.diagnostics.severityColumn")}</th><th>{t("common.fields.nodeId")}</th><th>{t("devconsole.diagnostics.codeColumn")}</th><th>{t("devconsole.diagnostics.messageColumn")}</th></tr>
                   </thead>
                   <tbody>
                     {diagnostics.map((d, i) => (
@@ -134,24 +137,24 @@ export function DevConsoleScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Recovery Logs">
-            <div class="panel-title">Recovery Logs</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("devconsole.recoveryLogs.title")}>
+            <div class="panel-title">{t("devconsole.recoveryLogs.title")}</div>
             {recoveryActions.length === 0 ? (
-              <p class="hint">No recovery actions were recorded.</p>
+              <p class="hint">{t("devconsole.recoveryLogs.hint")}</p>
             ) : (
               <ul class="plain-list">{recoveryActions.map((a, i) => <li key={i}>{a}</li>)}</ul>
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Validation Logs">
-            <div class="panel-title">Validation Logs</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("devconsole.validationLogs.title")}>
+            <div class="panel-title">{t("devconsole.validationLogs.title")}</div>
             {validationFailures.length === 0 ? (
-              <p class="hint">No validation field failures recorded.</p>
+              <p class="hint">{t("devconsole.validationLogs.hint")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Node ID</th><th>Field</th></tr>
+                    <tr><th>{t("common.fields.nodeId")}</th><th>{t("devconsole.validationLogs.fieldColumn")}</th></tr>
                   </thead>
                   <tbody>
                     {validationFailures.map((entry, i) => (
@@ -163,15 +166,15 @@ export function DevConsoleScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Performance Logs">
-            <div class="panel-title">Performance Logs</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("devconsole.performanceLogs.title")}>
+            <div class="panel-title">{t("devconsole.performanceLogs.title")}</div>
             <div class="table-scroll">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Pool</th><th>Size</th><th>Busy</th><th>Queued</th>
-                    <th>Completed</th><th>Cancelled</th><th>Failed</th>
-                    <th>Last Duration</th><th>Avg (last 10)</th>
+                    <th>{t("devconsole.performanceLogs.poolColumn")}</th><th>{t("devconsole.performanceLogs.sizeColumn")}</th><th>{t("devconsole.performanceLogs.busyColumn")}</th><th>{t("devconsole.performanceLogs.queuedColumn")}</th>
+                    <th>{t("devconsole.performanceLogs.completedColumn")}</th><th>{t("devconsole.performanceLogs.cancelledColumn")}</th><th>{t("devconsole.performanceLogs.failedColumn")}</th>
+                    <th>{t("devconsole.performanceLogs.lastDurationColumn")}</th><th>{t("devconsole.performanceLogs.avgRecentColumn")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,18 +199,17 @@ export function DevConsoleScreen() {
             </div>
             {Object.values(pools).every((p) => p === null) && (
               <p class="hint" style={{ marginBlockStart: "10px" }}>
-                Running in main-thread fallback mode (file:// origin) — Worker pool
-                metrics unavailable. Parse something from an HTTP server to see live stats.
+                {t("devconsole.performanceLogs.fallbackHint")}
               </p>
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label="Detection Logs">
-            <div class="panel-title">Detection Logs</div>
+          <div class="panel glass-panel" aria-label={t("devconsole.detectionLogs.title")}>
+            <div class="panel-title">{t("devconsole.detectionLogs.title")}</div>
             <div class="table-scroll">
               <table class="data-table">
                 <thead>
-                  <tr><th>Node ID</th><th>Parser</th><th>Confidence Score</th></tr>
+                  <tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>
                 </thead>
                 <tbody>
                   {detectionLog.map((entry) => (
@@ -221,13 +223,9 @@ export function DevConsoleScreen() {
               </table>
             </div>
             <div aria-disabled="true" style={{ marginBlockStart: "16px" }}>
-              <div class="panel-title" style={{ fontSize: "13px" }}>Alternative Candidates</div>
+              <div class="panel-title" style={{ fontSize: "13px" }}>{t("devconsole.detectionLogs.alternativeCandidates.title")}</div>
               <p class="hint">
-                Deferred — `core/parser/factory.js`'s `parseWithFallback` ranks candidate
-                parsers transiently while choosing one, but that ranking is never kept past
-                parser selection (`core/parser/parse-and-validate.js` only keeps the chosen
-                parser's name, extraction, and recovered fields). Shown as a placeholder
-                until a module persists it (Rule 9: never fabricate).
+                {t("devconsole.detectionLogs.alternativeCandidates.hint")}
               </p>
             </div>
           </div>

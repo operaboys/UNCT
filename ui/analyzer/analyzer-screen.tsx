@@ -44,14 +44,18 @@
  */
 import { useMemo, useState } from "preact/hooks";
 import { selectAnalysisByNodeId } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { analyzerStore, useAnalyzerState } from "../store/use-analyzer-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { analyzeNodes, CancelledError } from "../store/analyzer-worker-client.js";
 import { formatStringList, formatTriState, formatScore, formatBadge } from "./format.js";
 
 export function AnalyzerScreen() {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -85,16 +89,15 @@ export function AnalyzerScreen() {
   return (
     <main class="analyzer-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Analyzer</h1>
+        <h1 class="screen-title">{t("analyzer.title")}</h1>
         <p class="screen-subtitle">
-          Six-module verdict per node: protocol recognition, security score, TLS/Reality checks,
-          network compatibility, and Cloudflare Worker detection.
+          {t("analyzer.subtitle")}
         </p>
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Analyzer Controls">
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("analyzer.controls.ariaLabel")}>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : (
           <>
             <div class="form-actions" style={{ marginBlockStart: 0 }}>
@@ -110,12 +113,12 @@ export function AnalyzerScreen() {
                 ))}
               </select>
               <button type="button" class="btn btn--primary" onClick={handleAnalyze} disabled={isAnalyzing}>
-                {isAnalyzing ? "Analyzing…" : "Analyze"}
+                {isAnalyzing ? t("analyzer.actions.analyzing") : t("analyzer.actions.analyze")}
               </button>
             </div>
             {analyzeError && <div class="alert alert--error" role="alert">{analyzeError}</div>}
             {selectedNode && !bundle && (
-              <p class="hint" style={{ marginBlockStart: "12px" }}>Click Analyze to see results for this node.</p>
+              <p class="hint" style={{ marginBlockStart: "12px" }}>{t("analyzer.hint.clickAnalyze")}</p>
             )}
           </>
         )}
@@ -123,76 +126,76 @@ export function AnalyzerScreen() {
 
       {selectedNode && bundle && (
         <div class="panel-grid">
-          <div class="panel glass-panel" aria-label="Node Details">
-            <div class="panel-title">Node Details</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.nodeDetails.title")}>
+            <div class="panel-title">{t("analyzer.nodeDetails.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Protocol</dt><dd>{selectedNode.protocol}</dd></div>
-              <div class="kv-row"><dt>Address</dt><dd class="mono">{selectedNode.address}</dd></div>
-              <div class="kv-row"><dt>Port</dt><dd class="mono"><bdi>{selectedNode.port}</bdi></dd></div>
-              <div class="kv-row"><dt>Network</dt><dd>{selectedNode.network}</dd></div>
-              <div class="kv-row"><dt>Security</dt><dd>{selectedNode.security}</dd></div>
-              <div class="kv-row"><dt>Completeness Score</dt><dd>{formatScore(bundle.completeness.completenessScore)}</dd></div>
-              <div class="kv-row"><dt>Present Optional Fields</dt><dd>{formatStringList(bundle.completeness.presentOptionalFields)}</dd></div>
-              <div class="kv-row"><dt>Missing Fields</dt><dd>{formatStringList(bundle.completeness.missingFields)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.protocol")}</dt><dd>{selectedNode.protocol}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.address")}</dt><dd class="mono">{selectedNode.address}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.port")}</dt><dd class="mono"><bdi>{selectedNode.port}</bdi></dd></div>
+              <div class="kv-row"><dt>{t("common.fields.network")}</dt><dd>{selectedNode.network}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.security")}</dt><dd>{selectedNode.security}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.nodeDetails.completenessScore")}</dt><dd>{formatScore(bundle.completeness.completenessScore)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.nodeDetails.presentOptionalFields")}</dt><dd>{formatStringList(bundle.completeness.presentOptionalFields)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.nodeDetails.missingFields")}</dt><dd>{formatStringList(bundle.completeness.missingFields)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Protocol Analysis">
-            <div class="panel-title">Protocol Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.protocolAnalysis.title")}>
+            <div class="panel-title">{t("analyzer.protocolAnalysis.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Protocol</dt><dd>{bundle.protocol.protocol}</dd></div>
-              <div class="kv-row"><dt>Recognized</dt><dd>{formatTriState(bundle.protocol.recognized)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.protocol")}</dt><dd>{bundle.protocol.protocol}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.protocolAnalysis.recognized")}</dt><dd>{formatTriState(bundle.protocol.recognized)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Security Analysis">
-            <div class="panel-title">Security Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.securityAnalysis.title")}>
+            <div class="panel-title">{t("analyzer.securityAnalysis.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Security Score</dt><dd>{formatScore(bundle.security.securityScore)}</dd></div>
-              <div class="kv-row"><dt>Issues</dt><dd>{formatStringList(bundle.security.issues)}</dd></div>
-              <div class="kv-row"><dt>TLS Applicable</dt><dd>{formatTriState(bundle.tls.applicable)}</dd></div>
-              <div class="kv-row"><dt>TLS Coherent</dt><dd>{formatTriState(bundle.tls.coherent)}</dd></div>
-              <div class="kv-row"><dt>Known Fingerprint</dt><dd>{formatTriState(bundle.tls.knownFingerprint)}</dd></div>
-              <div class="kv-row"><dt>TLS Issues</dt><dd>{formatStringList(bundle.tls.issues)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.securityScore")}</dt><dd>{formatScore(bundle.security.securityScore)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.fields.issues")}</dt><dd>{formatStringList(bundle.security.issues)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.tlsApplicable")}</dt><dd>{formatTriState(bundle.tls.applicable)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.tlsCoherent")}</dt><dd>{formatTriState(bundle.tls.coherent)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.knownFingerprint")}</dt><dd>{formatTriState(bundle.tls.knownFingerprint)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.tlsIssues")}</dt><dd>{formatStringList(bundle.tls.issues)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Compatibility Analysis">
-            <div class="panel-title">Compatibility Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.compatibilityAnalysis.title")}>
+            <div class="panel-title">{t("analyzer.compatibilityAnalysis.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Network</dt><dd>{bundle.network.network}</dd></div>
-              <div class="kv-row"><dt>Compatible</dt><dd>{formatTriState(bundle.network.compatible)}</dd></div>
-              <div class="kv-row"><dt>Supported Networks</dt><dd>{formatStringList(bundle.network.supportedNetworks)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.network")}</dt><dd>{bundle.network.network}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.compatible")}</dt><dd>{formatTriState(bundle.network.compatible)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.compatibilityAnalysis.supportedNetworks")}</dt><dd>{formatStringList(bundle.network.supportedNetworks)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Cloudflare Analysis">
-            <div class="panel-title">Cloudflare Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.cloudflareAnalysis.title")}>
+            <div class="panel-title">{t("analyzer.cloudflareAnalysis.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Likely Cloudflare Worker</dt><dd>{formatTriState(bundle.cloudflare.likelyCloudflareWorker)}</dd></div>
-              <div class="kv-row"><dt>Confidence</dt><dd><bdi>{bundle.cloudflare.confidence}</bdi></dd></div>
-              <div class="kv-row"><dt>Signals</dt><dd>{formatStringList(bundle.cloudflare.signals)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.cloudflareAnalysis.likelyWorker")}</dt><dd>{formatTriState(bundle.cloudflare.likelyCloudflareWorker)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.confidence")}</dt><dd><bdi>{bundle.cloudflare.confidence}</bdi></dd></div>
+              <div class="kv-row"><dt>{t("common.fields.signals")}</dt><dd>{formatStringList(bundle.cloudflare.signals)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Clean IP Analysis">
-            <div class="panel-title">Clean IP Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.cleanIp.title")}>
+            <div class="panel-title">{t("analyzer.cleanIp.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Clean IP Pattern</dt><dd>{formatTriState(bundle.cleanIp.isCleanIpPattern)}</dd></div>
-              <div class="kv-row"><dt>Confidence</dt><dd><bdi>{bundle.cleanIp.confidence}</bdi></dd></div>
-              <div class="kv-row"><dt>Signals</dt><dd>{formatStringList(bundle.cleanIp.signals)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.cleanIp.pattern")}</dt><dd>{formatTriState(bundle.cleanIp.isCleanIpPattern)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.confidence")}</dt><dd><bdi>{bundle.cleanIp.confidence}</bdi></dd></div>
+              <div class="kv-row"><dt>{t("common.fields.signals")}</dt><dd>{formatStringList(bundle.cleanIp.signals)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Worker Analysis">
-            <div class="panel-title">Worker Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.worker.title")}>
+            <div class="panel-title">{t("analyzer.worker.title")}</div>
             {bundle.worker.applicable ? (
               <dl class="kv-list">
-                <div class="kv-row"><dt>Worker Domain</dt><dd class="mono">{bundle.worker.workerDomain ?? "—"}</dd></div>
-                <div class="kv-row"><dt>Path Segments</dt><dd>{formatStringList(bundle.worker.pathSegments)}</dd></div>
-                <div class="kv-row"><dt>UUID Segment</dt><dd class="mono">{bundle.worker.uuidSegment ?? "—"}</dd></div>
+                <div class="kv-row"><dt>{t("common.worker.domain")}</dt><dd class="mono">{bundle.worker.workerDomain ?? "—"}</dd></div>
+                <div class="kv-row"><dt>{t("common.worker.pathSegments")}</dt><dd>{formatStringList(bundle.worker.pathSegments)}</dd></div>
+                <div class="kv-row"><dt>{t("common.worker.uuidSegment")}</dt><dd class="mono">{bundle.worker.uuidSegment ?? "—"}</dd></div>
                 <div class="kv-row">
-                  <dt>Parameters</dt>
+                  <dt>{t("common.worker.parameters")}</dt>
                   <dd>
                     {Object.keys(bundle.worker.parameters).length === 0
                       ? "—"
@@ -203,7 +206,7 @@ export function AnalyzerScreen() {
                 </div>
                 {bundle.worker.encodedDataFindings.length > 0 && (
                   <div class="kv-row">
-                    <dt>Encoded Data</dt>
+                    <dt>{t("common.worker.encodedData")}</dt>
                     <dd>
                       <ul class="plain-list">
                         {bundle.worker.encodedDataFindings.map((f, i) => (
@@ -218,30 +221,30 @@ export function AnalyzerScreen() {
                 )}
               </dl>
             ) : (
-              <p class="hint">Not a detected Cloudflare Worker — extraction did not run.</p>
+              <p class="hint">{t("analyzer.worker.notDetected")}</p>
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label="Reality Analysis">
-            <div class="panel-title">Reality Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.realityAnalysis.title")}>
+            <div class="panel-title">{t("analyzer.realityAnalysis.title")}</div>
             <dl class="kv-list">
-              <div class="kv-row"><dt>Applicable</dt><dd>{formatTriState(bundle.reality.applicable)}</dd></div>
-              <div class="kv-row"><dt>Compatible</dt><dd>{formatTriState(bundle.reality.compatible)}</dd></div>
-              <div class="kv-row"><dt>PBK Plausible</dt><dd>{formatTriState(bundle.reality.pbkPlausible)}</dd></div>
-              <div class="kv-row"><dt>SID Plausible</dt><dd>{formatTriState(bundle.reality.sidPlausible)}</dd></div>
-              <div class="kv-row"><dt>Issues</dt><dd>{formatStringList(bundle.reality.issues)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.realityAnalysis.applicable")}</dt><dd>{formatTriState(bundle.reality.applicable)}</dd></div>
+              <div class="kv-row"><dt>{t("common.fields.compatible")}</dt><dd>{formatTriState(bundle.reality.compatible)}</dd></div>
+              <div class="kv-row"><dt>{t("common.reality.pbkPlausible")}</dt><dd>{formatTriState(bundle.reality.pbkPlausible)}</dd></div>
+              <div class="kv-row"><dt>{t("common.reality.sidPlausible")}</dt><dd>{formatTriState(bundle.reality.sidPlausible)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.fields.issues")}</dt><dd>{formatStringList(bundle.reality.issues)}</dd></div>
             </dl>
           </div>
 
-          <div class="panel glass-panel" aria-label="Route Rules Analysis">
-            <div class="panel-title">Route Rules Analysis</div>
+          <div class="panel glass-panel" aria-label={t("analyzer.rules.title")}>
+            <div class="panel-title">{t("analyzer.rules.title")}</div>
             {!bundle.rules.applicable ? (
-              <p class="hint">No route rules — this node's source format (Xray / URL / WireGuard / Subscription) does not carry a routing table.</p>
+              <p class="hint">{t("analyzer.rules.notApplicable")}</p>
             ) : (
               <dl class="kv-list">
-                <div class="kv-row"><dt>Total Rules</dt><dd><bdi>{bundle.rules.totalCount}</bdi></dd></div>
+                <div class="kv-row"><dt>{t("analyzer.rules.totalRules")}</dt><dd><bdi>{bundle.rules.totalCount}</bdi></dd></div>
                 <div class="kv-row">
-                  <dt>By Category</dt>
+                  <dt>{t("analyzer.rules.byCategory")}</dt>
                   <dd>
                     {Object.entries(bundle.rules.byCategory).length === 0
                       ? "—"
@@ -250,10 +253,10 @@ export function AnalyzerScreen() {
                           .join(", ")}
                   </dd>
                 </div>
-                <div class="kv-row"><dt>Duplicate Rules</dt><dd><bdi>{bundle.rules.duplicateCount}</bdi></dd></div>
+                <div class="kv-row"><dt>{t("analyzer.rules.duplicateRules")}</dt><dd><bdi>{bundle.rules.duplicateCount}</bdi></dd></div>
                 {bundle.rules.duplicates.length > 0 && (
                   <div class="kv-row">
-                    <dt>Duplicate Entries</dt>
+                    <dt>{t("analyzer.rules.duplicateEntries")}</dt>
                     <dd>
                       <ul class="plain-list">
                         {bundle.rules.duplicates.map((d) => <li key={d} class="mono">{d}</li>)}
@@ -268,14 +271,14 @@ export function AnalyzerScreen() {
       )}
 
       {selectedNode && bundle && (
-        <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label="Platform & Client Compatibility">
-          <div class="panel-title">Platform &amp; Client Compatibility</div>
+        <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label={t("analyzer.compatibility.title")}>
+          <div class="panel-title">{t("analyzer.compatibility.title")}</div>
           <div class="table-scroll">
-            <table class="data-table data-table--center" aria-label="Platform Compatibility">
-              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>Platforms</caption>
+            <table class="data-table data-table--center" aria-label={t("analyzer.compatibility.platformsCaption")}>
+              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>{t("analyzer.compatibility.platformsCaption")}</caption>
               <thead>
                 <tr>
-                  <th>Android</th><th>iOS</th><th>Windows</th><th>Linux</th><th>macOS</th>
+                  <th>{t("analyzer.compatibility.platform.android")}</th><th>{t("analyzer.compatibility.platform.ios")}</th><th>{t("analyzer.compatibility.platform.windows")}</th><th>{t("analyzer.compatibility.platform.linux")}</th><th>{t("analyzer.compatibility.platform.macos")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,11 +293,11 @@ export function AnalyzerScreen() {
             </table>
           </div>
           <div class="table-scroll" style={{ marginBlockStart: "20px" }}>
-            <table class="data-table data-table--center" aria-label="Client Compatibility">
-              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>Clients</caption>
+            <table class="data-table data-table--center" aria-label={t("analyzer.compatibility.clientsCaption")}>
+              <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>{t("analyzer.compatibility.clientsCaption")}</caption>
               <thead>
                 <tr>
-                  <th>Xray</th><th>sing-box</th><th>Clash Meta</th><th>NekoBox</th><th>v2rayNG</th><th>Hiddify</th>
+                  <th>{t("analyzer.compatibility.client.xray")}</th><th>{t("analyzer.compatibility.client.singbox")}</th><th>{t("analyzer.compatibility.client.clashMeta")}</th><th>{t("analyzer.compatibility.client.nekobox")}</th><th>{t("analyzer.compatibility.client.v2rayng")}</th><th>{t("analyzer.compatibility.client.hiddify")}</th>
                 </tr>
               </thead>
               <tbody>

@@ -62,8 +62,10 @@ import {
   exportTxt, exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson, exportClashYaml, exportCsv,
   exportZip, exportQr, exportHtmlReport,
 } from "../../core/exporter/index.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { formatSkipped, type SkippedExportNode } from "./format.js";
 import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
 
@@ -71,14 +73,14 @@ const QR_CELL_SIZE = 4;
 
 type Format = "txt" | "xrayJson" | "singboxJson" | "normalizedJson" | "analysisJson" | "clashYaml" | "csv";
 
-const FORMAT_LABELS: Record<Format, string> = {
-  txt: "TXT (URLs)",
-  xrayJson: "Xray JSON",
-  singboxJson: "Sing-box JSON",
-  normalizedJson: "Normalized JSON",
-  analysisJson: "Analysis JSON",
-  clashYaml: "Clash YAML / Clash Meta / Mihomo / Provider File",
-  csv: "CSV",
+const FORMAT_LABEL_KEYS: Record<Format, string> = {
+  txt: "export.format.txt",
+  xrayJson: "export.format.xrayJson",
+  singboxJson: "export.format.singboxJson",
+  normalizedJson: "export.format.normalizedJson",
+  analysisJson: "export.format.analysisJson",
+  clashYaml: "export.format.clashYaml",
+  csv: "export.format.csv",
 };
 
 const FORMAT_FILE: Record<Format, { extension: string; mimeType: string }> = {
@@ -94,6 +96,8 @@ const FORMAT_FILE: Record<Format, { extension: string; mimeType: string }> = {
 export function ExportScreen() {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
   const [format, setFormat] = useState<Format>("txt");
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
 
@@ -184,77 +188,72 @@ export function ExportScreen() {
   return (
     <main class="export-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Export Center</h1>
+        <h1 class="screen-title">{t("export.title")}</h1>
         <p class="screen-subtitle">
-          Preview and download the working Node List in any supported format — TXT, JSON
-          variants, Clash YAML, CSV, a ZIP bundle, per-node QR codes, or a sanitized HTML report.
+          {t("export.subtitle")}
         </p>
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Export">
-        <div class="panel-title">Export</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("export.section.title")}>
+        <div class="panel-title">{t("export.section.title")}</div>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : (
           <>
             <div class="form-actions" style={{ marginBlockStart: 0 }}>
               <label class="field">
-                Format
+                {t("export.section.formatLabel")}
                 <select
                   class="select"
                   value={format}
                   onChange={(e) => handleFormatChange((e.target as HTMLSelectElement).value as Format)}
                 >
-                  {(Object.keys(FORMAT_LABELS) as Format[]).map((f) => (
-                    <option key={f} value={f}>{FORMAT_LABELS[f]}</option>
+                  {(Object.keys(FORMAT_LABEL_KEYS) as Format[]).map((f) => (
+                    <option key={f} value={f}>{t(FORMAT_LABEL_KEYS[f])}</option>
                   ))}
                 </select>
               </label>
-              <button type="button" class="btn btn--primary" onClick={handleDownload}>Download</button>
-              <button type="button" class="btn btn--ghost" onClick={handleCopy}>Copy to Clipboard</button>
-              {copyStatus === "copied" && <span class="tag tag--valid" role="status">Copied.</span>}
-              {copyStatus === "error" && <span class="tag tag--invalid" role="alert">Copy failed.</span>}
+              <button type="button" class="btn btn--primary" onClick={handleDownload}>{t("common.actions.download")}</button>
+              <button type="button" class="btn btn--ghost" onClick={handleCopy}>{t("common.actions.copyToClipboard")}</button>
+              {copyStatus === "copied" && <span class="tag tag--valid" role="status">{t("export.status.copied")}</span>}
+              {copyStatus === "error" && <span class="tag tag--invalid" role="alert">{t("export.status.copyFailed")}</span>}
             </div>
 
             {format === "analysisJson" && Object.keys(analysisByNodeId).length === 0 && (
-              <p class="hint" style={{ marginBlockStart: "12px" }}>No analyzed nodes yet — visit the Analyzer Screen first.</p>
+              <p class="hint" style={{ marginBlockStart: "12px" }}>{t("export.hint.noAnalyzedNodes")}</p>
             )}
 
             <textarea class="code-textarea" style={{ marginBlockStart: "14px" }} readOnly rows={10} value={content} />
-            {skippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {skippedMessage}</p>}
+            {skippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>{t("common.skippedPrefix")}{skippedMessage}</p>}
           </>
         )}
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="ZIP Export">
-        <div class="panel-title">ZIP Export</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("export.zip.title")}>
+        <div class="panel-title">{t("export.zip.title")}</div>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : (
           <>
             <p class="hint">
-              Bundles TXT, Xray JSON, Sing-box JSON, Normalized JSON, Clash YAML, and CSV plus a
-              manifest.json (Export Version, Export Date, Node Count, UNM Version) into one
-              archive — doc 08 §7's Full Project Snapshot.
+              {t("export.zip.hint")}
             </p>
             <div class="form-actions">
-              <button type="button" class="btn btn--primary" onClick={handleDownloadZip}>Download ZIP</button>
+              <button type="button" class="btn btn--primary" onClick={handleDownloadZip}>{t("export.zip.download")}</button>
             </div>
-            {zipSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {zipSkippedMessage}</p>}
+            {zipSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>{t("common.skippedPrefix")}{zipSkippedMessage}</p>}
           </>
         )}
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="QR Export">
-        <div class="panel-title">QR Export</div>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("export.qr.title")}>
+        <div class="panel-title">{t("export.qr.title")}</div>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : (
           <>
             <p class="hint">
-              One QR code per node (doc 08 §6's "Single Node · Multi QR Pages") — encodes each
-              node's URL form, the same string TXT Export produces. Print this page for a
-              printable sheet.
+              {t("export.qr.hint")}
             </p>
             <div class="qr-grid" style={{ marginBlockStart: "14px" }}>
               {qrCodes.map((qr) => (
@@ -269,34 +268,32 @@ export function ExportScreen() {
                   </svg>
                   <figcaption>{qr.protocol}</figcaption>
                   <button type="button" class="btn btn--ghost btn--sm" onClick={() => handleDownloadQr(qr.nodeId, qr.matrix, qr.moduleCount)}>
-                    Download SVG
+                    {t("export.qr.downloadSvg")}
                   </button>
                 </figure>
               ))}
             </div>
-            {qrSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {qrSkippedMessage}</p>}
+            {qrSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>{t("common.skippedPrefix")}{qrSkippedMessage}</p>}
           </>
         )}
       </div>
 
-      <div class="panel glass-panel" aria-label="HTML Report Export">
-        <div class="panel-title">HTML Report Export</div>
+      <div class="panel glass-panel" aria-label={t("export.htmlReport.title")}>
+        <div class="panel-title">{t("export.htmlReport.title")}</div>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+          <p class="hint">{t("common.noNodesYet")}</p>
         ) : (
           <>
             <p class="hint">
-              Summary, Analysis, Security Report, Compatibility Report, Warnings, and
-              Recommendations per node (doc 08 §8) — escaped per value, then sanitized as a whole
-              document via DOMPurify (doc 08 §11, ADR-018) before either preview or download.
+              {t("export.htmlReport.hint")}
             </p>
             <div class="form-actions">
-              <button type="button" class="btn btn--primary" onClick={handleDownloadHtmlReport}>Download HTML</button>
+              <button type="button" class="btn btn--primary" onClick={handleDownloadHtmlReport}>{t("export.htmlReport.downloadHtml")}</button>
             </div>
             <iframe
               class="embed-frame"
               style={{ marginBlockStart: "14px" }}
-              title="HTML Report Preview"
+              title={t("export.htmlReport.title")}
               sandbox="allow-same-origin"
               srcdoc={htmlReportContent}
             />

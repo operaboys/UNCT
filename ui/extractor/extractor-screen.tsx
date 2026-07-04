@@ -51,14 +51,18 @@ import {
   selectNodesWithReality,
   selectAnalysisByNodeId,
 } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { formatTriState, formatStringList } from "../analyzer/format.js";
 import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
 
 export function ExtractorScreen() {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
 
   const uuidNodes = useMemo(() => selectNodesWithUuid({ nodes }), [nodes]);
   const ipNodes = useMemo(() => selectNodesWithIpAddress({ nodes }), [nodes]);
@@ -72,28 +76,27 @@ export function ExtractorScreen() {
   return (
     <main class="extractor-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Extractor</h1>
+        <h1 class="screen-title">{t("extractor.title")}</h1>
         <p class="screen-subtitle">
-          Pulls specific field shapes out of the working Node List — UUIDs, literal IP
-          addresses, domain addresses, Cloudflare Worker verdicts, and Reality keys.
+          {t("extractor.subtitle")}
         </p>
       </div>
 
       {nodes.length === 0 ? (
-        <div class="panel glass-panel" aria-label="Extractor">
-          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        <div class="panel glass-panel" aria-label={t("extractor.title")}>
+          <p class="hint">{t("common.noNodesYet")}</p>
         </div>
       ) : (
         <>
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="UUID Extractor">
-            <div class="panel-title">UUID Extractor</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.uuid.title")}>
+            <div class="panel-title">{t("extractor.uuid.title")}</div>
             {uuidNodes.length === 0 ? (
-              <p class="hint">No nodes carry a uuid.</p>
+              <p class="hint">{t("extractor.uuid.hint")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Protocol</th><th>Address</th><th>Port</th><th>UUID</th></tr>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.uuid")}</th></tr>
                   </thead>
                   <tbody>
                     {uuidNodes.map((n) => (
@@ -110,15 +113,15 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="IP Extractor">
-            <div class="panel-title">IP Extractor</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.ip.title")}>
+            <div class="panel-title">{t("extractor.ip.title")}</div>
             {ipNodes.length === 0 ? (
-              <p class="hint">No nodes have a literal IP address.</p>
+              <p class="hint">{t("extractor.ip.hint")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Protocol</th><th>Address</th><th>Port</th></tr>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>
                   </thead>
                   <tbody>
                     {ipNodes.map((n) => (
@@ -134,15 +137,15 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Domain Extractor">
-            <div class="panel-title">Domain Extractor</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.domain.title")}>
+            <div class="panel-title">{t("extractor.domain.title")}</div>
             {domainNodes.length === 0 ? (
-              <p class="hint">No nodes have a domain address.</p>
+              <p class="hint">{t("extractor.domain.hint")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Protocol</th><th>Address</th><th>Port</th></tr>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>
                   </thead>
                   <tbody>
                     {domainNodes.map((n) => (
@@ -158,22 +161,21 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Worker Extractor">
-            <div class="panel-title">Worker Extractor</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.worker.title")}>
+            <div class="panel-title">{t("extractor.worker.title")}</div>
             {Object.keys(analysisByNodeId).length === 0 ? (
               <p class="hint">
-                No nodes analyzed yet — visit the Analyzer Screen first. Worker detection is an
-                Analyzer verdict, not a raw field (Rule 9: never guess from an unanalyzed node).
+                {t("extractor.worker.notAnalyzedHint")}
               </p>
             ) : workerNodes.length === 0 ? (
-              <p class="hint">No analyzed nodes were detected as Cloudflare Workers.</p>
+              <p class="hint">{t("extractor.worker.noneDetected")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Protocol</th><th>Address</th><th>Port</th><th>Worker Domain</th>
-                      <th>Path Segments</th><th>UUID Segment</th><th>Parameters</th><th>Encoded Data</th>
+                      <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.worker.domain")}</th>
+                      <th>{t("common.worker.pathSegments")}</th><th>{t("common.worker.uuidSegment")}</th><th>{t("common.worker.parameters")}</th><th>{t("common.worker.encodedData")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -217,17 +219,17 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Reality Extractor">
-            <div class="panel-title">Reality Extractor</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.reality.title")}>
+            <div class="panel-title">{t("extractor.reality.title")}</div>
             {realityNodes.length === 0 ? (
-              <p class="hint">No nodes use Reality.</p>
+              <p class="hint">{t("extractor.reality.hint")}</p>
             ) : (
               <div class="table-scroll">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Protocol</th><th>Address</th><th>Port</th><th>PBK</th><th>SID</th>
-                      <th>PBK Plausible</th><th>SID Plausible</th>
+                      <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.reality.pbk")}</th><th>{t("common.reality.sid")}</th>
+                      <th>{t("common.reality.pbkPlausible")}</th><th>{t("common.reality.sidPlausible")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -240,8 +242,8 @@ export function ExtractorScreen() {
                           <td class="mono"><bdi>{n.port}</bdi></td>
                           <td class="mono">{n.pbk ?? ""}</td>
                           <td class="mono">{n.sid ?? ""}</td>
-                          <td>{bundle ? formatTriState(bundle.reality.pbkPlausible) : "Click Analyze first"}</td>
-                          <td>{bundle ? formatTriState(bundle.reality.sidPlausible) : "Click Analyze first"}</td>
+                          <td>{bundle ? formatTriState(bundle.reality.pbkPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
+                          <td>{bundle ? formatTriState(bundle.reality.sidPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
                         </tr>
                       );
                     })}
@@ -251,13 +253,10 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label="DNS Extractor" aria-disabled="true">
-            <div class="panel-title">DNS Extractor</div>
+          <div class="panel glass-panel" aria-label={t("extractor.dns.title")} aria-disabled="true">
+            <div class="panel-title">{t("extractor.dns.title")}</div>
             <p class="hint">
-              Deferred — `dnsLeakRisk` (core/analyzer/analyze-node.js) exists but is not yet
-              wired into `AnalysisBundle` at all (ADR-022), a different, not-yet-finished
-              situation from Worker Extractor above (which is real — it only lacked this UI
-              layer, per the Orphan Check that un-deferred it).
+              {t("extractor.dns.hint")}
             </p>
           </div>
         </>

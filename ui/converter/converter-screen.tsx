@@ -50,8 +50,10 @@ import {
   selectAggregatedErrors,
   selectAggregatedRecoveryActions,
 } from "../../core/store/selectors.js";
+import { createTranslator } from "../../core/i18n/translator.js";
 import { readFileAsText, extractTextFromDropEvent } from "../../core/importer/index.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { parseRawConfig, CancelledError } from "../store/parser-worker-client.js";
 import { convertBatchInWorker, type ConvertResult, type ExportFormat } from "./converter-worker-client.js";
 import { formatProtocolCounts, formatDiagnosticList, formatSkippedProtocols } from "./format.js";
@@ -62,11 +64,11 @@ const CLIPBOARD_IMPORT_SUPPORTED =
 
 const EMPTY_CONVERT_RESULT: ConvertResult = { converted: [], skipped: [] };
 
-const FORMAT_LABELS: Record<ExportFormat, string> = {
-  url: "Links (URL)",
-  xrayJson: "Xray JSON",
-  singboxJson: "Sing-box JSON",
-  clashYaml: "Clash YAML",
+const FORMAT_LABEL_KEYS: Record<ExportFormat, string> = {
+  url: "converter.format.url",
+  xrayJson: "converter.format.xrayJson",
+  singboxJson: "converter.format.singboxJson",
+  clashYaml: "converter.format.clashYaml",
 };
 
 interface LastParse {
@@ -76,6 +78,8 @@ interface LastParse {
 
 export function ConverterScreen() {
   const nodes = useParserState();
+  useSettingsState();
+  const t = createTranslator(settingsStore);
   const [raw, setRaw] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
   const [lastParse, setLastParse] = useState<LastParse | null>(null);
@@ -186,17 +190,15 @@ export function ConverterScreen() {
   return (
     <main class="converter-screen">
       <div class="screen-header">
-        <h1 class="screen-title">Converter</h1>
+        <h1 class="screen-title">{t("converter.title")}</h1>
         <p class="screen-subtitle">
-          Paste a config: a single URL (vless/vmess/trojan/ss/hysteria2/tuic), a multi-line
-          subscription, Xray/Sing-box JSON, Clash/Clash.Meta YAML, or a WireGuard config. Or drop
-          a file on the box below, upload one, or import from the clipboard.
+          {t("converter.subtitle")}
         </p>
       </div>
 
       <div class="content-grid">
-        <div class="panel glass-panel" aria-label="Input Panel">
-          <div class="panel-title">Input</div>
+        <div class="panel glass-panel" aria-label={t("converter.input.ariaLabel")}>
+          <div class="panel-title">{t("converter.input.title")}</div>
           <div class={`dropzone${isDragOver ? " dropzone--active" : ""}`}>
             <textarea
               class="code-textarea"
@@ -206,16 +208,16 @@ export function ConverterScreen() {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              placeholder="vless://... or a multi-line subscription, etc. (drag a file here to load it)"
+              placeholder={t("converter.input.textareaPlaceholder")}
             />
           </div>
           <div class="form-actions">
             <button type="button" class="btn btn--primary" onClick={handleParse} disabled={raw.trim().length === 0 || isParsing}>
-              {isParsing ? "Parsing…" : "Parse"}
+              {isParsing ? t("converter.actions.parsing") : t("converter.actions.parse")}
             </button>
-            <button type="button" class="btn btn--ghost" onClick={handleClear}>Clear</button>
+            <button type="button" class="btn btn--ghost" onClick={handleClear}>{t("converter.actions.clear")}</button>
             <button type="button" class="btn btn--ghost" onClick={() => fileInputRef.current?.click()} disabled={isParsing}>
-              Upload File
+              {t("converter.actions.uploadFile")}
             </button>
             <input
               ref={fileInputRef}
@@ -231,38 +233,38 @@ export function ConverterScreen() {
               title={
                 CLIPBOARD_IMPORT_SUPPORTED
                   ? undefined
-                  : "Clipboard import is unavailable in this browser/context (needs HTTPS and the Clipboard API)."
+                  : t("converter.actions.clipboardUnsupportedTitle")
               }
             >
-              Import from Clipboard
+              {t("converter.actions.importFromClipboard")}
             </button>
           </div>
           {parseError && <div class="alert alert--error" role="alert">{parseError}</div>}
         </div>
 
         <div>
-          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Parser Preview">
-            <div class="panel-title">Parser Preview</div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("converter.parserPreview.ariaLabel")}>
+            <div class="panel-title">{t("converter.parserPreview.title")}</div>
             {lastParse ? (
               <dl class="kv-list">
-                <div class="kv-row"><dt>Detected Format</dt><dd>{lastParse.parserName}</dd></div>
-                <div class="kv-row"><dt>Recovered</dt><dd>{String(lastParse.recovered)}</dd></div>
-                <div class="kv-row"><dt>Protocol Count</dt><dd>{formatProtocolCounts(protocolCounts)}</dd></div>
-                <div class="kv-row"><dt>Errors</dt><dd>{formatDiagnosticList(errors)}</dd></div>
-                <div class="kv-row"><dt>Warnings</dt><dd>{formatDiagnosticList(warnings)}</dd></div>
+                <div class="kv-row"><dt>{t("converter.parserPreview.detectedFormat")}</dt><dd>{lastParse.parserName}</dd></div>
+                <div class="kv-row"><dt>{t("converter.parserPreview.recovered")}</dt><dd>{String(lastParse.recovered)}</dd></div>
+                <div class="kv-row"><dt>{t("converter.parserPreview.protocolCount")}</dt><dd>{formatProtocolCounts(protocolCounts)}</dd></div>
+                <div class="kv-row"><dt>{t("converter.parserPreview.errors")}</dt><dd>{formatDiagnosticList(errors)}</dd></div>
+                <div class="kv-row"><dt>{t("converter.parserPreview.warnings")}</dt><dd>{formatDiagnosticList(warnings)}</dd></div>
               </dl>
             ) : (
-              <p class="hint">Parse an input above to see its preview.</p>
+              <p class="hint">{t("converter.parserPreview.hint")}</p>
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label="Recovery Actions">
-            <div class="panel-title">Recovery Actions</div>
+          <div class="panel glass-panel" aria-label={t("converter.recoveryActions.ariaLabel")}>
+            <div class="panel-title">{t("converter.recoveryActions.title")}</div>
             {recoveryActions.length === 0 ? (
-              <p class="hint">No recovery actions were recorded.</p>
+              <p class="hint">{t("converter.recoveryActions.hint")}</p>
             ) : (
               <>
-                <p class="hint">Recovered Fields Count: <bdi>{recoveryActions.length}</bdi></p>
+                <p class="hint">{t("converter.recoveryActions.countPrefix")}<bdi>{recoveryActions.length}</bdi></p>
                 <ul class="plain-list">
                   {recoveryActions.map((action, i) => <li key={i}>{action}</li>)}
                 </ul>
@@ -272,17 +274,17 @@ export function ConverterScreen() {
         </div>
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label="Normalized Object">
-        <div class="panel-title">Normalized Object</div>
+      <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label={t("converter.normalizedObject.ariaLabel")}>
+        <div class="panel-title">{t("converter.normalizedObject.title")}</div>
         {nodes.length === 0 ? (
-          <p class="hint">No nodes yet.</p>
+          <p class="hint">{t("common.noNodesYetShort")}</p>
         ) : (
           <div class="table-scroll">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Protocol</th><th>Address</th><th>Port</th>
-                  <th>Network</th><th>Security</th><th>Valid</th>
+                  <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th>
+                  <th>{t("common.fields.network")}</th><th>{t("common.fields.security")}</th><th>{t("common.fields.valid")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -295,9 +297,9 @@ export function ConverterScreen() {
                     <td>{n.security}</td>
                     <td>
                       {n.validation.overallValid ? (
-                        <span class="tag tag--valid">Valid</span>
+                        <span class="tag tag--valid">{t("common.fields.valid")}</span>
                       ) : (
-                        <span class="tag tag--invalid">Invalid</span>
+                        <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
                       )}
                     </td>
                   </tr>
@@ -308,22 +310,22 @@ export function ConverterScreen() {
         )}
       </div>
 
-      <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label="Output Panel">
+      <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label={t("converter.outputPanel.ariaLabel")}>
         <div class="panel-title">
-          Output
+          {t("converter.outputPanel.title")}
           <select
             class="select"
             value={format}
             onChange={(e) => setFormat((e.target as HTMLSelectElement).value as ExportFormat)}
           >
-            {(Object.keys(FORMAT_LABELS) as ExportFormat[]).map((f) => (
-              <option key={f} value={f}>{FORMAT_LABELS[f]}</option>
+            {(Object.keys(FORMAT_LABEL_KEYS) as ExportFormat[]).map((f) => (
+              <option key={f} value={f}>{t(FORMAT_LABEL_KEYS[f])}</option>
             ))}
           </select>
         </div>
-        <p class="hint">QR output is deferred — no QR library has been reviewed under 14-DEPENDENCY_POLICY yet.</p>
+        <p class="hint">{t("converter.outputPanel.qrDeferredHint")}</p>
         {nodes.length === 0 ? (
-          <p class="hint">Nothing to export yet.</p>
+          <p class="hint">{t("converter.outputPanel.nothingToExport")}</p>
         ) : (
           <>
             <textarea class="code-textarea" readOnly rows={10} value={converted.map((c) => c.output).join("\n")} />
