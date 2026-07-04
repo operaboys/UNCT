@@ -870,6 +870,13 @@ code, kbd, samp, .mono {
 }
 .tag--valid { background: rgba(31, 209, 166, 0.18); color: #0d8a6e; }
 .tag--invalid { background: rgba(229, 72, 77, 0.14); color: #b3211f; }
+/* The four `ErrorSeverity` levels (Developer Console's Warnings & Errors):
+   "error" reuses `.tag--invalid` above (same color, same meaning) rather
+   than a redundant duplicate rule; "critical" is a darker/bolder variant
+   of the same red for the one level above plain "error". */
+.tag--info { background: rgba(107, 101, 132, 0.14); color: var(--unct-text-muted); }
+.tag--warning { background: rgba(255, 182, 72, 0.24); color: #92600a; }
+.tag--critical { background: rgba(229, 72, 77, 0.32); color: #7a0f0f; font-weight: 800; }
 
 /* ---------------------------------------------------------------------
  * Panel Grid (07-UI_UX_SYSTEM §4.3, Analyzer Screen redesign) — a
