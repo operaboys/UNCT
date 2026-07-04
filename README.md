@@ -3,9 +3,11 @@
 ابزار آفلاین و کلاینت‌ساید برای تبدیل، تحلیل، و مدیریت کانفیگ‌های شبکه (VLESS, VMESS, Trojan, Shadowsocks, Hysteria2, TUIC, WireGuard).
 
 > پروژه هر ۱۳ فاز Roadmap (`docs/blueprints/09-DEVELOPMENT_ROADMAP.md`) را — با چند استثنای صریح
-> و مستند که آگاهانه Blocked/حذف شده‌اند (پایین‌تر) — پشت سر گذاشته و اکنون آماده‌ی ورود به
-> **فاز نهایی: طراحی بصری کامل** (Glassmorphism/Cyber Professional طبق سند ۰۷ §۲، RTL کامل، و
-> ترجمه‌ی محتوای فارسی) است — همان فازی که از ابتدای پروژه عمداً به انتها موکول شده بود.
+> و مستند که آگاهانه Blocked/حذف شده‌اند (پایین‌تر) — پشت سر گذاشته، و **فاز نهایی: طراحی بصری**
+> (هویت «Liquid Glass» طبق سند ۰۷ §۲، بازطراحی هر ۸ صفحه، CSS واکنش‌گرا، و Dark Mode واقعی) هم
+> کامل شده — همان فازی که از ابتدای پروژه عمداً به انتها موکول شده بود. آنچه از آن فاز هنوز باقی
+> مانده (ترجمه‌ی واقعی محتوای صفحات به فارسی + تأیید بصری RTL) در «محدودیت‌های شناخته‌شده» پایین‌تر
+> صادقانه ذکر شده.
 
 ## وضعیت کلی
 
@@ -19,8 +21,8 @@
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۰۹۱ تست در ۹۰ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
-موفق (`app.js` ~۲۳۶kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
+تست: **۱۱۰۴ تست در ۹۰ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+موفق (`app.js` ~۲۵۱kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
 --omit=dev` صفر آسیب‌پذیری.
 
 ---
@@ -38,7 +40,7 @@
 | Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
 | Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
-| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته شده؛ Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ هنوز تأیید نشده — فقط `<meta viewport>`، بدون CSS واکنش‌گرا (عمداً به همراه Glassmorphism به فاز نهایی طراحی بصری موکول شده) |
+| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته و روی هویت بصری «Liquid Glass» بازطراحی شده؛ Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ اکنون با CSS واکنش‌گرا (Media Query + Grid خودکار‌جمع‌شونده) پوشش داده شده — تأییدشده با Playwright روی چند صفحه؛ Dark Mode هم یک نسخه‌ی واقعی «Liquid Glass» تیره دارد (نه فقط رنگ تخت پشت المان‌های روشن) |
 | Phase 10 — Analyzer Extended | ✅ کامل (با یک استثنای مستند) | هر ۷ ماژول ساخته شده‌اند؛ ۶ تا به `AnalysisBundle`/UI وصل‌اند، یکی (DNS) عمداً نه — جزئیات در بخش جدا پایین‌تر |
 | Phase 11 — Plugin System | ✅ مکانیزم کامل / API عمومی Blocked | Loader/Registry/Exporter Contract (ADR-020) کامل و تست‌شده؛ Custom Parser/Export API عمومی Blocked با شرط دقیق — جزئیات پایین‌تر |
 | Phase 12 — Advanced/Backlog | ✅ کامل (۳ Tier) | هر ۳ Tier بررسی/پیاده‌سازی شدند؛ چند آیتم آگاهانه Blocked/حذف شدند نه ساخته — جزئیات پایین‌تر |
@@ -116,7 +118,7 @@ P12-12، P12-13).
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
 | 5 | **Extractor** | UUID/IP/Domain/Reality/**Worker** Extractor واقعی. «DNS Extractor» تنها Placeholder باقی‌مانده (وابسته به تکمیل معماری DNS Analyzer، ADR-022) |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
-| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) + انتخاب زبان (بدون ترجمه‌ی محتوای صفحات — زیرساخت i18n آماده، محتوا هنوز ترجمه نشده). ظاهر کامل «Cyber Professional / Glassmorphism» هنوز شروع نشده (عمداً به فاز نهایی موکول شده) |
+| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS، ظاهر Radio Card بازطراحی‌شده) + انتخاب زبان (بدون ترجمه‌ی محتوای صفحات — زیرساخت i18n آماده، محتوا هنوز ترجمه نشده) |
 | 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + **Performance Logs**، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
 
 ---
@@ -222,10 +224,28 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 - **`core/worker/converter.worker.js` به Converter Screen وصل است، ولی نه به Export Center** —
   Export Center (`ui/export/export-screen.tsx`) مستقیماً `core/exporter/` را روی Main Thread
   صدا می‌زند؛ یک تصمیم Scope جداست، نه باگ.
-- **طراحی بصری حداقلی است** — فقط دو متغیر CSS (`--unct-bg`/`--unct-fg`) برای Dark/Light/Auto؛
-  سیستم کامل «Cyber Professional / Glassmorphism»، RTL کامل، و ترجمه‌ی محتوای صفحات (زیرساخت
-  i18n آماده، محتوا ترجمه‌نشده)، و CSS واکنش‌گرا برای «Mobile Optimized» — همه عمداً به فاز نهایی
-  Roadmap موکول شده‌اند — تصمیمی قطعی، نه سؤال باز.
+- **محتوای صفحات هنوز به فارسی ترجمه نشده** — زیرساخت i18n (`core/i18n/`، ADR-019) کامل و
+  تست‌شده است و `languageChoice`/`resolvedLanguage` در Settings واقعاً کار می‌کند (`lang`/`dir`
+  سند در `<html>` واقعاً عوض می‌شود)، ولی متن ثابت هر ۸ صفحه هنوز مستقیماً انگلیسی است — به
+  Dictionary وصل نشده. تأیید بصری واقعی RTL (یعنی دیدن صفحات زیر `dir="rtl"` با محتوای واقعی
+  فارسی) هم به همین دلیل هنوز انجام نشده؛ تنها تضمین فعلی، رعایت CSS Logical Properties در سرتاسر
+  `assets/css/theme.css` (طبق `docs/architecture/RTL-GUIDELINES.md`) است که باید mirroring را
+  بدون تغییر ساختاری فراهم کند، نه تأیید چشمی با متن فارسی واقعی.
+- **هویت بصری «Liquid Glass» (سند ۰۷ §۲) کامل است** — هر ۸ صفحه بازطراحی شدند: `.glass-panel`/
+  `.signal-ring`/`.protocol-badge` + مجموعه‌ای از کلاس‌های عمومی مشترک (`.panel-grid`،
+  `.data-table`، `.kv-list`، `.tag`، `.btn`، `.select`، …) که هر صفحه از همان مجموعه بازاستفاده
+  می‌کند، نه بازتعریف محلی. CSS واکنش‌گرا (Grid خودکارجمع‌شونده + یک Media Query برای چیدمان
+  نامتقارن Dashboard/Converter) و یک Dark Mode واقعی (شفافیت/Highlight/Glint با پالت تیره‌ی
+  مجزا، نه صرفاً پس‌زمینه‌ی تیره پشت المان‌های روشن) هر دو با Playwright تأیید شده‌اند — Dark Mode
+  مستقیماً روی ۶ از ۸ صفحه (Dashboard، Converter، Analyzer، Subscription Center، Export Center،
+  Developer Console) Screenshot گرفته شد؛ Settings و Extractor از همان کلاس‌های مشترک استفاده
+  می‌کنند پس باید همان‌طور درست باشند، ولی به‌صورت مجزا دوباره Screenshot نگرفته شدند.
+- **پیش‌نمایش گزارش HTML در Export Center، در Dark Mode کنتراست پایینی دارد** —
+  `core/exporter/to-html.js` یک سند HTML کاملاً مستقل با استایل داخلی ثابت (برای دانلود/اشتراک‌گذاری
+  خارج از اپ) می‌سازد که عمداً به `data-theme` زنده‌ی اپ وابسته نیست؛ داخل iframe در Dark Mode
+  همان استایل روشن ثابت را دارد که روی پس‌زمینه‌ی تیره‌ی iframe کم‌کنتراست دیده می‌شود. رفع آن یک
+  تغییر در خودِ `core/exporter/to-html.js` (افزودن `background:#fff` صریح به سند تولیدی) است، نه
+  یک مسئله‌ی `theme.css`.
 - **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** — یک نتیجه‌ی معماری، نه محدودیت:
   منطق Detect/Normalize داخل خود هر Parser و `core/unm/mapper/` پیاده شده.
 - **«Recent Exports» (Dashboard) و «Alternative Candidates» (Developer Console)** همچنان
@@ -238,7 +258,13 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 
 ## گام بعدی واقعی
 
-طبق تصمیمی که از ابتدای پروژه به انتهای کل Roadmap موکول شده بود، گام بعدی **فاز نهایی طراحی
-بصری** است: پیاده‌سازی کامل «Cyber Professional / Glassmorphism» (سند ۰۷ §۲)، RTL کامل، ترجمه‌ی
-محتوای فارسی صفحات (زیرساخت i18n از قبل آماده است)، و CSS واکنش‌گرا/Media Query برای معیار
-«Mobile Optimized» سند ۰۹.
+فاز نهایی طراحی بصری (هویت «Liquid Glass»، بازطراحی هر ۸ صفحه، CSS واکنش‌گرا، Dark Mode واقعی)
+کامل شد. آنچه از آن فاز صادقانه هنوز باقی مانده (بخش «محدودیت‌های شناخته‌شده» بالا):
+
+1. **ترجمه‌ی واقعی محتوای صفحات به فارسی** — زیرساخت i18n آماده است، فقط متن‌ها به Dictionary
+   وصل نشده‌اند.
+2. **تأیید بصری واقعی RTL** با محتوای فارسی واقعی زیر `dir="rtl"` (تا امروز فقط رعایت CSS
+   Logical Properties تضمین شده، نه یک بررسی چشمی).
+3. یک اصلاح کوچک در `core/exporter/to-html.js` برای کنتراست پیش‌نمایش گزارش HTML در Dark Mode.
+
+هیچ‌کدام Blocker معماری ندارند؛ هر سه آماده‌ی شروع مستقیم‌اند.
