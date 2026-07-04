@@ -324,4 +324,12 @@ export const fa = {
   "settings.themeEngine.currentlyAppliedPrefix": "درحال‌حاضر اعمال‌شده: ",
   "settings.themeEngine.currentlyAppliedDark": "تیره",
   "settings.themeEngine.currentlyAppliedLight": "روشن",
+  "settings.languageEngine.title": "زبان",
+  "settings.languageEngine.legend": "زبان",
+  "settings.languageEngine.en": "English",
+  "settings.languageEngine.fa": "فارسی",
+  "settings.languageEngine.auto": "خودکار (همگام با سیستم)",
+  "settings.languageEngine.currentlyAppliedPrefix": "درحال‌حاضر اعمال‌شده: ",
+  "settings.languageEngine.currentlyAppliedEn": "English",
+  "settings.languageEngine.currentlyAppliedFa": "فارسی",
 };

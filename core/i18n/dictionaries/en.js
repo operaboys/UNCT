@@ -322,4 +322,12 @@ export const en = {
   "settings.themeEngine.currentlyAppliedPrefix": "Currently applied: ",
   "settings.themeEngine.currentlyAppliedDark": "Dark",
   "settings.themeEngine.currentlyAppliedLight": "Light",
+  "settings.languageEngine.title": "Language",
+  "settings.languageEngine.legend": "Language",
+  "settings.languageEngine.en": "English",
+  "settings.languageEngine.fa": "فارسی",
+  "settings.languageEngine.auto": "Auto (System Sync)",
+  "settings.languageEngine.currentlyAppliedPrefix": "Currently applied: ",
+  "settings.languageEngine.currentlyAppliedEn": "English",
+  "settings.languageEngine.currentlyAppliedFa": "فارسی",
 };
