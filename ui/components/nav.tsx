@@ -30,27 +30,39 @@
  * Active-tab styling is driven entirely by the pre-existing `disabled` prop
  * (`.nav-tab:disabled` in theme.css) — this redesign only changes the CSS,
  * not the click/keyboard-focus semantics `main.tsx` already had.
+ *
+ * Labels resolve through `t()` (`createTranslator`/`settingsStore`, the same
+ * pattern every one of the 8 screens already uses) — left hardcoded English
+ * during the initial i18n content pass since real Persian content didn't
+ * exist yet at that point, but that's no longer true now that a real
+ * Language switcher exists in Settings: a user switching languages must not
+ * see the nav bar stay English while every screen's own content switches.
  */
+import { createTranslator } from "../../core/i18n/translator.js";
+import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 
 export interface NavItem {
   key: string;
-  label: string;
+  labelKey: string;
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "converter", label: "Converter" },
-  { key: "analyzer", label: "Analyzer" },
-  { key: "subscription", label: "Subscription Center" },
-  { key: "extractor", label: "Extractor" },
-  { key: "export", label: "Export Center" },
-  { key: "settings", label: "Settings" },
-  { key: "devconsole", label: "Developer Console" },
+  { key: "dashboard", labelKey: "nav.dashboard" },
+  { key: "converter", labelKey: "nav.converter" },
+  { key: "analyzer", labelKey: "nav.analyzer" },
+  { key: "subscription", labelKey: "nav.subscription" },
+  { key: "extractor", labelKey: "nav.extractor" },
+  { key: "export", labelKey: "nav.export" },
+  { key: "settings", labelKey: "nav.settings" },
+  { key: "devconsole", labelKey: "nav.devconsole" },
 ];
 
 export function AppNav({ current, onNavigate }: { current: string; onNavigate: (key: string) => void }) {
+  useSettingsState();
+  const t = createTranslator(settingsStore);
+
   return (
-    <nav class="app-nav glass-panel" aria-label="Screen Switcher">
+    <nav class="app-nav glass-panel" aria-label={t("nav.screenSwitcher")}>
       <div class="app-nav__scroll">
         {NAV_ITEMS.map((item) => (
           <button
@@ -60,7 +72,7 @@ export function AppNav({ current, onNavigate }: { current: string; onNavigate: (
             disabled={current === item.key}
             onClick={() => onNavigate(item.key)}
           >
-            {item.label}
+            {t(item.labelKey)}
           </button>
         ))}
       </div>

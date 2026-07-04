@@ -38,12 +38,14 @@ test.describe("Settings Screen — Language Engine", () => {
     await expect(page.getByText("درحال‌حاضر اعمال‌شده: فارسی")).toBeVisible();
 
     // Switching screens confirms the language choice persists app-wide,
-    // not just on the screen where it was changed.
-    await page.getByRole("button", { name: "Converter", exact: true }).click();
+    // not just on the screen where it was changed. Nav labels are Persian
+    // now too (ui/components/nav.tsx resolves through t() since this same
+    // checkpoint), so the click itself uses the Persian label.
+    await page.getByRole("button", { name: "مبدل", exact: true }).click();
     await expect(page.locator(".screen-title")).toHaveText("مبدل");
 
     // Switching back to English un-flips both the attributes and the text.
-    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "تنظیمات", exact: true }).click();
     await page.getByRole("radio", { name: "English" }).check();
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");

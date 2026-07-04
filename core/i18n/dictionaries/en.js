@@ -11,6 +11,17 @@
  * `common.*` section for strings repeated verbatim across screens.
  */
 export const en = {
+  // nav — ui/components/nav.tsx's shared tab bar (all 8 Main Screens)
+  "nav.screenSwitcher": "Screen Switcher",
+  "nav.dashboard": "Dashboard",
+  "nav.converter": "Converter",
+  "nav.analyzer": "Analyzer",
+  "nav.subscription": "Subscription Center",
+  "nav.extractor": "Extractor",
+  "nav.export": "Export Center",
+  "nav.settings": "Settings",
+  "nav.devconsole": "Developer Console",
+
   // common — strings repeated verbatim across multiple screens
   "common.noNodesYet": "No nodes yet — parse something on the Converter Screen first.",
   "common.noNodesYetShort": "No nodes yet.",
@@ -105,7 +116,7 @@ export const en = {
   "converter.normalizedObject.ariaLabel": "Normalized Object",
   "converter.outputPanel.title": "Output",
   "converter.outputPanel.ariaLabel": "Output Panel",
-  "converter.outputPanel.qrDeferredHint": "QR output is deferred — no QR library has been reviewed under 14-DEPENDENCY_POLICY yet.",
+  "converter.outputPanel.qrDeferredHint": "QR output isn't available in this list yet — download QR codes from the Export Center screen instead.",
   "converter.outputPanel.nothingToExport": "Nothing to export yet.",
   "converter.format.url": "Links (URL)",
   "converter.format.xrayJson": "Xray JSON",
@@ -212,7 +223,7 @@ export const en = {
   "subscription.nodeList.saveAsTemplate": "Save as Template",
   "subscription.templateLibrary.title": "Template Library",
   "subscription.templateLibrary.hint":
-    "A Template is exactly a saved node (doc 03 §6) — kept in its own cross-session library, separate from the working Node List above, so clearing/re-parsing never loses it. Check a node above and click \"Save as Template\", or select templates below to include them in the Subscription Builder.",
+    "A Template is a saved node kept in its own library, separate from the working Node List above, so clearing or re-parsing never loses it. Check a node above and click \"Save as Template\", or select templates below to include them in the Subscription Builder.",
   "subscription.templateLibrary.empty": "No templates saved yet.",
   "subscription.templateLibrary.remarkColumn": "Remark",
   "subscription.templateLibrary.delete": "Delete",
@@ -241,14 +252,14 @@ export const en = {
   "extractor.domain.hint": "No nodes have a domain address.",
   "extractor.worker.title": "Worker Extractor",
   "extractor.worker.notAnalyzedHint":
-    "No nodes analyzed yet — visit the Analyzer Screen first. Worker detection is an Analyzer verdict, not a raw field (Rule 9: never guess from an unanalyzed node).",
+    "No nodes analyzed yet — visit the Analyzer Screen first. Worker detection only appears once a node has been analyzed.",
   "extractor.worker.noneDetected": "No analyzed nodes were detected as Cloudflare Workers.",
   "extractor.reality.title": "Reality Extractor",
   "extractor.reality.hint": "No nodes use Reality.",
   "extractor.reality.clickAnalyzeFirst": "Click Analyze first",
   "extractor.dns.title": "DNS Extractor",
   "extractor.dns.hint":
-    "Deferred — `dnsLeakRisk` (core/analyzer/analyze-node.js) exists but is not yet wired into `AnalysisBundle` at all (ADR-022), a different, not-yet-finished situation from Worker Extractor above (which is real — it only lacked this UI layer, per the Orphan Check that un-deferred it).",
+    "DNS leak detection isn't available yet — this section will show real results once that analysis is added.",
 
   // export-screen.tsx
   "export.title": "Export Center",
@@ -268,15 +279,15 @@ export const en = {
   "export.status.copyFailed": "Copy failed.",
   "export.zip.title": "ZIP Export",
   "export.zip.hint":
-    "Bundles TXT, Xray JSON, Sing-box JSON, Normalized JSON, Clash YAML, and CSV plus a manifest.json (Export Version, Export Date, Node Count, UNM Version) into one archive — doc 08 §7's Full Project Snapshot.",
+    "Bundles TXT, Xray JSON, Sing-box JSON, Normalized JSON, Clash YAML, and CSV plus a manifest.json (export version, export date, node count) into one archive.",
   "export.zip.download": "Download ZIP",
   "export.qr.title": "QR Export",
   "export.qr.hint":
-    "One QR code per node (doc 08 §6's \"Single Node · Multi QR Pages\") — encodes each node's URL form, the same string TXT Export produces. Print this page for a printable sheet.",
+    "One QR code per node — encodes each node's URL form, the same string TXT Export produces. Print this page for a printable sheet.",
   "export.qr.downloadSvg": "Download SVG",
   "export.htmlReport.title": "HTML Report Export",
   "export.htmlReport.hint":
-    "Summary, Analysis, Security Report, Compatibility Report, Warnings, and Recommendations per node (doc 08 §8) — escaped per value, then sanitized as a whole document via DOMPurify (doc 08 §11, ADR-018) before either preview or download.",
+    "Summary, Analysis, Security Report, Compatibility Report, Warnings, and Recommendations per node — sanitized before either preview or download.",
   "export.htmlReport.downloadHtml": "Download HTML",
 
   // devconsole-screen.tsx
@@ -309,11 +320,11 @@ export const en = {
   "devconsole.detectionLogs.title": "Detection Logs",
   "devconsole.detectionLogs.alternativeCandidates.title": "Alternative Candidates",
   "devconsole.detectionLogs.alternativeCandidates.hint":
-    "Deferred — `core/parser/factory.js`'s `parseWithFallback` ranks candidate parsers transiently while choosing one, but that ranking is never kept past parser selection (`core/parser/parse-and-validate.js` only keeps the chosen parser's name, extraction, and recovered fields). Shown as a placeholder until a module persists it (Rule 9: never fabricate).",
+    "Not available yet — alternative parser candidates aren't kept once a node has been parsed.",
 
   // settings-screen.tsx
   "settings.title": "Settings",
-  "settings.subtitle": "App-wide preferences — currently just the Theme Engine (07-UI_UX_SYSTEM §2); nothing else is spec'd here yet.",
+  "settings.subtitle": "App-wide preferences for theme and language.",
   "settings.themeEngine.title": "Theme Engine",
   "settings.themeEngine.legend": "Theme",
   "settings.themeEngine.dark": "Dark Mode",

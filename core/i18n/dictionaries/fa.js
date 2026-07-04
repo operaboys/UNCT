@@ -13,6 +13,17 @@
  * community tools rather than a forced literal translation of every word.
  */
 export const fa = {
+  // nav
+  "nav.screenSwitcher": "تعویض صفحه",
+  "nav.dashboard": "داشبورد",
+  "nav.converter": "مبدل",
+  "nav.analyzer": "تحلیل‌گر",
+  "nav.subscription": "مرکز اشتراک",
+  "nav.extractor": "استخراج‌کننده",
+  "nav.export": "مرکز خروجی",
+  "nav.settings": "تنظیمات",
+  "nav.devconsole": "کنسول توسعه‌دهنده",
+
   // common
   "common.noNodesYet": "هنوز نودی وجود ندارد — ابتدا چیزی را در صفحه‌ی مبدل تجزیه کنید.",
   "common.noNodesYetShort": "هنوز نودی وجود ندارد.",
@@ -107,7 +118,7 @@ export const fa = {
   "converter.normalizedObject.ariaLabel": "آبجکت نرمال‌شده",
   "converter.outputPanel.title": "خروجی",
   "converter.outputPanel.ariaLabel": "پنل خروجی",
-  "converter.outputPanel.qrDeferredHint": "خروجی QR فعلاً به تعویق افتاده — هنوز هیچ کتابخانه‌ی QR طبق 14-DEPENDENCY_POLICY بررسی نشده است.",
+  "converter.outputPanel.qrDeferredHint": "خروجی QR در این لیست هنوز در دسترس نیست — به‌جای آن، کد QR را از صفحه‌ی مرکز خروجی دانلود کنید.",
   "converter.outputPanel.nothingToExport": "هنوز چیزی برای خروجی گرفتن وجود ندارد.",
   "converter.format.url": "لینک‌ها (URL)",
   "converter.format.xrayJson": "Xray JSON",
@@ -214,7 +225,7 @@ export const fa = {
   "subscription.nodeList.saveAsTemplate": "ذخیره به‌عنوان الگو",
   "subscription.templateLibrary.title": "کتابخانه‌ی الگوها",
   "subscription.templateLibrary.hint":
-    "یک الگو دقیقاً همان نود ذخیره‌شده است (سند ۰۳ §۶) — که در کتابخانه‌ی بین‌نشستی جداگانه‌ی خودش نگه‌داشته می‌شود، جدا از لیست نودهای کاری بالا، تا پاک‌کردن/تجزیه‌ی دوباره هرگز آن را از بین نبرد. یکی از نودهای بالا را علامت بزنید و روی «ذخیره به‌عنوان الگو» کلیک کنید، یا الگوهایی را در پایین انتخاب کنید تا در سازنده‌ی اشتراک لحاظ شوند.",
+    "یک الگو، یک نود ذخیره‌شده است که در کتابخانه‌ی خودش نگه‌داشته می‌شود، جدا از لیست نودهای کاری بالا، تا پاک‌کردن یا تجزیه‌ی دوباره هرگز آن را از بین نبرد. یکی از نودهای بالا را علامت بزنید و روی «ذخیره به‌عنوان الگو» کلیک کنید، یا الگوهایی را در پایین انتخاب کنید تا در سازنده‌ی اشتراک لحاظ شوند.",
   "subscription.templateLibrary.empty": "هنوز الگویی ذخیره نشده است.",
   "subscription.templateLibrary.remarkColumn": "یادداشت",
   "subscription.templateLibrary.delete": "حذف",
@@ -243,14 +254,14 @@ export const fa = {
   "extractor.domain.hint": "هیچ نودی آدرس دامنه ندارد.",
   "extractor.worker.title": "استخراج‌کننده‌ی Worker",
   "extractor.worker.notAnalyzedHint":
-    "هنوز نودی تحلیل نشده — ابتدا به صفحه‌ی تحلیل‌گر بروید. شناسایی Worker نتیجه‌ی تحلیل‌گر است، نه یک فیلد خام (قانون ۹: هرگز از نود تحلیل‌نشده حدس نزن).",
+    "هنوز نودی تحلیل نشده — ابتدا به صفحه‌ی تحلیل‌گر بروید. شناسایی Worker فقط بعد از تحلیل‌شدن نود ظاهر می‌شود.",
   "extractor.worker.noneDetected": "هیچ نود تحلیل‌شده‌ای به‌عنوان Cloudflare Worker شناسایی نشد.",
   "extractor.reality.title": "استخراج‌کننده‌ی Reality",
   "extractor.reality.hint": "هیچ نودی از Reality استفاده نمی‌کند.",
   "extractor.reality.clickAnalyzeFirst": "ابتدا تحلیل کنید",
   "extractor.dns.title": "استخراج‌کننده‌ی DNS",
   "extractor.dns.hint":
-    "به تعویق افتاده — `dnsLeakRisk` (core/analyzer/analyze-node.js) وجود دارد اما هنوز اصلاً به `AnalysisBundle` متصل نشده (ADR-022)؛ وضعیتی متفاوت و هنوز ناتمام نسبت به استخراج‌کننده‌ی Worker بالا (که واقعی است — فقط این لایه‌ی رابط کاربری را نداشت، طبق بررسی Orphan که آن را از حالت معلق خارج کرد).",
+    "شناسایی نشتی DNS هنوز در دسترس نیست — این بخش با اضافه‌شدن آن تحلیل، نتایج واقعی را نشان خواهد داد.",
 
   // export-screen.tsx
   "export.title": "مرکز خروجی",
@@ -270,15 +281,15 @@ export const fa = {
   "export.status.copyFailed": "کپی ناموفق بود.",
   "export.zip.title": "خروجی ZIP",
   "export.zip.hint":
-    "TXT، Xray JSON، Sing-box JSON، JSON نرمال‌شده، Clash YAML و CSV را به‌همراه یک manifest.json (نسخه‌ی خروجی، تاریخ خروجی، تعداد نودها، نسخه‌ی UNM) در یک بسته‌بندی می‌کند — تصویر کامل پروژه طبق سند ۰۸ §۷.",
+    "TXT، Xray JSON، Sing-box JSON، JSON نرمال‌شده، Clash YAML و CSV را به‌همراه یک manifest.json (نسخه‌ی خروجی، تاریخ خروجی، تعداد نودها) در یک بسته‌بندی می‌کند.",
   "export.zip.download": "دانلود ZIP",
   "export.qr.title": "خروجی QR",
   "export.qr.hint":
-    "یک کد QR برای هر نود (سند ۰۸ §۶، «Single Node · Multi QR Pages») — همان رشته‌ای که خروجی TXT تولید می‌کند را در قالب URL هر نود رمزگذاری می‌کند. برای دریافت یک برگه‌ی قابل‌چاپ، این صفحه را چاپ کنید.",
+    "یک کد QR برای هر نود — همان رشته‌ای که خروجی TXT تولید می‌کند را در قالب URL هر نود رمزگذاری می‌کند. برای دریافت یک برگه‌ی قابل‌چاپ، این صفحه را چاپ کنید.",
   "export.qr.downloadSvg": "دانلود SVG",
   "export.htmlReport.title": "خروجی گزارش HTML",
   "export.htmlReport.hint":
-    "خلاصه، تحلیل، گزارش امنیتی، گزارش سازگاری، هشدارها و پیشنهادها برای هر نود (سند ۰۸ §۸) — هر مقدار escape شده و سپس کل سند از طریق DOMPurify پاکسازی می‌شود (سند ۰۸ §۱۱، ADR-018)، پیش از پیش‌نمایش یا دانلود.",
+    "خلاصه، تحلیل، گزارش امنیتی، گزارش سازگاری، هشدارها و پیشنهادها برای هر نود — پیش از پیش‌نمایش یا دانلود پاکسازی می‌شود.",
   "export.htmlReport.downloadHtml": "دانلود HTML",
 
   // devconsole-screen.tsx
@@ -311,11 +322,11 @@ export const fa = {
   "devconsole.detectionLogs.title": "گزارش‌های شناسایی",
   "devconsole.detectionLogs.alternativeCandidates.title": "گزینه‌های جایگزین",
   "devconsole.detectionLogs.alternativeCandidates.hint":
-    "به تعویق افتاده — `parseWithFallback` در `core/parser/factory.js` هنگام انتخاب یک تجزیه‌گر، تجزیه‌گرهای کاندید را به‌طور موقت رتبه‌بندی می‌کند، اما آن رتبه‌بندی پس از انتخاب تجزیه‌گر نگه‌داشته نمی‌شود (`core/parser/parse-and-validate.js` فقط نام تجزیه‌گر انتخاب‌شده، استخراج، و فیلدهای بازیابی‌شده را نگه می‌دارد). تا زمانی که ماژولی آن را ماندگار نکند، به‌عنوان جای‌نگه‌دار نمایش داده می‌شود (قانون ۹: هرگز جعل نکن).",
+    "هنوز در دسترس نیست — گزینه‌های جایگزین تجزیه‌گر پس از تجزیه‌شدن یک نود نگه‌داشته نمی‌شوند.",
 
   // settings-screen.tsx
   "settings.title": "تنظیمات",
-  "settings.subtitle": "تنظیمات سراسری برنامه — فعلاً فقط موتور تم (سند 07-UI_UX_SYSTEM §۲)؛ هنوز چیز دیگری اینجا مشخص نشده است.",
+  "settings.subtitle": "تنظیمات سراسری برنامه برای تم و زبان.",
   "settings.themeEngine.title": "موتور تم",
   "settings.themeEngine.legend": "تم",
   "settings.themeEngine.dark": "حالت تیره",
