@@ -87,8 +87,6 @@
   --unct-pink: #ff6b9d;
   --unct-mint: #1fd1a6;
   --unct-amber: #ffb648;
-  --unct-text: #211b3d;
-  --unct-text-muted: #6b6584;
   /* Not part of the 07-UI_UX_SYSTEM §2 locked palette table (which has no
      error/danger role) — added because form validation errors need a
      distinct color; kept as muted/soft as the rest of the palette rather
@@ -99,15 +97,21 @@
   --unct-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 
-  /* No background image by default (dark theme below stays flat/untouched
-     — this Checkpoint only finalizes the Light identity). */
-  --unct-bg-image: none;
+  /* --unct-text/--unct-text-muted moved out of this shared block and into
+     the two theme-scoped blocks below (unified Dark Mode Checkpoint) —
+     unlike the five brand colors above, ink/muted-ink are surface-
+     dependent (dark ink reads fine on the light base, not on the dark
+     one), so every one of the ~20 component rules that already reference
+     `var(--unct-text)`/`var(--unct-text-muted)` needs a real per-theme
+     value, the same way `--unct-bg`/`--unct-fg` already had one. */
 }
 
 /* Scoped to exactly the two states Settings' Theme Engine resolves to
    (`resolvedTheme`, applied as `<html data-theme>` by ui/main.tsx). */
 :root[data-theme="light"] {
   --unct-bg: #ffffff;
+  --unct-text: #211b3d;
+  --unct-text-muted: #6b6584;
   --unct-fg: var(--unct-text);
   /* The approved Liquid Glass background: three large, soft radial color
      pools (purple top-left, pink top-right, mint bottom-center) over a
@@ -119,11 +123,27 @@
     linear-gradient(135deg, #f4f1ff 0%, #fdf9f0 50%, #eafcf7 100%);
 }
 
-/* Dark theme is intentionally NOT redesigned in this Checkpoint — kept
-   exactly as it was before this pass (flat colors, no gradient/glass). */
+/* Dark Mode (unified end-of-phase Checkpoint) — a real Liquid Glass
+   design pass, not the flat placeholder colors this block held before.
+   Text/background tokens live here; every `.glass-panel`/component
+   surface, highlight, hairline border, and status color that needs a
+   different value on a dark backdrop is overridden in the dedicated
+   "Dark Mode" section near the end of this file (kept as one block for
+   readability, rather than scattered per-rule edits to the light-mode
+   CSS above, which stays provably untouched). */
 :root[data-theme="dark"] {
   --unct-bg: #14161a;
-  --unct-fg: #e8e8e8;
+  --unct-text: #f1eef6;
+  --unct-text-muted: #a39dc0;
+  --unct-fg: var(--unct-text);
+  /* Same three-radial-glow structure as the light gradient above, re-tuned
+     to dim/desaturated glows over a near-black base instead of a bright
+     cream one — still a layered Liquid Glass backdrop, not a flat color. */
+  --unct-bg-image:
+    radial-gradient(ellipse 60% 50% at 12% 8%, rgba(124, 92, 252, 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(255, 107, 157, 0.14), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(31, 209, 166, 0.12), transparent 65%),
+    linear-gradient(135deg, #18151f 0%, #121316 50%, #101a1a 100%);
 }
 
 body {
@@ -456,6 +476,17 @@ code, kbd, samp, .mono {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 20px;
+}
+/* Unified-mobile-behavior Checkpoint: `.content-grid`'s asymmetric ratio is
+   intentional on wide viewports (Dashboard/Converter's master-detail
+   layout, pixel-matched to an approved reference) — unlike `.panel-grid`,
+   it can't use `auto-fit`/`minmax` without losing that 1.6:1 weighting, so
+   a breakpoint collapses it to a single stacked column instead, matching
+   `.panel-grid`'s own collapse point (2 × its 320px minmax + 20px gap). */
+@media (max-width: 660px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .panel {
   padding: 22px;
@@ -813,6 +844,17 @@ code, kbd, samp, .mono {
 }
 
 .select {
+  /* max-width + the text-overflow trio below: a native <select> otherwise
+     sizes itself to fit its single LONGEST <option> text (e.g. Export
+     Center's "Clash YAML / Clash Meta / Mihomo / Provider File"), which
+     overflows narrow viewports regardless of the currently selected
+     option's own length — this is what was actually behind the "label
+     wraps above the control" mobile issue found in an earlier Checkpoint,
+     not a flex/legend problem. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding-block: 9px;
   padding-inline: 14px;
   border: none;
@@ -934,6 +976,12 @@ code, kbd, samp, .mono {
 }
 
 .field {
+  /* `min-width: 0` overrides the flex default of `min-width: auto`, which
+     otherwise refuses to shrink a flex item below its content's intrinsic
+     min-size (the oversized <select> above) — without this, `.select`'s
+     own `max-width: 100%` has nothing to shrink against inside a wrapping
+     `.form-actions` row. */
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1022,3 +1070,117 @@ code, kbd, samp, .mono {
   background: rgba(124, 92, 252, 0.14);
   box-shadow: 0 0 0 1.5px var(--unct-purple) inset;
 }
+
+/* =======================================================================
+ * Dark Mode — a real Liquid Glass design pass (unified end-of-phase
+ * Checkpoint), covering all 8 redesigned screens at once. Everything
+ * below is scoped under `:root[data-theme="dark"] <selector>`, which has
+ * higher specificity than the bare `.classname` rules above regardless of
+ * source order — this section is purely ADDITIVE, not one existing
+ * light-mode rule above was edited to build it, so light mode is
+ * provably byte-for-byte unchanged. `--unct-text`/`--unct-text-muted`
+ * were already redefined for dark mode up in the `:root[data-theme="dark"]`
+ * token block near the top of this file — since ~20 component rules
+ * already read those two variables (not hardcoded literals), that single
+ * redefinition alone fixes most of this screen's text contrast; only
+ * hardcoded-literal backgrounds/borders/status-colors need the explicit
+ * overrides below.
+ *
+ * Same technique as light mode, re-tuned for a dark backdrop: light mode
+ * washes a panel with white at ~0.4-0.55 opacity over a bright base; here
+ * every surface instead gets a much LOWER-opacity white wash (a standard
+ * "frosted dark glass" technique — a whisper of light lifting the panel
+ * off the near-black background, not a color invert), and every status/
+ * severity color that relied on a DARK, saturated text tone for contrast
+ * on a light tint (e.g. `.tag--valid`'s `#0d8a6e` dark green) gets a
+ * brighter equivalent, since a dark-ink color on a barely-tinted dark
+ * surface would otherwise be nearly invisible.
+ * ===================================================================== */
+
+:root[data-theme="dark"] .glass-panel {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 24px 48px rgba(0, 0, 0, 0.4);
+}
+:root[data-theme="dark"] .glass-panel::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 42%);
+}
+:root[data-theme="dark"] .glass-panel::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+}
+
+:root[data-theme="dark"] .signal-ring {
+  background: conic-gradient(
+    from -90deg,
+    var(--unct-purple) 0%,
+    var(--unct-mint) calc(var(--signal-value) * 1%),
+    rgba(255, 255, 255, 0.12) calc(var(--signal-value) * 1%)
+  );
+}
+:root[data-theme="dark"] .signal-ring::before {
+  background: rgba(20, 22, 26, 0.9);
+}
+
+:root[data-theme="dark"] .stat-value--mint,
+:root[data-theme="dark"] .node-score.high {
+  color: #4ee8c3;
+}
+:root[data-theme="dark"] .node-score.high {
+  background: rgba(31, 209, 166, 0.16);
+}
+:root[data-theme="dark"] .node-score.mid {
+  background: rgba(255, 182, 72, 0.18);
+  color: #ffcf85;
+}
+
+:root[data-theme="dark"] .node-item:hover,
+:root[data-theme="dark"] .data-table tr:hover td {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="dark"] .dist-track {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* Every "neutral glass surface" control — inputs, selects, ghost buttons,
+   the secondary Quick-Action button, nav-tab hover, radio cards — shares
+   one low-opacity white wash in dark mode, the same way most of them
+   already share one light-mode opacity (~0.5) today. */
+:root[data-theme="dark"] .action-btn.secondary,
+:root[data-theme="dark"] .btn--ghost,
+:root[data-theme="dark"] .nav-tab:not(:disabled):hover,
+:root[data-theme="dark"] .select,
+:root[data-theme="dark"] .input,
+:root[data-theme="dark"] .code-textarea,
+:root[data-theme="dark"] .radio-card {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="dark"] .btn--ghost:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+:root[data-theme="dark"] .radio-card:has(input:checked) {
+  background: rgba(124, 92, 252, 0.24);
+}
+
+/* Hairline dividers: the light-mode `rgba(33, 27, 61, X)` (dark ink) borders
+   would be invisible on a dark background — swapped for a light-based
+   hairline instead. */
+:root[data-theme="dark"] .kv-row,
+:root[data-theme="dark"] .data-table th,
+:root[data-theme="dark"] .data-table td {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+:root[data-theme="dark"] .embed-frame {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Status/severity colors: brighter text tones so each tag/alert stays
+   readable against its own low-opacity tinted background in the dark. */
+:root[data-theme="dark"] .tag--valid { background: rgba(31, 209, 166, 0.18); color: #4ee8c3; }
+:root[data-theme="dark"] .tag--invalid { background: rgba(229, 72, 77, 0.22); color: #ff9494; }
+:root[data-theme="dark"] .tag--info { background: rgba(168, 162, 192, 0.18); color: #c7c2dd; }
+:root[data-theme="dark"] .tag--warning { background: rgba(255, 182, 72, 0.24); color: #ffcf85; }
+:root[data-theme="dark"] .tag--critical { background: rgba(229, 72, 77, 0.38); color: #ffb3b3; }
+:root[data-theme="dark"] .alert--error { background: rgba(229, 72, 77, 0.18); color: #ff9494; }
