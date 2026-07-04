@@ -85,7 +85,7 @@
 | Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
 | Visualization | Subscription Visualizer ✅ (P12-11, بدون Chart Library — ADR-026) *(بقیه‌ی چهار مورد حذف شدند — بند زیر)* |
 | Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
-| UX Scaling | Extractor Level System *(بررسی P12-12 — بند زیر؛ ۴ Extractor فعال از ۸-۱۰ آستانه‌ی پیشنهادی)* |
+| UX Scaling | Extractor Level System *(بررسی P12-12 — بند زیر؛ ۶ Extractor فعال از ۸-۱۰ آستانه‌ی پیشنهادی، به‌روز شده بعد از فعال‌شدن Worker/DNS Extractor)* |
 
 ### P12-11 — وضعیت گروه Visualization *(بررسی جدید — پیش از هر تحقیق Library)*
 
@@ -140,6 +140,13 @@ Dependency). جزئیات کامل در `docs/adr/ADR-026-VISUALIZATION-GROUP-NO
 > نیست — در Phase 11 با Spec کامل (ADR-020) ساخته و تست شده و از این ردیف حذف شد. آنچه باقی
 > می‌ماند صرفاً **یک API عمومی/مستندشده‌ی سطح‌بالاتر** روی همان مکانیزم است — که طبق بررسی P12-13
 > زیر، هنوز Blocked است.
+
+> **اصلاح (بعد از این بررسی):** ردیف‌های ۵ (Worker Extractor) و ۶ (DNS Extractor) بالا، هر دو در
+> چک‌پوینت‌های بعدی از Placeholder خارج و فعال شدند — Worker Extractor (Orphan Check جدا، بدون
+> نیاز به منطق Core جدید) و DNS Extractor (`analyzeDnsLeakRisk` به `AnalysisBundle` وصل شد،
+> ADR-022 Addendum). **عدد واقعی امروز: ۶ Extractor کاملاً فعال از ۶ کل** (`ui/extractor/
+> extractor-screen.tsx` — هیچ `aria-disabled` باقی نمانده). آستانه‌ی ۸-۱۰ همچنان محقق نشده،
+> پس تصمیم «Blocked می‌ماند» زیر عوض نمی‌شود — فقط فاصله تا آستانه کمتر شده (۲ Extractor، نه ۴).
 
 ### P12-13 — وضعیت Custom Parser/Export API *(بررسی جدید)*
 

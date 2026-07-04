@@ -3,29 +3,32 @@
 ابزار آفلاین و کلاینت‌ساید برای تبدیل، تحلیل، و مدیریت کانفیگ‌های شبکه (VLESS, VMESS, Trojan, Shadowsocks, Hysteria2, TUIC, WireGuard).
 
 > پروژه هر ۱۳ فاز Roadmap (`docs/blueprints/09-DEVELOPMENT_ROADMAP.md`) را — با چند استثنای صریح
-> و مستند که آگاهانه Blocked/حذف شده‌اند (پایین‌تر) — پشت سر گذاشته، و **فاز نهایی: طراحی بصری**
-> (هویت «Liquid Glass» طبق سند ۰۷ §۲، بازطراحی هر ۸ صفحه، CSS واکنش‌گرا، و Dark Mode واقعی) هم
-> کامل شده — همان فازی که از ابتدای پروژه عمداً به انتها موکول شده بود. آنچه از آن فاز هنوز باقی
-> مانده (ترجمه‌ی واقعی محتوای صفحات به فارسی + تأیید بصری RTL) در «محدودیت‌های شناخته‌شده» پایین‌تر
-> صادقانه ذکر شده.
+> و مستند که آگاهانه Blocked/حذف شده‌اند (پایین‌تر) — پشت سر گذاشته. **فاز نهایی: طراحی بصری**
+> (هویت «Liquid Glass» طبق سند ۰۷ §۲، بازطراحی هر ۸ صفحه، CSS واکنش‌گرا، Dark Mode واقعی) کامل
+> شده، **و** بعد از آن، ترجمه‌ی واقعی فارسی + تأیید بصری RTL هر ۸ صفحه هم کامل شد (`core/i18n/`،
+> ۲۹۹ کلید دیکشنری در هر دو زبان، `tests/e2e/rtl-visual.spec.js` با ۱۳ تست Pass). چند فیکس
+> کنتراست/Responsive واقعی هم بعد از آن پیدا و رفع شدند (پایین‌تر). آنچه واقعاً هنوز باز است —
+> `riskScore` نهایی، Custom Parser/Export API، Extractor Level System — در «محدودیت‌های
+> شناخته‌شده» پایین‌تر صادقانه ذکر شده.
 
 ## وضعیت کلی
 
 **Phase 0 تا Phase 12 کامل‌اند**، با این استثناهای مستند و آگاهانه (نه نقص، نه فراموشی):
-- DNS Analyzer اکنون به `AnalysisBundle` وصل است و در Extractor Screen واقعی نمایش داده می‌شود
-  (ADR-022 Addendum)؛ فقط تجمیع `dnsLeakRisk` در یک `riskScore` نهایی (Final Report، ترکیب
-  Security+Compatibility+DNS+Reality) همچنان باز است — فرمولش هنوز تعریف نشده.
+- `riskScore` نهایی (تجمیع Security+Compatibility+DNS+Reality در Final Report) هنوز تعریف
+  نشده — طبق ADR-011، یک ADR جدا و آینده است.
 - Custom Parser/Export API عمومی (Phase 11) عمداً Blocked است تا حداقل دو Plugin واقعی نوشته شود.
 - از گروه Visualization (Phase 12، ۵ فیچر)، ۴ تا به‌طور کامل از Backlog حذف شدند (داده‌ی واقعی
   ندارند)؛ فقط Subscription Visualizer ساخته شد.
-- Extractor Level System (Phase 12) با عدد دقیق (۴ از ۶ Extractor فعال) همچنان Blocked است.
+- Extractor Level System (Phase 12) همچنان Blocked است — هر ۶ Extractor واقعی حالا فعال‌اند
+  (بند پایین)، ولی آستانه‌ی پیشنهادی ۸-۱۰ Extractor هنوز محقق نشده.
 
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
 تست: **۱۱۱۲ تست در ۹۱ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
 موفق (`app.js` ~۳۱۴kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
---omit=dev` صفر آسیب‌پذیری.
+--omit=dev` صفر آسیب‌پذیری. (هر عدد بالا با اجرای واقعی `npm test`/`npm run typecheck`/
+`npm run build`/`npm audit` در همین چک‌پوینت دوباره تأیید شد، نه از حافظه.)
 
 ---
 
@@ -41,9 +44,9 @@
 | Phase 5 — Web Worker Engine | ✅ کامل | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` + `converter.worker.js` واقعی‌اند و هر سه به Converter Screen وصل‌اند (Parse از طریق `parser.worker.js`، Convert از طریق `converter.worker.js`، هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016). **استثنا:** Export Center مسیر جدایی دارد و مستقیماً `core/exporter/` را روی Main Thread صدا می‌زند، نه از طریق این Worker Pool (بخش محدودیت‌ها) |
 | Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
-| Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شود |
-| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته و روی هویت بصری «Liquid Glass» بازطراحی شده؛ Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ اکنون با CSS واکنش‌گرا (Media Query + Grid خودکار‌جمع‌شونده) پوشش داده شده — تأییدشده با Playwright روی چند صفحه؛ Dark Mode هم یک نسخه‌ی واقعی «Liquid Glass» تیره دارد (نه فقط رنگ تخت پشت المان‌های روشن) |
-| Phase 10 — Analyzer Extended | ✅ کامل (با یک استثنای مستند) | هر ۷ ماژول ساخته شده‌اند؛ ۶ تا به `AnalysisBundle`/UI وصل‌اند، یکی (DNS) عمداً نه — جزئیات در بخش جدا پایین‌تر |
+| Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme/Language در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شوند |
+| Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته، روی هویت بصری «Liquid Glass» بازطراحی، و کامل به فارسی ترجمه شده (i18n + RTL، بند پایین). Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ با CSS واکنش‌گرا (Media Query + Grid خودکار‌جمع‌شونده) پوشش داده شده و با چند فیکس واقعی Responsive بعد از بازطراحی تکمیل شد (بند «محدودیت‌های شناخته‌شده» پایین برای فهرست دقیق)؛ Dark Mode هم یک نسخه‌ی واقعی «Liquid Glass» تیره دارد که روی هر ۸ صفحه جداگانه Screenshot گرفته و تأیید شده |
+| Phase 10 — Analyzer Extended | ✅ کامل | هر ۷ ماژول ساخته شده و به `AnalysisBundle`/UI وصل‌اند (جدول پایین) |
 | Phase 11 — Plugin System | ✅ مکانیزم کامل / API عمومی Blocked | Loader/Registry/Exporter Contract (ADR-020) کامل و تست‌شده؛ Custom Parser/Export API عمومی Blocked با شرط دقیق — جزئیات پایین‌تر |
 | Phase 12 — Advanced/Backlog | ✅ کامل (۳ Tier) | هر ۳ Tier بررسی/پیاده‌سازی شدند؛ چند آیتم آگاهانه Blocked/حذف شدند نه ساخته — جزئیات پایین‌تر |
 
@@ -51,7 +54,7 @@
 
 ## Phase 10 — Analyzer Extended: وضعیت هر ۷ ماژول
 
-`core/analyzer/extended/` هفت ماژول دارد. شش‌تای اول از طریق `analyze-node.js` به
+`core/analyzer/extended/` هفت ماژول دارد. هر هفت‌تا از طریق `analyze-node.js` به
 `AnalysisBundle` وصل و در UI مصرف می‌شوند (تأییدشده با grep مستقیم):
 
 | ماژول | وضعیت | مصرف در UI |
@@ -62,7 +65,7 @@
 | Worker Analyzer | ✅ کامل | Analyzer Screen — «Worker Analysis» + Extractor Screen — «Worker Extractor» |
 | Rule Analyzer (P12-5) | ✅ کامل | Analyzer Screen — «Route Rules Analysis» |
 | Subscription Analyzer | ✅ کامل (سطح-مجموعه، نه AnalysisBundle) | Subscription Center — Summary + Protocol Distribution (نمودار میله‌ای، P12-11) |
-| **DNS Analyzer** | ✅ کامل، **به `AnalysisBundle` وصل** (فیلد مستقل `dns`، ADR-022 Addendum) | Extractor Screen — «DNS Extractor» (Badge رنگی برای none/low/medium/high/unknown). تجمیع در `riskScore` نهایی همچنان یک گام آینده (Final Report aggregation) است — طبق ADR-011، هرگز در `securityScore` ادغام نمی‌شود |
+| DNS Analyzer | ✅ کامل، به `AnalysisBundle` وصل (فیلد مستقل `dns`، ADR-022 Addendum) | Extractor Screen — «DNS Extractor» (Badge رنگی برای none/low/medium/high/unknown). تجمیع در `riskScore` نهایی همچنان یک گام آینده است — طبق ADR-011، هرگز در `securityScore` ادغام نمی‌شود |
 
 ---
 
@@ -96,8 +99,9 @@ UNMNode است که در یک IndexedDB جدا (`core/storage/template-store.js`
 
 **Tier 3 (بررسی صادقانه‌ی Backlog قدیمی، قبل از هر کد جدید):**
 - Custom Parser/Export API → Blocked (بالا).
-- Extractor Level System → شمارش دقیق نشان داد فقط ۴ از ۶ Extractor فعال‌اند (آستانه‌ی
-  پیشنهادی ۸-۱۰) — Blocked با عدد دقیق، نه حدس.
+- Extractor Level System → هر ۶ Extractor واقعی (`ui/extractor/extractor-screen.tsx`) حالا
+  فعال‌اند (UUID/IP/Domain/Reality/Worker/DNS، هیچ `aria-disabled` باقی نمانده)، ولی آستانه‌ی
+  پیشنهادی ۸-۱۰ Extractor مجزا هنوز محقق نشده — Blocked با عدد دقیق، نه حدس.
 - گروه Visualization (۵ فیچر) → ۴ تا (Node Relationship Map، Visual Topology Mapper،
   Cloudflare Topology View، Reality Visualizer) **به‌طور کامل حذف شدند**، چون هیچ داده‌ی
   واقعی چندموجودیتی/رابطه‌ای در UNM برایشان وجود ندارد (نه یک فیلد کم است، بلکه خودِ مفهوم
@@ -112,16 +116,41 @@ P12-12، P12-13).
 
 ## ۸ صفحه‌ی اصلی (Main Screens)
 
+هر ۸ صفحه روی هویت «Liquid Glass» بازطراحی و کامل به فارسی ترجمه شده‌اند (`t()`/
+`createTranslator`، شامل نوار ناوبری بالای صفحه). وضعیت واقعی هر صفحه:
+
 | # | صفحه | وضعیت واقعی |
 |---|---|---|
 | 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports» همگی واقعی. «Recent Exports» همچنان Placeholder غیرفعال — هیچ ماژولی هنوز Log فعالیت Export را ثبت نمی‌کند |
-| 2 | **Converter** | Paste Area + **File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل** (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
+| 2 | **Converter** | Paste Area + File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
-| 5 | **Extractor** | هر ۶ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/**DNS**. هیچ Placeholder غیرفعالی باقی نمانده |
+| 5 | **Extractor** | هر ۶ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS. هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
-| 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS، ظاهر Radio Card بازطراحی‌شده) + انتخاب زبان (بدون ترجمه‌ی محتوای صفحات — زیرساخت i18n آماده، محتوا هنوز ترجمه نشده) |
-| 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + **Performance Logs**، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
+| 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
+| 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
+
+---
+
+## i18n + RTL — وضعیت واقعی
+
+`core/i18n/` (ADR-019) کامل و به هر ۸ صفحه + نوار ناوبری (`ui/components/nav.tsx`) وصل است:
+
+- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۲۹۹ کلید در هر دو زبان** (شمارش
+  واقعی با `Object.keys`، نه تخمین) — `tests/i18n/dictionaries.test.js` عدم‌تطابق کلید بین دو
+  زبان و رشته‌ی خالی را رد می‌کند.
+- تمام متن هر ۸ صفحه (نه فقط برچسب‌ها) از طریق `t()`/`createTranslator` resolve می‌شود؛ نوار
+  ناوبری هم از `labelKey`/`t()` استفاده می‌کند، نه رشته‌ی ثابت انگلیسی.
+- Settings' Language Engine (`languageChoice`/`resolvedLanguage`) واقعاً `dir`/`lang` سند
+  `<html>` را زنده عوض می‌کند — بدون Reload، بدون localStorage دستی برای تست.
+- دیکشنری از رشته‌های Dev-facing (ارجاع مستقیم به شماره‌ی سند/بند/ADR که قرار نبود کاربر
+  ببیند) پاکسازی شد — تأییدشده در commit `c604b42`.
+- تأیید بصری واقعی RTL: `tests/e2e/rtl-visual.spec.js` — **۱۳ تست Pass** — شامل `dir="rtl"`/
+  `lang="fa"` روی `<html>`، متن فارسی واقعی (نه بازگشت خاموش به انگلیسی) روی هر ۸ صفحه بدون
+  خطای Console، Mirror شدن واقعی `.content-grid`/`.panel-grid`/`.data-table` زیر RTL، و
+  Mirror شدن جهت آیکون فلش (`.cta-arrow`، یک باگ واقعی که همین بررسی پیدا و رفع کرد).
+- `tests/e2e/language-switcher.spec.js`: سوییچ زبان از طریق کلیک واقعی روی Radio Card (نه
+  تزریق دستی `localStorage`) را تأیید می‌کند.
 
 ---
 
@@ -152,6 +181,14 @@ npm run test:e2e          # تست واقعی مرورگر (Playwright) — قب
 > بعد از هر تغییر در `ui/` یا `core/worker/*.worker.js`، حتماً `npm run build` را اجرا و
 > خروجی (`assets/js/app.js*`, `assets/js/parser-worker.js*`, `assets/js/converter-worker.js*`)
 > را در همان Commit وارد کنید — این خروجی Commit می‌شود، نه Gitignore (بخش بعدی).
+
+> **قانون دائمی (از این چک‌پوینت به بعد): هر Commit/چک‌پوینت باید `README.md` را هم‌زمان
+> به‌روز نگه دارد** — نه فقط بخش مرتبط با همان تسک، بلکه هر بخش دیگری که همان تغییر
+> نادرست/عقب‌افتاده کرده باشد (جدول فازها، جدول ۸ صفحه، محدودیت‌های شناخته‌شده، اعداد
+> تست/build). این یک قدم اختیاری یا «اگر وقت شد» نیست؛ بخشی ثابت از هر Commit است. هر عدد
+> گزارش‌شده (شمار تست، حجم build، شمار کلید دیکشنری، …) باید بلافاصله پیش از نوشتن با یک
+> دستور واقعی (`npm test`، `grep`، `Object.keys`، …) تأیید شود، حتی اگر «از چک‌پوینت قبل
+> درست به‌نظر برسد».
 
 ### قبل از هر کد: بخوان
 
@@ -217,8 +254,9 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 - **Custom Parser/Export API عمومی Blocked است** — مکانیزم Plugin System (Loader/Registry)
   کامل کار می‌کند؛ فقط یک لایه‌ی API عمومی/مستندشده‌ی سطح‌بالاتر ساخته نشده، چون هیچ Plugin
   واقعی (غیر از یک نمونه‌ی صریحاً Test-Only) برای استخراج الگوی مشترک واقعی وجود ندارد.
-- **Extractor Level System (Basic/Advanced/Deep) Blocked است** — فقط ۴ از ۶ Extractor واقعی
-  فعال‌اند (آستانه‌ی پیشنهادی ۸-۱۰)؛ عدد دقیق در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
+- **Extractor Level System (Basic/Advanced/Deep) Blocked است** — هر ۶ Extractor واقعی فعال‌اند
+  (بند بالا)، ولی آستانه‌ی پیشنهادی ۸-۱۰ Extractor مجزا هنوز محقق نشده؛ جزئیات در
+  `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
 - **۴ از ۵ فیچر گروه Visualization به‌طور کامل حذف شدند** (Node Relationship Map، Visual
   Topology Mapper، Cloudflare Topology View، Reality Visualizer) — نه Blocked، بلکه حذف کامل،
   چون هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی در UNM برایشان وجود ندارد. جزئیات در
@@ -226,28 +264,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 - **`core/worker/converter.worker.js` به Converter Screen وصل است، ولی نه به Export Center** —
   Export Center (`ui/export/export-screen.tsx`) مستقیماً `core/exporter/` را روی Main Thread
   صدا می‌زند؛ یک تصمیم Scope جداست، نه باگ.
-- **محتوای صفحات هنوز به فارسی ترجمه نشده** — زیرساخت i18n (`core/i18n/`، ADR-019) کامل و
-  تست‌شده است و `languageChoice`/`resolvedLanguage` در Settings واقعاً کار می‌کند (`lang`/`dir`
-  سند در `<html>` واقعاً عوض می‌شود)، ولی متن ثابت هر ۸ صفحه هنوز مستقیماً انگلیسی است — به
-  Dictionary وصل نشده. تأیید بصری واقعی RTL (یعنی دیدن صفحات زیر `dir="rtl"` با محتوای واقعی
-  فارسی) هم به همین دلیل هنوز انجام نشده؛ تنها تضمین فعلی، رعایت CSS Logical Properties در سرتاسر
-  `assets/css/theme.css` (طبق `docs/architecture/RTL-GUIDELINES.md`) است که باید mirroring را
-  بدون تغییر ساختاری فراهم کند، نه تأیید چشمی با متن فارسی واقعی.
-- **هویت بصری «Liquid Glass» (سند ۰۷ §۲) کامل است** — هر ۸ صفحه بازطراحی شدند: `.glass-panel`/
-  `.signal-ring`/`.protocol-badge` + مجموعه‌ای از کلاس‌های عمومی مشترک (`.panel-grid`،
-  `.data-table`، `.kv-list`، `.tag`، `.btn`، `.select`، …) که هر صفحه از همان مجموعه بازاستفاده
-  می‌کند، نه بازتعریف محلی. CSS واکنش‌گرا (Grid خودکارجمع‌شونده + یک Media Query برای چیدمان
-  نامتقارن Dashboard/Converter) و یک Dark Mode واقعی (شفافیت/Highlight/Glint با پالت تیره‌ی
-  مجزا، نه صرفاً پس‌زمینه‌ی تیره پشت المان‌های روشن) هر دو با Playwright تأیید شده‌اند — Dark Mode
-  مستقیماً روی ۶ از ۸ صفحه (Dashboard، Converter، Analyzer، Subscription Center، Export Center،
-  Developer Console) Screenshot گرفته شد؛ Settings و Extractor از همان کلاس‌های مشترک استفاده
-  می‌کنند پس باید همان‌طور درست باشند، ولی به‌صورت مجزا دوباره Screenshot نگرفته شدند.
-- **پیش‌نمایش گزارش HTML در Export Center، در Dark Mode کنتراست پایینی دارد** —
-  `core/exporter/to-html.js` یک سند HTML کاملاً مستقل با استایل داخلی ثابت (برای دانلود/اشتراک‌گذاری
-  خارج از اپ) می‌سازد که عمداً به `data-theme` زنده‌ی اپ وابسته نیست؛ داخل iframe در Dark Mode
-  همان استایل روشن ثابت را دارد که روی پس‌زمینه‌ی تیره‌ی iframe کم‌کنتراست دیده می‌شود. رفع آن یک
-  تغییر در خودِ `core/exporter/to-html.js` (افزودن `background:#fff` صریح به سند تولیدی) است، نه
-  یک مسئله‌ی `theme.css`.
 - **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** — یک نتیجه‌ی معماری، نه محدودیت:
   منطق Detect/Normalize داخل خود هر Parser و `core/unm/mapper/` پیاده شده.
 - **«Recent Exports» (Dashboard) و «Alternative Candidates» (Developer Console)** همچنان
@@ -258,15 +274,41 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 
 ---
 
+## اصلاحات اخیر پس از پایان فاز طراحی بصری (برای ردیابی، نه یک محدودیت)
+
+فاز طراحی بصری/i18n که «کامل» اعلام شده بود، چند باگ واقعی داشت که در بازبینی‌های بعدی پیدا و
+رفع شدند — برای شفافیت کامل، همه‌شان با فایل/commit مشخص اینجا ثبت می‌شوند (نه صرفاً حذف از
+لیست محدودیت‌ها):
+
+- **کنتراست پایین «neutral glass surface»** — `.action-btn.secondary`، `.btn--ghost`، `.input`،
+  `.select`، `.code-textarea`، `.radio-card` همگی در Light و Dark Mode تقریباً هم‌رنگ
+  `.glass-panel` زیرشان بودند (بدون Border). رفع شد با افزایش Opacity پس‌زمینه + یک Border
+  ظریف `--unct-purple` روی هر ۶ کلاس، در هر دو تم (`assets/css/theme.css`، commit‌های
+  `2e382df` و `656bf42`).
+- **پیش‌نمایش گزارش HTML در Dark Mode کنتراست پایین داشت** — `core/exporter/to-html.js` یک
+  `background:#fff` صریح گرفت (commit `b131749`).
+- **سه باگ واقعی Mobile/Responsive**: Overflow کردن `<select>` فرمت در Export Center (فقدان
+  `min-width: 0` روی یک Flex Item)، اندازه‌ی پیکسلی مطلق SVG کد QR (بدون قید به عرض کارت)، و
+  نبود Breakpoint موبایل روی `.stat-row` داشبورد — هر سه در `assets/css/theme.css` رفع شدند
+  (commit `dfc7e2f`).
+- **کارت QR در دسکتاپ با تعداد نود کم، در گوشه‌ی چپ گیر می‌افتاد** — علت `grid-template-columns:
+  repeat(auto-fill, …)` در `.qr-grid` بود (ستون‌های خالی شبح، دقیقاً همان مشکلی که `.panel-grid`
+  از قبل با `auto-fit` حل کرده بود)؛ رفع شد با تغییر به `auto-fit` + یک `max-width: 240px` روی
+  خودِ `.qr-card` (commit `f8fb1e6`).
+
+---
+
 ## گام بعدی واقعی
 
-فاز نهایی طراحی بصری (هویت «Liquid Glass»، بازطراحی هر ۸ صفحه، CSS واکنش‌گرا، Dark Mode واقعی)
-کامل شد. آنچه از آن فاز صادقانه هنوز باقی مانده (بخش «محدودیت‌های شناخته‌شده» بالا):
+فاز نهایی طراحی بصری و فاز i18n/RTL هر دو کامل شدند. آنچه از کل پروژه صادقانه هنوز باز است
+(بخش «محدودیت‌های شناخته‌شده» بالا، نه یک فاز جدید):
 
-1. **ترجمه‌ی واقعی محتوای صفحات به فارسی** — زیرساخت i18n آماده است، فقط متن‌ها به Dictionary
-   وصل نشده‌اند.
-2. **تأیید بصری واقعی RTL** با محتوای فارسی واقعی زیر `dir="rtl"` (تا امروز فقط رعایت CSS
-   Logical Properties تضمین شده، نه یک بررسی چشمی).
-3. یک اصلاح کوچک در `core/exporter/to-html.js` برای کنتراست پیش‌نمایش گزارش HTML در Dark Mode.
+1. **`riskScore` نهایی (Final Report aggregation)** — نیاز به یک ADR جدا برای فرمول ترکیب
+   Security+Compatibility+DNS+Reality دارد؛ هیچ ماژولی مالک این تجمیع نیست.
+2. **Custom Parser/Export API عمومی** — Blocked تا حداقل دو Plugin واقعی (یا یک Exporter واقعی)
+   نوشته شود؛ مکانیزم زیرین از قبل کامل و تست‌شده است.
+3. **Extractor Level System (Basic/Advanced/Deep)** — Blocked تا شمار Extractorهای واقعی از ۶
+   به آستانه‌ی پیشنهادی ۸-۱۰ برسد.
 
-هیچ‌کدام Blocker معماری ندارند؛ هر سه آماده‌ی شروع مستقیم‌اند.
+هیچ‌کدام Blocker معماری ندارند؛ هر سه صرفاً منتظر یک محرک بیرونی (تصمیم فرمول، یا حجم واقعی
+Plugin/Extractor بیشتر) هستند، نه کدنویسی ناتمام.
