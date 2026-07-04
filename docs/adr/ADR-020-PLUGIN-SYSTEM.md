@@ -133,4 +133,78 @@ satisfies the Extension Rule's acceptance criterion: "ماژول خارجی بد
   (deferred by design — needs a separate ADR before Phase 12).
 - Sandboxing is architectural, not VM-level; a malicious plugin with ESM import access could
   import `core/plugin/registry.js` directly. True sandboxing requires Worker isolation
+
+---
+
+## Addendum — Two real Custom Parsers built; fallback tier wired in; Parser-side API now documented
+
+`ULTIMATE_BLUEPRINT_INDEX.md` P12-13 set an explicit condition before the Custom Parser/Export
+API could move past "mechanism only": **at least two real Custom Parsers, or one real Custom
+Exporter**. This addendum records that the Parser side of that condition is now met, and what
+was learned building the two real implementations.
+
+### What was built
+
+- **`plugins/sip008-parser/`** — the official Shadowsocks SIP008 JSON spec (a `{version,
+  servers[]}` document listing many servers at once). Multi-node (`producesMany: true`).
+- **`plugins/hysteria2-config-parser/`** — Hysteria2's official native client config JSON
+  (`{server, auth, tls: {sni}, ...}`). Single-node.
+
+Both target formats genuinely absent from `core/parser/` (verified before starting: neither
+collides with any of the six core parsers' own detection surface), both target protocols
+already in the frozen `Protocol` union (`shadowsocks`, `hysteria2` — no new protocol was added),
+and both are covered by real fixture-based unit tests (`tests/plugin/sip008-parser.test.js`,
+`tests/plugin/hysteria2-config-parser.test.js`) plus an integration test proving they resolve
+through the real `parseAndValidate()` entry point
+(`tests/plugin/parse-with-plugins.test.js`).
+
+### Fallback-tier integration (§5 above, now resolved)
+
+§5's "no parser-factory integration in this phase" is resolved — not by adding plugins to
+`ParserFactory` itself (that chain stays exactly as closed as this ADR always intended), but by
+a new, separate fallback tier: `core/plugin/parse-with-plugins.js`, tried only after
+`ParserFactory.parseWithFallback()` has already thrown for every one of the six core parsers.
+Both real parse entry points — `core/parser/parse-and-validate.js` (main thread) and
+`core/worker/parser.worker.js` (the real Worker Converter Screen normally uses) — now import a
+shared `appPluginRegistry` (`core/plugin/app-plugins.js`) and try this fallback tier
+automatically. This was verified with real Playwright screenshots of the Converter Screen
+successfully parsing both new formats through the actual running app (not a dev-only stub),
+with the Parser Preview panel showing `Detected Format: sip008-parser` /
+`hysteria2-config-parser` and zero console errors.
+
+`plugins/example-parser/` (fictional format, explicitly test-only) is deliberately excluded from
+`app-plugins.js` — it must never be reachable from the real app's parse path.
+
+### A real architectural finding: the frozen `SourceType`/`Protocol` unions constrain what a
+### Custom Parser can honestly produce
+
+Both plugins had to reuse `sourceType: "subscription"` — not because it was the "obvious" fit,
+but because the frozen `SourceType` union (`core/types/unm.d.ts`) has **no dedicated slot** for
+"a native single- or multi-node config file, not a URI, not one of the six core JSON/YAML
+envelopes" for any protocol besides WireGuard (which got its own `"wireguard-config"` value via
+ADR-007). A plugin cannot add one — that file is the Architecture Freeze zone, off-limits to
+Plugin Isolation by design. `"subscription"` was confirmed safe to reuse only after a `grep`
+across `core/`/`ui/` found nothing branches on `sourceType === "subscription"` the way
+`core/analyzer/extended/dns-analyzer.js` branches on `"wireguard-config"` — this was a
+verification step, not an assumption. This constraint is now documented for future plugin
+authors in `core/plugin/README.md`, and is the main reason a *fully general* public API
+(one that could honestly support an arbitrary new native-config format) is not yet possible
+without a further ADR extending those unions — a real limit of today's design, not an oversight.
+
+### Decision: Parser-side API is now documented; Exporter side is explicitly NOT
+
+With the condition met and the common pattern extracted from two real (not hypothetical)
+implementations, `core/plugin/README.md` is a real, usable guide for third-party Custom Parser
+authors — grounded in what was actually built, including the `SourceType` constraint above as a
+first-class caveat, not a footnote.
+
+This does **not** extend to Custom **Exporter** plugins. `core/plugin/exporter-contract.js`'s
+mechanism is unchanged and still has zero real implementations (only its own unit test) — the
+"two real Parsers OR one real Exporter" condition names two independent, alternative bars, and
+only the Parser bar has real evidence behind it today. A documented Exporter authoring guide
+would be exactly the guesswork this ADR's original Trade-offs section warned against. That half
+of P12-13's Block remains open.
+
+See `ULTIMATE_BLUEPRINT_INDEX.md` P12-13's own addendum for the Backlog-tracking side of this
+same decision.
   (already available in Phase 5's infrastructure) and is the natural Phase 12 upgrade path.

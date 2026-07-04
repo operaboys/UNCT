@@ -19,6 +19,12 @@
  * names (`parser`, `confidence`, `warnings`, `errors`, ...) are generic
  * enough to risk colliding with future Analyzer/Converter output, so they
  * get a `meta`-prefix instead.
+ *
+ * Custom Parser plugins (`core/plugin/app-plugins.js`) are tried as a
+ * distinct fallback tier only when every core parser above fails — see
+ * `processParserPayload()` below and `core/plugin/parse-with-plugins.js`'s
+ * header. The six-parser `factory`/`buildParserFactory()` chain itself is
+ * untouched by this addition.
  */
 import { createParserFactory, normalizeAll } from "../parser/factory.js";
 import { registerXrayParser } from "../parser/xray/index.js";
@@ -28,6 +34,8 @@ import { registerUrlParser } from "../parser/url/index.js";
 import { registerSubscriptionParser } from "../parser/subscription/index.js";
 import { registerWireguardParser } from "../parser/wireguard/index.js";
 import { applyValidation } from "../validator/apply-validation.js";
+import { appPluginRegistry } from "../plugin/app-plugins.js";
+import { parseWithPlugins } from "../plugin/parse-with-plugins.js";
 import { createWorkerEntry } from "./shared/handler-envelope.js";
 
 /** Registration order = 12-PARSER_FACTORY §5 fallback order (same as the Foundation Gate). */
@@ -79,10 +87,16 @@ function processParserPayload(payload) {
   if (typeof raw !== "string") {
     throw new Error("parser.worker: payload.raw must be a string (WORKER_CONTRACT_VIOLATION)");
   }
-  const { name, extraction, recovered } = factory.parseWithFallback(raw);
-  const parser = factory.get(name);
-  const nodes = normalizeAll(parser, extraction).map(applyValidation);
-  return { parserName: name, recovered, nodes: nodes.map(flattenNode) };
+  try {
+    const { name, extraction, recovered } = factory.parseWithFallback(raw);
+    const parser = factory.get(name);
+    const nodes = normalizeAll(parser, extraction).map(applyValidation);
+    return { parserName: name, recovered, nodes: nodes.map(flattenNode) };
+  } catch (coreError) {
+    const pluginResult = parseWithPlugins(raw, appPluginRegistry);
+    if (!pluginResult) throw coreError;
+    return { parserName: pluginResult.parserName, recovered: pluginResult.recovered, nodes: pluginResult.nodes.map(flattenNode) };
+  }
 }
 
 /** Pure, directly-callable handler; also self-wires to `self.onmessage` under feature detection. */

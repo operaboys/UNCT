@@ -17,6 +17,11 @@
  * its own short list here rather than a shared import, since the Worker
  * file is an already-frozen Phase 5 deliverable this step does not touch.
  *
+ * Custom Parser plugins (`core/plugin/app-plugins.js`, Phase 11 Blocked-item
+ * resolution) are a distinct, additive fallback tier tried only when the six
+ * core parsers above all fail — see `core/plugin/parse-with-plugins.js`'s
+ * header for why this does not touch `factory.js`'s own fallback chain.
+ *
  * @typedef {import("../types/unm").UNMNode} UNMNode
  */
 import { createParserFactory, normalizeAll } from "./factory.js";
@@ -27,6 +32,8 @@ import { registerUrlParser } from "./url/index.js";
 import { registerSubscriptionParser } from "./subscription/index.js";
 import { registerWireguardParser } from "./wireguard/index.js";
 import { applyValidation } from "../validator/apply-validation.js";
+import { appPluginRegistry } from "../plugin/app-plugins.js";
+import { parseWithPlugins } from "../plugin/parse-with-plugins.js";
 
 function buildFactory() {
   const f = createParserFactory();
@@ -44,12 +51,19 @@ const factory = buildFactory();
 /**
  * @param {string} raw
  * @returns {{ parserName: string, recovered: boolean, nodes: Readonly<UNMNode>[] }}
- * @throws {Error} if every candidate parser fails, or none reaches the
- *   confidence threshold ("Unknown Format" — see ParserFactory.parseWithFallback)
+ * @throws {Error} if every core candidate AND every Custom Parser plugin
+ *   fails, or none reaches the confidence threshold ("Unknown Format" — see
+ *   ParserFactory.parseWithFallback)
  */
 export function parseAndValidate(raw) {
-  const { name, extraction, recovered } = factory.parseWithFallback(raw);
-  const parser = factory.get(name);
-  const nodes = normalizeAll(parser, extraction).map(applyValidation);
-  return { parserName: name, recovered, nodes };
+  try {
+    const { name, extraction, recovered } = factory.parseWithFallback(raw);
+    const parser = factory.get(name);
+    const nodes = normalizeAll(parser, extraction).map(applyValidation);
+    return { parserName: name, recovered, nodes };
+  } catch (coreError) {
+    const pluginResult = parseWithPlugins(raw, appPluginRegistry);
+    if (!pluginResult) throw coreError;
+    return pluginResult;
+  }
 }

@@ -170,6 +170,28 @@ Registry موجود، بدون داشتن حداقل یک نمونه‌ی واق
 همچنان کاملاً کاربردی و پابرجاست — این تصمیم فقط درباره‌ی «آیا الان زمان تبدیل آن به یک API عمومی/
 مستند است» است، نه درباره‌ی خودِ مکانیزم.
 
+> **اصلاح (بعد از این بررسی) — شرط سمت Parser محقق شد:** دو Custom Parser واقعی نوشته شد:
+> `plugins/sip008-parser/` (سند رسمی SIP008 Shadowsocks JSON) و
+> `plugins/hysteria2-config-parser/` (کانفیگ Native کلاینت Hysteria2). هر دو فرمت واقعاً غایب از
+> `core/parser/` بودند (تأییدشده قبل از شروع)، هر دو با تست واحد واقعی (Fixture از Spec رسمی، نه
+> فرضی) پوشش داده شدند، و هر دو با اسکرین‌شات واقعی Playwright از Converter Screen تأیید شدند —
+> «Detected Format: sip008-parser» / «hysteria2-config-parser» واقعاً در UI نمایش داده شد، از
+> طریق مکانیزم Worker واقعی (نه فقط تست واحد). یک لایه‌ی Fallback جدید و مجزا
+> (`core/plugin/parse-with-plugins.js`) این دو Parser را بعد از شکست هر ۶ Parser هسته، هم در
+> `core/parser/parse-and-validate.js` (Main Thread) و هم در `core/worker/parser.worker.js`
+> (Worker واقعی) قابل‌دسترس می‌کند — بدون هیچ تغییری در خودِ زنجیره‌ی بسته‌ی شش‌تایی `factory.js`.
+>
+> **یافته‌ی معماری واقعی:** هر دو Parser مجبور شدند `sourceType: "subscription"` را بازاستفاده
+> کنند، چون union منجمد `SourceType` هیچ مقدار اختصاصی برای «فایل کانفیگ Native، نه URI، نه پاکت
+> JSON/YAML شش‌گانه‌ی موجود» برای هیچ پروتکلی به‌جز WireGuard ندارد (که خودش طبق ADR-007 یک مقدار
+> اختصاصی گرفت). این محدودیت واقعی، نه فرضی، اکنون در `core/plugin/README.md` برای نویسندگان
+> آینده مستند شده است.
+>
+> **تصمیم نهایی:** سمت Parser این آیتم دیگر Blocked نیست — `core/plugin/README.md` یک راهنمای
+> واقعی و مستند برای نوشتن Custom Parser است، بر پایه‌ی دو نمونه‌ی واقعی، نه حدس. سمت Exporter
+> (نیمه‌ی دیگر شرط بالا) **همچنان کاملاً باز و Blocked است** — `core/plugin/exporter-contract.js`
+> هنوز هیچ پیاده‌سازی واقعی ندارد؛ جزئیات کامل در Addendum انتهای `ADR-020-PLUGIN-SYSTEM.md`.
+
 ---
 
 ## نکته‌ی صادقانه درباره‌ی نسخه‌ی اصلی این سند
