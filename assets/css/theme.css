@@ -749,11 +749,12 @@ code, kbd, samp, .mono {
   box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
 }
 .btn--ghost {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(124, 92, 252, 0.35);
   color: var(--unct-text);
 }
 .btn--ghost:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .dropzone {
@@ -775,10 +776,10 @@ code, kbd, samp, .mono {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border: none;
+  border: 1px solid rgba(124, 92, 252, 0.35);
   border-radius: 13px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.72);
   font-family: var(--unct-font-mono);
   font-size: 12.5px;
   line-height: 1.6;
@@ -873,9 +874,9 @@ code, kbd, samp, .mono {
   white-space: nowrap;
   padding-block: 9px;
   padding-inline: 14px;
-  border: none;
+  border: 1px solid rgba(124, 92, 252, 0.35);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.72);
   font: inherit;
   font-weight: 600;
   font-size: 13px;
@@ -969,9 +970,9 @@ code, kbd, samp, .mono {
 .input {
   padding-block: 9px;
   padding-inline: 14px;
-  border: none;
+  border: 1px solid rgba(124, 92, 252, 0.35);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.72);
   font: inherit;
   font-size: 13px;
   color: var(--unct-text);
@@ -1076,13 +1077,15 @@ code, kbd, samp, .mono {
   padding-block: 10px;
   padding-inline: 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(124, 92, 252, 0.35);
+  background: rgba(255, 255, 255, 0.72);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
 }
 .radio-card:has(input:checked) {
+  border-color: transparent;
   background: rgba(124, 92, 252, 0.14);
   box-shadow: 0 0 0 1.5px var(--unct-purple) inset;
 }
@@ -1160,29 +1163,33 @@ code, kbd, samp, .mono {
   background: rgba(255, 255, 255, 0.10);
 }
 
-/* Every "neutral glass surface" control — inputs, selects, ghost buttons,
-   nav-tab hover, radio cards — shares one low-opacity white wash in dark
-   mode, the same way most of them already share one light-mode opacity
-   (~0.5) today. */
+/* nav-tab hover is a transient highlight on an already-legible text pill,
+   not a persistent bordered "surface" — stays the plain low-opacity wash. */
+:root[data-theme="dark"] .nav-tab:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+/* Every persistent "neutral glass surface" control — the secondary
+   Quick-Action button, ghost buttons, selects, text inputs, the code
+   textarea, radio cards — used to share that same 0.08 wash with no
+   border, which was indistinguishable from the dark .glass-panel they
+   sit on (systemic sweep of the same fix already applied individually to
+   .action-btn.secondary: background bump + a visible --unct-purple
+   border). */
+:root[data-theme="dark"] .action-btn.secondary,
 :root[data-theme="dark"] .btn--ghost,
-:root[data-theme="dark"] .nav-tab:not(:disabled):hover,
 :root[data-theme="dark"] .select,
 :root[data-theme="dark"] .input,
 :root[data-theme="dark"] .code-textarea,
 :root[data-theme="dark"] .radio-card {
-  background: rgba(255, 255, 255, 0.08);
-}
-:root[data-theme="dark"] .btn--ghost:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-:root[data-theme="dark"] .radio-card:has(input:checked) {
-  background: rgba(124, 92, 252, 0.24);
-}
-/* Needs its own rule (not the shared 0.08 wash above) — that opacity was
-   indistinguishable from the dark .glass-panel it sits on. */
-:root[data-theme="dark"] .action-btn.secondary {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(124, 92, 252, 0.45);
+}
+:root[data-theme="dark"] .btn--ghost:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+:root[data-theme="dark"] .radio-card:has(input:checked) {
+  border-color: transparent;
+  background: rgba(124, 92, 252, 0.24);
 }
 
 /* Hairline dividers: the light-mode `rgba(33, 27, 61, X)` (dark ink) borders
