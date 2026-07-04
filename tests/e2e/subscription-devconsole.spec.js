@@ -37,32 +37,39 @@ test.describe("Subscription Center — Security Score sort/column (Orphan Check 
     await page.getByRole("button", { name: "Converter", exact: true }).click();
     await page.locator("textarea").first().fill(`${WARN_NODE}\n${ERROR_NODE}`);
     await page.getByRole("button", { name: "Parse", exact: true }).click();
-    await expect(page.locator("section[aria-label='Normalized Object'] table tbody tr")).toHaveCount(2);
+    // Every panel from the Liquid Glass redesign is a `<div aria-label="...">`
+    // (`.panel.glass-panel`), not a `<section>`.
+    await expect(page.locator("[aria-label='Normalized Object'] table tbody tr")).toHaveCount(2);
 
     await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
-    const nodeListTable = page.locator("section[aria-label='Node List'] table");
+    const nodeListTable = page.locator("[aria-label='Node List'] table");
     await expect(nodeListTable.locator("tbody tr")).toHaveCount(2);
+    // Column 6 (Include, Protocol, Address, Port, Valid, Security Score, ...) --
+    // "Valid" was inserted before "Security Score" since this test was written.
     // Before Analyzing, the Analyzer hasn't scored anything yet (Rule 9: never a fabricated 0).
-    await expect(nodeListTable.locator("tbody tr td:nth-child(5)").first()).toHaveText("N/A");
+    await expect(nodeListTable.locator("tbody tr td:nth-child(6)").first()).toHaveText("N/A");
 
     await page.getByRole("button", { name: "Analyzer", exact: true }).click();
     await page.getByRole("button", { name: "Analyze", exact: true }).click();
-    await expect(page.locator("section[aria-label='Security Analysis'] dd").first()).not.toHaveText("N/A");
+    await expect(page.locator("[aria-label='Security Analysis'] dd").first()).not.toHaveText("N/A");
 
     await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
-    const scoreCells = nodeListTable.locator("tbody tr td:nth-child(5)");
+    const scoreCells = nodeListTable.locator("tbody tr td:nth-child(6)");
     await expect(scoreCells.first()).toHaveText(/^\d+\/100$/);
     await expect(scoreCells.nth(1)).toHaveText(/^\d+\/100$/);
 
-    const sortSelect = page.locator("section[aria-label='Sort'] select").first();
+    // "Sort"/"Direction" are `.field` labels inside the "List Controls" panel
+    // (no separate "Sort" panel exists in the redesigned subscription-screen.tsx).
+    const listControls = page.locator("[aria-label='List Controls']");
+    const sortSelect = listControls.locator(".field", { hasText: "Sort" }).locator("select");
     await expect(sortSelect.locator("option", { hasText: "Security Score" })).toHaveCount(1);
     await sortSelect.selectOption("securityScore");
 
-    const directionSelect = page.locator("section[aria-label='Sort'] select").nth(1);
+    const directionSelect = listControls.locator(".field", { hasText: "Direction" }).locator("select");
     await expect(directionSelect).toBeDisabled();
     await expect(page.getByText("Security Score sort is always highest-first")).toBeVisible();
 
-    const scores = await nodeListTable.locator("tbody tr td:nth-child(5)").allTextContents();
+    const scores = await nodeListTable.locator("tbody tr td:nth-child(6)").allTextContents();
     const numericScores = scores.map((s) => Number(s.split("/")[0]));
     expect(numericScores).toEqual([...numericScores].sort((a, b) => b - a));
   });
@@ -74,10 +81,12 @@ test.describe("Developer Console — severity-sorted diagnostics (Orphan Check #
     await page.getByRole("button", { name: "Converter", exact: true }).click();
     await page.locator("textarea").first().fill(`${WARN_NODE}\n${ERROR_NODE}`);
     await page.getByRole("button", { name: "Parse", exact: true }).click();
-    await expect(page.locator("section[aria-label='Normalized Object'] table tbody tr")).toHaveCount(2);
+    await expect(page.locator("[aria-label='Normalized Object'] table tbody tr")).toHaveCount(2);
 
     await page.getByRole("button", { name: "Developer Console", exact: true }).click();
-    const diagnosticsTable = page.locator("section[aria-label='Warnings and Errors'] table");
+    // Renamed to "Warnings & Errors" (merged Warnings+Errors section,
+    // devconsole-screen.tsx's devconsole.diagnostics.title) in the redesign.
+    const diagnosticsTable = page.locator("[aria-label='Warnings & Errors'] table");
     await expect(diagnosticsTable.locator("thead th").first()).toHaveText("Severity");
 
     const severityCells = diagnosticsTable.locator("tbody tr td:first-child");

@@ -21,12 +21,14 @@ test.describe("Extractor Screen — Worker Extractor (real data, no longer a pla
     await page.getByRole("button", { name: "Converter", exact: true }).click();
     await page.locator("textarea").first().fill(WORKER_NODE);
     await page.getByRole("button", { name: "Parse", exact: true }).click();
-    await expect(page.locator("section[aria-label='Normalized Object'] table tbody tr")).toHaveCount(1);
+    // Every panel from the Liquid Glass redesign is a `<div aria-label="...">`
+    // (`.panel.glass-panel`), not a `<section>`.
+    await expect(page.locator("[aria-label='Normalized Object'] table tbody tr")).toHaveCount(1);
 
     // Before Analyze runs, the Extractor Screen must not guess — Worker
     // detection is an Analyzer verdict, never a raw-field guess (Rule 9).
     await page.getByRole("button", { name: "Extractor", exact: true }).click();
-    const workerSection = page.locator("section[aria-label='Worker Extractor']");
+    const workerSection = page.locator("[aria-label='Worker Extractor']");
     await expect(workerSection.getByText("No nodes analyzed yet")).toBeVisible();
 
     await page.getByRole("button", { name: "Analyzer", exact: true }).click();
@@ -35,7 +37,7 @@ test.describe("Extractor Screen — Worker Extractor (real data, no longer a pla
     // The Analyzer Screen's own pre-existing Worker Analysis section (not
     // touched by this change) already shows the same verdict — confirms the
     // shared AnalysisBundle, not a second/duplicated computation.
-    const analyzerWorkerSection = page.locator("section[aria-label='Worker Analysis']");
+    const analyzerWorkerSection = page.locator("[aria-label='Worker Analysis']");
     await expect(analyzerWorkerSection.getByText("bpb-panel.myworker.workers.dev")).toBeVisible();
 
     await page.getByRole("button", { name: "Extractor", exact: true }).click();

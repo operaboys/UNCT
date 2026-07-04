@@ -41,7 +41,10 @@ test.describe("Converter Screen — File Upload", () => {
       await expect(page.locator("textarea").first()).toHaveValue(/vless:\/\/.*node-one/);
       await expect(page.locator("dl dd").first()).toHaveText("url"); // Detected Format
       await expect(page.locator("table tbody tr")).toHaveCount(1);
-      await expect(page.locator("table tbody tr td").first()).toHaveText("vless");
+      // Liquid Glass redesign shows the two-letter protocol-badge abbreviation
+      // (ui/components/protocol-labels.ts's PROTOCOL_ABBREVIATION), not the
+      // raw "vless" string, in the Normalized Object table's first cell.
+      await expect(page.locator("table tbody tr td").first()).toHaveText("VL");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

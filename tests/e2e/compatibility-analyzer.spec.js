@@ -26,25 +26,32 @@ test.describe("Analyzer Screen — Platform & Client Compatibility (Phase 10, §
     await page.getByRole("button", { name: "Converter", exact: true }).click();
     await page.locator("textarea").first().fill(REALITY_NODE);
     await page.getByRole("button", { name: "Parse", exact: true }).click();
-    await expect(page.locator("section[aria-label='Normalized Object'] table tbody tr")).toHaveCount(1);
+    // Every panel from the Liquid Glass redesign is a `<div aria-label="...">`
+    // (`.panel.glass-panel`), not a `<section>`.
+    await expect(page.locator("[aria-label='Normalized Object'] table tbody tr")).toHaveCount(1);
 
     await page.getByRole("button", { name: "Analyzer", exact: true }).click();
     await page.getByRole("button", { name: "Analyze", exact: true }).click();
 
-    const section = page.locator("section[aria-label='Platform & Client Compatibility']");
-    await expect(section.locator("h2")).toHaveText("Platform & Client Compatibility");
+    const section = page.locator("[aria-label='Platform & Client Compatibility']");
+    // No <h2> anymore, just a `.panel-title` div (same redesign as every
+    // other Analyzer section).
+    await expect(section.locator(".panel-title")).toHaveText("Platform & Client Compatibility");
 
     // The pre-existing, differently-scoped section must still be present and
     // unrelated — proves this is a NEW section, not a renamed/repurposed one.
-    await expect(page.locator("section[aria-label='Compatibility Analysis'] h2")).toHaveText("Compatibility Analysis");
+    await expect(page.locator("[aria-label='Compatibility Analysis'] .panel-title")).toHaveText("Compatibility Analysis");
 
-    const platformTable = section.locator("table[aria-label='Platform Compatibility']");
+    // The two inner <table> elements carry their own (shorter) aria-label
+    // directly -- "Platforms"/"Clients", not "Platform Compatibility"/"Client
+    // Compatibility" (analyzer-screen.tsx's analyzer.compatibility.platformsCaption/clientsCaption).
+    const platformTable = section.locator("table[aria-label='Platforms']");
     await expect(platformTable.locator("thead th")).toHaveText(["Android", "iOS", "Windows", "Linux", "macOS"]);
     const platformBadges = await platformTable.locator("tbody td").allTextContents();
     expect(platformBadges).toHaveLength(5);
     for (const badge of platformBadges) expect(["✅", "❌", "❓"]).toContain(badge);
 
-    const clientTable = section.locator("table[aria-label='Client Compatibility']");
+    const clientTable = section.locator("table[aria-label='Clients']");
     await expect(clientTable.locator("thead th")).toHaveText(["Xray", "sing-box", "Clash Meta", "NekoBox", "v2rayNG", "Hiddify"]);
     const clientBadges = clientTable.locator("tbody td");
     await expect(clientBadges).toHaveCount(6);
