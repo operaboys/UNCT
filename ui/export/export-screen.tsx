@@ -45,6 +45,17 @@
  * Analysis JSON reads `useAnalyzerState()` the same way `extractor-screen.tsx`'s
  * Reality Extractor does, since that bundle (not `node.analysis`) is the real
  * six-module Analyzer verdict (Rule 9: never fabricate a placeholder bundle).
+ *
+ * Visual design (final visual design phase, Export Center step): restyled
+ * onto the same Liquid Glass system as the other redesigned screens,
+ * reusing `.glass-panel`/`.panel-title`/`.btn`/`.select`/`.field`/
+ * `.code-textarea`/`.hint`/`.tag` as-is. Two new classes were added to
+ * `assets/css/theme.css` for this step: `.qr-grid`/`.qr-card` (a responsive
+ * grid of small QR cards — nothing existing fit that shape) and
+ * `.embed-frame` (a rounded/bordered frame for the sandboxed HTML Report
+ * `<iframe>`, replacing its previous inline `border:"1px solid #ccc"`). No
+ * logic/state/handlers changed — same export functions, same sandboxed
+ * iframe, same Blob download plumbing.
  */
 import { useMemo, useState } from "preact/hooks";
 import {
@@ -172,44 +183,51 @@ export function ExportScreen() {
 
   return (
     <main class="export-screen">
-      <h1>Export Center</h1>
+      <div class="screen-header">
+        <h1 class="screen-title">Export Center</h1>
+        <p class="screen-subtitle">
+          Preview and download the working Node List in any supported format — TXT, JSON
+          variants, Clash YAML, CSV, a ZIP bundle, per-node QR codes, or a sanitized HTML report.
+        </p>
+      </div>
 
-      {nodes.length === 0 ? (
-        <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
-      ) : (
-        <section aria-label="Export">
-          <h2>Export</h2>
-          <label>
-            Format:{" "}
-            <select
-              value={format}
-              onChange={(e) => handleFormatChange((e.target as HTMLSelectElement).value as Format)}
-            >
-              {(Object.keys(FORMAT_LABELS) as Format[]).map((f) => (
-                <option key={f} value={f}>{FORMAT_LABELS[f]}</option>
-              ))}
-            </select>
-          </label>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="Export">
+        <div class="panel-title">Export</div>
+        {nodes.length === 0 ? (
+          <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
+        ) : (
+          <>
+            <div class="form-actions" style={{ marginBlockStart: 0 }}>
+              <label class="field">
+                Format
+                <select
+                  class="select"
+                  value={format}
+                  onChange={(e) => handleFormatChange((e.target as HTMLSelectElement).value as Format)}
+                >
+                  {(Object.keys(FORMAT_LABELS) as Format[]).map((f) => (
+                    <option key={f} value={f}>{FORMAT_LABELS[f]}</option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" class="btn btn--primary" onClick={handleDownload}>Download</button>
+              <button type="button" class="btn btn--ghost" onClick={handleCopy}>Copy to Clipboard</button>
+              {copyStatus === "copied" && <span class="tag tag--valid" role="status">Copied.</span>}
+              {copyStatus === "error" && <span class="tag tag--invalid" role="alert">Copy failed.</span>}
+            </div>
 
-          {format === "analysisJson" && Object.keys(analysisByNodeId).length === 0 && (
-            <p class="hint">No analyzed nodes yet — visit the Analyzer Screen first.</p>
-          )}
+            {format === "analysisJson" && Object.keys(analysisByNodeId).length === 0 && (
+              <p class="hint" style={{ marginBlockStart: "12px" }}>No analyzed nodes yet — visit the Analyzer Screen first.</p>
+            )}
 
-          <div class="actions">
-            <button type="button" onClick={handleDownload}>Download</button>
-            <button type="button" onClick={handleCopy}>Copy to Clipboard</button>
-            {copyStatus === "copied" && <span role="status">Copied.</span>}
-            {copyStatus === "error" && <span role="alert">Copy failed.</span>}
-          </div>
+            <textarea class="code-textarea" style={{ marginBlockStart: "14px" }} readOnly rows={10} value={content} />
+            {skippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {skippedMessage}</p>}
+          </>
+        )}
+      </div>
 
-          <h3>Preview</h3>
-          <textarea readOnly rows={10} cols={80} value={content} />
-          {skippedMessage && <p class="hint">Skipped: {skippedMessage}</p>}
-        </section>
-      )}
-
-      <section aria-label="ZIP Export">
-        <h2>ZIP Export</h2>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="ZIP Export">
+        <div class="panel-title">ZIP Export</div>
         {nodes.length === 0 ? (
           <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
         ) : (
@@ -219,14 +237,16 @@ export function ExportScreen() {
               manifest.json (Export Version, Export Date, Node Count, UNM Version) into one
               archive — doc 08 §7's Full Project Snapshot.
             </p>
-            <button type="button" onClick={handleDownloadZip}>Download ZIP</button>
-            {zipSkippedMessage && <p class="hint">Skipped: {zipSkippedMessage}</p>}
+            <div class="form-actions">
+              <button type="button" class="btn btn--primary" onClick={handleDownloadZip}>Download ZIP</button>
+            </div>
+            {zipSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {zipSkippedMessage}</p>}
           </>
         )}
-      </section>
+      </div>
 
-      <section aria-label="QR Export">
-        <h2>QR Export</h2>
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label="QR Export">
+        <div class="panel-title">QR Export</div>
         {nodes.length === 0 ? (
           <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
         ) : (
@@ -236,9 +256,9 @@ export function ExportScreen() {
               node's URL form, the same string TXT Export produces. Print this page for a
               printable sheet.
             </p>
-            <div class="qr-grid">
+            <div class="qr-grid" style={{ marginBlockStart: "14px" }}>
               {qrCodes.map((qr) => (
-                <figure key={qr.nodeId}>
+                <figure class="qr-card glass-panel" key={qr.nodeId}>
                   <svg
                     viewBox={`0 0 ${qr.moduleCount * QR_CELL_SIZE} ${qr.moduleCount * QR_CELL_SIZE}`}
                     width={qr.moduleCount * QR_CELL_SIZE}
@@ -248,19 +268,19 @@ export function ExportScreen() {
                     <path d={matrixToSvgPath(qr.matrix, QR_CELL_SIZE)} fill="#000" />
                   </svg>
                   <figcaption>{qr.protocol}</figcaption>
-                  <button type="button" onClick={() => handleDownloadQr(qr.nodeId, qr.matrix, qr.moduleCount)}>
+                  <button type="button" class="btn btn--ghost btn--sm" onClick={() => handleDownloadQr(qr.nodeId, qr.matrix, qr.moduleCount)}>
                     Download SVG
                   </button>
                 </figure>
               ))}
             </div>
-            {qrSkippedMessage && <p class="hint">Skipped: {qrSkippedMessage}</p>}
+            {qrSkippedMessage && <p class="hint" style={{ marginBlockStart: "10px" }}>Skipped: {qrSkippedMessage}</p>}
           </>
         )}
-      </section>
+      </div>
 
-      <section aria-label="HTML Report Export">
-        <h2>HTML Report Export</h2>
+      <div class="panel glass-panel" aria-label="HTML Report Export">
+        <div class="panel-title">HTML Report Export</div>
         {nodes.length === 0 ? (
           <p class="hint">No nodes yet — parse something on the Converter Screen first.</p>
         ) : (
@@ -270,17 +290,19 @@ export function ExportScreen() {
               Recommendations per node (doc 08 §8) — escaped per value, then sanitized as a whole
               document via DOMPurify (doc 08 §11, ADR-018) before either preview or download.
             </p>
-            <button type="button" onClick={handleDownloadHtmlReport}>Download HTML</button>
-            <h3>Preview</h3>
+            <div class="form-actions">
+              <button type="button" class="btn btn--primary" onClick={handleDownloadHtmlReport}>Download HTML</button>
+            </div>
             <iframe
+              class="embed-frame"
+              style={{ marginBlockStart: "14px" }}
               title="HTML Report Preview"
               sandbox="allow-same-origin"
               srcdoc={htmlReportContent}
-              style={{ width: "100%", height: "400px", border: "1px solid #ccc" }}
             />
           </>
         )}
-      </section>
+      </div>
     </main>
   );
 }
