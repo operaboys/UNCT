@@ -29,19 +29,29 @@
  * this one has NOTHING to show until the Analyzer has actually run
  * (Rule 9: never guess "this might be a Worker" from an unanalyzed node).
  *
- * DNS Extractor stays deferred/disabled — deliberately NOT touched here.
- * Per ADR-022, `core/analyzer/extended/dns-analyzer.js` exists but is not
- * yet wired into `AnalysisBundle` at all (a different, not-yet-finished
- * situation from Worker's, which only lacked its UI layer) — a separate
- * review decides when that module's own architecture is ready.
+ * DNS Extractor (un-deferred, same shape as Worker's un-deferral):
+ * `analyze-node.js` now threads `analyzeDnsLeakRisk` (ADR-022) into every
+ * `AnalysisBundle` as its own independent `dns` field — never folded into
+ * `security` (ADR-011 §"Explicitly out of scope" forbids exactly that; the
+ * eventual `riskScore` aggregate combining Security + Compatibility + DNS +
+ * Reality is a separate, still-open Final Report decision, not this
+ * screen's or this field's concern). Every node gets a real
+ * `dnsLeakRisk` verdict once Analyzed (including "unknown" for URL/
+ * subscription-sourced nodes that structurally carry no DNS block — Rule 9,
+ * shown as its own neutral badge, never silently hidden or defaulted to
+ * "none"), rendered as a `.tag` badge colored by `dnsRiskTagClass()`
+ * (`ui/analyzer/format.ts`) the same way Developer Console colors severity.
+ * Per-row "Click Analyze first" fallback for any node without a bundle yet
+ * mirrors the Reality Extractor's own per-row (not whole-panel) gate above,
+ * since DNS risk is meaningful for every node rather than a subset like
+ * Worker's.
  *
  * Visual design (final visual design phase, Extractor step): restyled onto
  * the same Liquid Glass system as the other redesigned screens, reusing
  * `.glass-panel`/`.panel-title`/`.data-table`/`.table-scroll`/`.protocol-badge`/
- * `.plain-list`/`.hint`/`.mono` as-is — no new CSS was needed, this screen's
- * five tables + one placeholder fit the existing shapes exactly. No logic/
- * state/handlers changed — same selectors, same Worker/Reality bundle
- * lookups as before this pass.
+ * `.plain-list`/`.hint`/`.mono`/`.tag` as-is — no new CSS was needed. No
+ * logic/state/handlers changed for the other five sections — same
+ * selectors, same Worker/Reality bundle lookups as before this pass.
  */
 import { useMemo } from "preact/hooks";
 import {
@@ -55,7 +65,7 @@ import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
-import { formatTriState, formatStringList } from "../analyzer/format.js";
+import { formatTriState, formatStringList, dnsRiskTagClass } from "../analyzer/format.js";
 import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
 
 export function ExtractorScreen() {
@@ -253,11 +263,34 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label={t("extractor.dns.title")} aria-disabled="true">
+          <div class="panel glass-panel" aria-label={t("extractor.dns.title")}>
             <div class="panel-title">{t("extractor.dns.title")}</div>
-            <p class="hint">
-              {t("extractor.dns.hint")}
-            </p>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.dnsLeakRisk")}</th></tr>
+                </thead>
+                <tbody>
+                  {nodes.map((n) => {
+                    const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
+                    return (
+                      <tr key={n.nodeId}>
+                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                        <td class="mono">{n.address}</td>
+                        <td class="mono"><bdi>{n.port}</bdi></td>
+                        <td>
+                          {bundle ? (
+                            <span class={`tag ${dnsRiskTagClass(bundle.dns)}`}>{t(`extractor.dns.risk.${bundle.dns}`)}</span>
+                          ) : (
+                            t("extractor.reality.clickAnalyzeFirst")
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}

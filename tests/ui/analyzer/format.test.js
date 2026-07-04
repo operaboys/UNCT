@@ -3,7 +3,7 @@
  * structure for the Analyzer Screen's sibling formatting module.
  */
 import { describe, it, expect } from "vitest";
-import { formatStringList, formatTriState, formatScore, formatBadge } from "../../../ui/analyzer/format.js";
+import { formatStringList, formatTriState, formatScore, formatBadge, dnsRiskTagClass } from "../../../ui/analyzer/format.js";
 
 describe("formatStringList", () => {
   it("joins items with a comma", () => {
@@ -43,5 +43,22 @@ describe("formatBadge", () => {
   it("formats null as ❓, never collapsing into the ❌ glyph (Rule 9)", () => {
     expect(formatBadge(null)).toBe("❓");
     expect(formatBadge(null)).not.toBe(formatBadge(false));
+  });
+});
+
+describe("dnsRiskTagClass", () => {
+  it("maps each concrete DnsLeakRisk level to a distinct tag class", () => {
+    expect(dnsRiskTagClass("none")).toBe("tag--valid");
+    expect(dnsRiskTagClass("low")).toBe("tag--warning");
+    expect(dnsRiskTagClass("medium")).toBe("tag--invalid");
+    expect(dnsRiskTagClass("high")).toBe("tag--critical");
+  });
+
+  it("maps 'unknown' to the neutral info class, never a risk-severity color (Rule 9)", () => {
+    expect(dnsRiskTagClass("unknown")).toBe("tag--info");
+  });
+
+  it("falls back to the neutral info class for any unrecognized value", () => {
+    expect(dnsRiskTagClass("not-a-real-risk-level")).toBe("tag--info");
   });
 });

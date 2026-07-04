@@ -588,3 +588,30 @@ required by this ADR.
 - [ ] `tests/analyzer/dns-analyzer.test.js` — all cases pass
 - [ ] Git diff — `core/unm/create-node.js`, `core/worker/worker-manager.js`,
   `core/validator/`, `core/storage/` are NOT in the diff (scope guard)
+
+---
+
+## Addendum — `dnsLeakRisk` wired into `AnalysisBundle` + Extractor UI (this checkpoint)
+
+Everything in this ADR's §1-5 (types, parser extraction, `analyzeDnsLeakRisk()`) had already
+shipped in an earlier checkpoint. What remained — flagged in §"UI" above as "a separate
+implementation task" — was wiring the already-built, already-tested `analyzeDnsLeakRisk()` into
+`analyzeNode()`'s bundle and un-deferring the Extractor Screen panel. Both are now done:
+
+- **`core/analyzer/analyze-node.js`**: `analyzeNode()`/`analyzeBatch()` now call
+  `analyzeDnsLeakRisk(node)` and thread the result into the bundle as its own field —
+  `AnalysisBundle.dns: DnsLeakRisk` — exactly the same shape as `cloudflare`/`cleanIp`/`worker`/
+  `rules` (a per-module verdict, not folded into anything). This is the field this ADR's §5
+  already said it "wires into `AnalysisObject.dnsLeakRisk` during the Analyzer Engine's assembly
+  step" — no new decision was made here, only the wiring itself.
+- **`ui/extractor/extractor-screen.tsx`**: the DNS Extractor panel referenced in §"UI" above is
+  no longer a placeholder. It renders every node's `dnsLeakRisk` as a `.tag` badge (colored via
+  `dnsRiskTagClass()`, `ui/analyzer/format.ts`), including `"unknown"` for URL/subscription-
+  sourced nodes as its own neutral badge (Rule 9 — never silently hidden or defaulted).
+
+**Reaffirmed, unchanged by this addendum**: §"Explicit Non-Decisions" item 5 (`riskScore`
+aggregation) is **still open**. `dnsLeakRisk` is a standalone `AnalysisBundle`/`AnalysisObject`
+field today, exactly as this ADR always specified — it is not, and must not be, combined with
+`securityScore` (ADR-011's own explicit boundary) or any other score. The Final Report aggregation
+step that will eventually combine Security + Compatibility + DNS + Reality into one `riskScore`
+still has no formula and no owning module; that remains a distinct, future ADR.

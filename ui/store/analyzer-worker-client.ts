@@ -21,7 +21,7 @@
  */
 import { analyzeBatch } from "../../core/analyzer/analyze-node.js";
 import { createWorkerManager, CancelledError } from "../../core/worker/worker-manager.js";
-import type { UNMNode, Protocol, NetworkType, SecurityType } from "../../core/types/unm";
+import type { UNMNode, Protocol, NetworkType, SecurityType, DnsLeakRisk } from "../../core/types/unm";
 
 export { CancelledError };
 
@@ -125,6 +125,7 @@ export interface AnalysisBundle {
   cleanIp: CleanIpAnalysis;
   worker: WorkerAnalysis;
   rules: RuleAnalysis;
+  dns: DnsLeakRisk;
 }
 
 export interface AnalyzeResult {

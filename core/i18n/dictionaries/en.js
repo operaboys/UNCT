@@ -46,6 +46,7 @@ export const en = {
   "common.fields.confidenceScore": "Confidence Score",
   "common.fields.signals": "Signals",
   "common.fields.compatible": "Compatible",
+  "common.fields.dnsLeakRisk": "DNS Leak Risk",
   "common.reality.pbk": "PBK",
   "common.reality.sid": "SID",
   "common.reality.pbkPlausible": "PBK Plausible",
@@ -258,8 +259,11 @@ export const en = {
   "extractor.reality.hint": "No nodes use Reality.",
   "extractor.reality.clickAnalyzeFirst": "Click Analyze first",
   "extractor.dns.title": "DNS Extractor",
-  "extractor.dns.hint":
-    "DNS leak detection isn't available yet — this section will show real results once that analysis is added.",
+  "extractor.dns.risk.none": "None",
+  "extractor.dns.risk.low": "Low",
+  "extractor.dns.risk.medium": "Medium",
+  "extractor.dns.risk.high": "High",
+  "extractor.dns.risk.unknown": "Unknown",
 
   // export-screen.tsx
   "export.title": "Export Center",

@@ -48,6 +48,7 @@ export const fa = {
   "common.fields.confidenceScore": "امتیاز اطمینان",
   "common.fields.signals": "نشانه‌ها",
   "common.fields.compatible": "سازگار",
+  "common.fields.dnsLeakRisk": "ریسک نشتی DNS",
   "common.reality.pbk": "PBK",
   "common.reality.sid": "SID",
   "common.reality.pbkPlausible": "معقول‌بودن PBK",
@@ -260,8 +261,11 @@ export const fa = {
   "extractor.reality.hint": "هیچ نودی از Reality استفاده نمی‌کند.",
   "extractor.reality.clickAnalyzeFirst": "ابتدا تحلیل کنید",
   "extractor.dns.title": "استخراج‌کننده‌ی DNS",
-  "extractor.dns.hint":
-    "شناسایی نشتی DNS هنوز در دسترس نیست — این بخش با اضافه‌شدن آن تحلیل، نتایج واقعی را نشان خواهد داد.",
+  "extractor.dns.risk.none": "هیچ",
+  "extractor.dns.risk.low": "کم",
+  "extractor.dns.risk.medium": "متوسط",
+  "extractor.dns.risk.high": "زیاد",
+  "extractor.dns.risk.unknown": "نامشخص",
 
   // export-screen.tsx
   "export.title": "مرکز خروجی",

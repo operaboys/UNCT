@@ -36,3 +36,23 @@ export function formatBadge(value: boolean | null): string {
   if (value === null) return "❓";
   return value ? "✅" : "❌";
 }
+
+/**
+ * Maps a `DnsLeakRisk` (ADR-022) to one of the five existing `.tag--*`
+ * severity classes (`assets/css/theme.css`) — the same increasing-severity
+ * ramp Developer Console already uses for INFO < WARNING < ERROR < CRITICAL,
+ * with `valid` (green) added on the safe end for "none" and `info` (neutral
+ * grey) reused for "unknown" (absence of data is not itself a risk level,
+ * Rule 9). No new CSS class is introduced.
+ */
+const DNS_RISK_TAG_CLASS: Record<string, string> = {
+  none: "tag--valid",
+  low: "tag--warning",
+  medium: "tag--invalid",
+  high: "tag--critical",
+  unknown: "tag--info",
+};
+
+export function dnsRiskTagClass(risk: string): string {
+  return DNS_RISK_TAG_CLASS[risk] ?? "tag--info";
+}

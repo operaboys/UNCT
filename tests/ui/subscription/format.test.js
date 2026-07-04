@@ -42,6 +42,7 @@ function bundle(securityScore) {
     cleanIp: { isCleanIpPattern: false, confidence: "low", signals: [] },
     worker: { applicable: false, workerDomain: null, pathSegments: [], uuidSegment: null, parameters: {}, encodedDataFindings: [] },
     rules: { applicable: false, totalCount: 0, byCategory: {}, duplicateCount: 0, duplicates: [] },
+    dns: "unknown",
   };
 }
 

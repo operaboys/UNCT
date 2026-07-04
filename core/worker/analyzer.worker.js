@@ -12,7 +12,9 @@
  *
  * Input payload: `{ nodes: UNMNode[] }` — the parsed nodes to analyze.
  * Output result: `{ analyzed: { nodeId, analysis }[] }`, where `analysis` is
- * the seven-module verdict bundle `analyzeNode` produces. (That bundle is NOT
+ * the full verdict bundle `analyzeNode` produces (now including the ADR-022
+ * DNS Analyzer's `dns` field — no change needed here either, same reason as
+ * Compatibility above). (That bundle is NOT
  * yet a complete spec-05-§4 `AnalysisObject`: today's modules can fill only
  * `securityScore` directly; the rest of `AnalysisObject` (including
  * `compatibilityScore` as a single 0-100 number) needs the rest of §2's

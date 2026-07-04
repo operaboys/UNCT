@@ -12,7 +12,9 @@
 ## وضعیت کلی
 
 **Phase 0 تا Phase 12 کامل‌اند**، با این استثناهای مستند و آگاهانه (نه نقص، نه فراموشی):
-- DNS Analyzer (Phase 10) عمداً به `AnalysisBundle` وصل نیست (ADR-022).
+- DNS Analyzer اکنون به `AnalysisBundle` وصل است و در Extractor Screen واقعی نمایش داده می‌شود
+  (ADR-022 Addendum)؛ فقط تجمیع `dnsLeakRisk` در یک `riskScore` نهایی (Final Report، ترکیب
+  Security+Compatibility+DNS+Reality) همچنان باز است — فرمولش هنوز تعریف نشده.
 - Custom Parser/Export API عمومی (Phase 11) عمداً Blocked است تا حداقل دو Plugin واقعی نوشته شود.
 - از گروه Visualization (Phase 12، ۵ فیچر)، ۴ تا به‌طور کامل از Backlog حذف شدند (داده‌ی واقعی
   ندارند)؛ فقط Subscription Visualizer ساخته شد.
@@ -21,8 +23,8 @@
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۱۰۴ تست در ۹۰ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
-موفق (`app.js` ~۲۵۱kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
+تست: **۱۱۱۲ تست در ۹۱ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+موفق (`app.js` ~۳۱۴kb، `parser-worker.js` ~۹۳kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
 --omit=dev` صفر آسیب‌پذیری.
 
 ---
@@ -60,7 +62,7 @@
 | Worker Analyzer | ✅ کامل | Analyzer Screen — «Worker Analysis» + Extractor Screen — «Worker Extractor» |
 | Rule Analyzer (P12-5) | ✅ کامل | Analyzer Screen — «Route Rules Analysis» |
 | Subscription Analyzer | ✅ کامل (سطح-مجموعه، نه AnalysisBundle) | Subscription Center — Summary + Protocol Distribution (نمودار میله‌ای، P12-11) |
-| **DNS Analyzer** | ✅ ساخته شده، **عمداً به `AnalysisBundle` وصل نیست** | هیچ (طبق ADR-022 بند «Explicit Non-Decisions» شماره ۵: تجمیع `dnsLeakRisk` در Score نهایی به یک گام آینده — Final Report aggregation — موکول شده؛ این یک محدودیت مستند است، نه نقص فراموش‌شده) |
+| **DNS Analyzer** | ✅ کامل، **به `AnalysisBundle` وصل** (فیلد مستقل `dns`، ADR-022 Addendum) | Extractor Screen — «DNS Extractor» (Badge رنگی برای none/low/medium/high/unknown). تجمیع در `riskScore` نهایی همچنان یک گام آینده (Final Report aggregation) است — طبق ADR-011، هرگز در `securityScore` ادغام نمی‌شود |
 
 ---
 
@@ -116,7 +118,7 @@ P12-12، P12-13).
 | 2 | **Converter** | Paste Area + **File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل** (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
-| 5 | **Extractor** | UUID/IP/Domain/Reality/**Worker** Extractor واقعی. «DNS Extractor» تنها Placeholder باقی‌مانده (وابسته به تکمیل معماری DNS Analyzer، ADR-022) |
+| 5 | **Extractor** | هر ۶ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/**DNS**. هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | فقط **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS، ظاهر Radio Card بازطراحی‌شده) + انتخاب زبان (بدون ترجمه‌ی محتوای صفحات — زیرساخت i18n آماده، محتوا هنوز ترجمه نشده) |
 | 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + **Performance Logs**، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
@@ -208,10 +210,10 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 
 این بخش صادقانه است — هرچیزی که در عمل ساخته نشده یا کامل وصل نیست، اینجاست:
 
-- **DNS Analyzer عمداً به `AnalysisBundle` وصل نیست** — ماژول (`core/analyzer/extended/dns-analyzer.js`)
-  کامل ساخته و تست شده، ولی طبق ADR-022's بند «Explicit Non-Decisions» شماره ۵، تجمیع
-  `dnsLeakRisk` در Score نهایی یک گام آینده (Final Report aggregation) است — نه این فاز.
-  «DNS Extractor» در Extractor Screen به همین دلیل همچنان Placeholder است.
+- **`riskScore` نهایی (Final Report aggregation) هنوز تعریف نشده** — `dnsLeakRisk` اکنون یک
+  فیلد مستقل در `AnalysisBundle`/Extractor Screen است (ADR-022 Addendum)، ولی ترکیب
+  Security+Compatibility+DNS+Reality در یک عدد نهایی `riskScore` طبق ADR-011 بند «Explicitly
+  out of scope» همچنان یک ADR جدا و آینده است — نه این فاز.
 - **Custom Parser/Export API عمومی Blocked است** — مکانیزم Plugin System (Loader/Registry)
   کامل کار می‌کند؛ فقط یک لایه‌ی API عمومی/مستندشده‌ی سطح‌بالاتر ساخته نشده، چون هیچ Plugin
   واقعی (غیر از یک نمونه‌ی صریحاً Test-Only) برای استخراج الگوی مشترک واقعی وجود ندارد.

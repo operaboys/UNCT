@@ -41,6 +41,7 @@ const fakeBundle = {
   cleanIp: /** @type {any} */ ({}),
   worker: /** @type {any} */ ({}),
   rules: /** @type {any} */ ({}),
+  dns: "unknown",
 };
 
 describe("exportMarkdown", () => {
