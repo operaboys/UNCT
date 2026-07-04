@@ -1036,11 +1036,26 @@ code, kbd, samp, .mono {
  * inside an already-elevated wrapper the way most other panels' content is.
  * ------------------------------------------------------------------- */
 .qr-grid {
+  /* `auto-fit` (not `auto-fill`, same fix `.panel-grid` above already
+     uses): `auto-fill` always reserves as many 160px tracks as the
+     container's width allows, even ones with no real item to fill --
+     with only 1-2 QR cards on a wide desktop panel, those phantom empty
+     tracks pinned the real card(s) to the left instead of letting them
+     take the container's actual available width. `auto-fit` collapses
+     the empty tracks so existing items size into the freed space. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
 }
 .qr-card {
+  /* `auto-fit` alone only removes the phantom empty tracks -- it doesn't
+     cap how wide a *lone* track can stretch, so on a wide desktop panel
+     with just 1 real card, that single 1fr track (and this card filling
+     it) would otherwise stretch to the panel's full width. Capped
+     independently of the `<svg>`'s own 220px max-width below so the
+     whole card (padding + figcaption + button, not just the QR image)
+     stays a compact, consistent size regardless of node count. */
+  max-width: 240px;
   padding: 16px;
   display: flex;
   flex-direction: column;
