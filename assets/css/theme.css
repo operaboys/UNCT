@@ -512,6 +512,21 @@ code, kbd, samp, .mono {
   padding: 0;
 }
 
+/* RTL fix (docs/architecture/RTL-GUIDELINES.md): `.cta-arrow` wraps every
+   literal "forward/continue" arrow glyph (&rarr;, Dashboard's "See all"/
+   Quick Actions buttons). The glyph itself is a fixed Unicode character --
+   CSS Logical Properties don't reach into rendered text content -- so
+   without this it keeps pointing physically right even under dir="rtl",
+   reading as "backward" relative to the surrounding RTL flow. Mirroring it
+   with a horizontal flip restores the correct "continues this way" meaning
+   in both directions, matching how the rest of this stylesheet already
+   auto-mirrors via `dir` (RTL-GUIDELINES.md §4) without any component logic
+   change. */
+[dir="rtl"] .cta-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
 .node-item {
   position: relative;
   z-index: 1;

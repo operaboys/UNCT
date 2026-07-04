@@ -164,7 +164,7 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
         <div class="panel glass-panel" aria-label={t("dashboard.recentImports.title")}>
           <div class="panel-title">
             {t("dashboard.recentImports.title")}
-            <button type="button" class="see-all" onClick={() => onNavigate?.("subscription")}>{t("dashboard.recentImports.seeAll")} &rarr;</button>
+            <button type="button" class="see-all" onClick={() => onNavigate?.("subscription")}>{t("dashboard.recentImports.seeAll")} <span class="cta-arrow">&rarr;</span></button>
           </div>
           {recentImports.length === 0 ? (
             <p class="hint">{t("common.noNodesYet")}</p>
@@ -219,10 +219,10 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
               <span>{t("dashboard.quickActions.importConfig")}</span><span>+</span>
             </button>
             <button type="button" class="action-btn secondary" onClick={() => onNavigate?.("export")}>
-              <span>{t("dashboard.quickActions.exportAll")}</span><span>&rarr;</span>
+              <span>{t("dashboard.quickActions.exportAll")}</span><span class="cta-arrow">&rarr;</span>
             </button>
             <button type="button" class="action-btn secondary" onClick={() => onNavigate?.("devconsole")}>
-              <span>{t("dashboard.quickActions.runDiagnostics")}</span><span>&rarr;</span>
+              <span>{t("dashboard.quickActions.runDiagnostics")}</span><span class="cta-arrow">&rarr;</span>
             </button>
           </div>
         </div>
