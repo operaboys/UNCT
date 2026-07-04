@@ -85,7 +85,7 @@
 | Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
 | Visualization | Subscription Visualizer ✅ (P12-11, بدون Chart Library — ADR-026) *(بقیه‌ی چهار مورد حذف شدند — بند زیر)* |
 | Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
-| UX Scaling | Extractor Level System *(بررسی P12-12 — بند زیر؛ ۶ Extractor فعال از ۸-۱۰ آستانه‌ی پیشنهادی، به‌روز شده بعد از فعال‌شدن Worker/DNS Extractor)* |
+| UX Scaling | Extractor Level System ✅ **رفع Block (P12-12، بند زیر)** — ۱۰ Extractor کاملاً فعال از ۱۰ کل، رسیده به آستانه‌ی پیشنهادی ۸-۱۰ |
 
 ### P12-11 — وضعیت گروه Visualization *(بررسی جدید — پیش از هر تحقیق Library)*
 
@@ -147,6 +147,36 @@ Dependency). جزئیات کامل در `docs/adr/ADR-026-VISUALIZATION-GROUP-NO
 > ADR-022 Addendum). **عدد واقعی امروز: ۶ Extractor کاملاً فعال از ۶ کل** (`ui/extractor/
 > extractor-screen.tsx` — هیچ `aria-disabled` باقی نمانده). آستانه‌ی ۸-۱۰ همچنان محقق نشده،
 > پس تصمیم «Blocked می‌ماند» زیر عوض نمی‌شود — فقط فاصله تا آستانه کمتر شده (۲ Extractor، نه ۴).
+
+> **اصلاح (این چک‌پوینت) — Block رفع شد، ۴ Extractor جدید واقعی اضافه شد:** بررسی مستقیم
+> `core/types/unm.d.ts` (فیلدهای `UNMNode`) قبل از هر کدنویسی، به‌جای حدس زدن اسم Extractor، ۴
+> گروه‌فیلد واقعی و مستقل پیدا کرد که در هیچ‌کدام از ۶ Extractor موجود استخراج نشده بودند و توسط
+> هر ۶ Parser هسته پر می‌شوند (تأییدشده با `grep` قبل از افزودن، نه فرض):
+>
+> | # | Extractor جدید | فیلد(های) UNM | چرا مستقل است |
+> |---|---|---|---|
+> | 7 | Credentials Extractor | `password`, `method` | اطلاعات احراز هویت Shadowsocks/Trojan/Hysteria2 — تا امروز در هیچ پنل Extractor نمایش داده نمی‌شد |
+> | 8 | Transport Extractor | `host`, `path` | تنظیمات WS/gRPC/HTTPUpgrade — متمایز از `pathSegments`ِ Worker Extractor که فقط برای نودهای تشخیص‌داده‌شده‌ی Worker محاسبه می‌شود |
+> | 9 | TLS Fingerprint Extractor | `alpn`, `fingerprint` | فیلدهای uTLS/ALPN — مستقل از Reality Extractor چون یک نود می‌تواند این‌ها را زیر `security: "tls"` ساده داشته باشد، بدون هیچ ارتباطی با Reality |
+> | 10 | Flow Extractor | `flow` | Flow Control ولس (مثل `xtls-rprx-vision`) — معمولاً همراه Reality ولی نه همیشه (زیر TLS ساده هم معتبر است)، پس تکرار داده‌ی Reality Extractor نیست |
+>
+> **فیلدهای رد‌شده (با استدلال):** «Port Extractor مستقل» رد شد — `port` یک فیلد الزامی روی
+> **هر** Node است (نه یک زیرمجموعه مثل UUID/Reality)، از قبل در هر ۱۰ پنل به‌عنوان ستون نمایش
+> داده می‌شود؛ یک پنل جدا برای آن، طبق تعریف خودِ الگوی Extractor (چه نودهایی فلان فیلد را
+> دارند)، معنادار نیست.
+>
+> پیاده‌سازی: ۴ selector جدید در `core/store/selectors.js`
+> (`selectNodesWithCredentials`/`selectNodesWithTransportPath`/`selectNodesWithTlsFingerprint`/
+> `selectNodesWithFlow`) با همان الگوی `selectNodesWithUuid` (طبقه‌بندی حضور فیلد، بدون قضاوت
+> اعتبار جدید — مرز Rule 11)، ۴ پنل جدید در `ui/extractor/extractor-screen.tsx` با جدول واقعی
+> (نه Placeholder)، تست واحد واقعی برای هر ۴ selector (`tests/store/selectors.test.js`)، و
+> کلیدهای دیکشنری En/Fa برای هر پنل. تأییدشده با اسکرین‌شات واقعی Playwright روی
+> Converter→Extractor (Light + Dark) با نودهای واقعی VLESS+Reality+Flow، VLESS+WS+TLS، و
+> Shadowsocks SIP002.
+>
+> **عدد نهایی: ۱۰ Extractor کاملاً فعال از ۱۰ کل** (`npx vitest run tests/store/selectors.test.js`:
+> ۵۳ تست سبز در این فایل، شامل ۸ تست جدید برای این ۴ selector). این دقیقاً بالای آستانه‌ی
+> پیشنهادی ۸-۱۰ است — **این آیتم دیگر Blocked نیست.**
 
 ### P12-13 — وضعیت Custom Parser/Export API *(بررسی جدید)*
 

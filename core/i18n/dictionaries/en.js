@@ -47,6 +47,13 @@ export const en = {
   "common.fields.signals": "Signals",
   "common.fields.compatible": "Compatible",
   "common.fields.dnsLeakRisk": "DNS Leak Risk",
+  "common.fields.method": "Method",
+  "common.fields.password": "Password",
+  "common.fields.host": "Host",
+  "common.fields.path": "Path",
+  "common.fields.alpn": "ALPN",
+  "common.fields.fingerprint": "Fingerprint",
+  "common.fields.flow": "Flow",
   "common.reality.pbk": "PBK",
   "common.reality.sid": "SID",
   "common.reality.pbkPlausible": "PBK Plausible",
@@ -244,7 +251,7 @@ export const en = {
   // extractor-screen.tsx
   "extractor.title": "Extractor",
   "extractor.subtitle":
-    "Pulls specific field shapes out of the working Node List — UUIDs, literal IP addresses, domain addresses, Cloudflare Worker verdicts, and Reality keys.",
+    "Pulls specific field shapes out of the working Node List — UUIDs, literal IP addresses, domain addresses, Cloudflare Worker verdicts, Reality keys, credentials, transport settings, TLS fingerprints, and VLESS flow.",
   "extractor.uuid.title": "UUID Extractor",
   "extractor.uuid.hint": "No nodes carry a uuid.",
   "extractor.ip.title": "IP Extractor",
@@ -264,6 +271,14 @@ export const en = {
   "extractor.dns.risk.medium": "Medium",
   "extractor.dns.risk.high": "High",
   "extractor.dns.risk.unknown": "Unknown",
+  "extractor.credentials.title": "Credentials Extractor",
+  "extractor.credentials.hint": "No nodes carry a password or method.",
+  "extractor.transport.title": "Transport Extractor",
+  "extractor.transport.hint": "No nodes carry a transport host or path.",
+  "extractor.tls.title": "TLS Fingerprint Extractor",
+  "extractor.tls.hint": "No nodes carry an ALPN list or a fingerprint.",
+  "extractor.flow.title": "Flow Extractor",
+  "extractor.flow.hint": "No nodes carry a flow.",
 
   // export-screen.tsx
   "export.title": "Export Center",

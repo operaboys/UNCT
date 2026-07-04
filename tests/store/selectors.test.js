@@ -27,6 +27,10 @@ import {
   selectNodesWithIpAddress,
   selectNodesWithDomainAddress,
   selectNodesWithReality,
+  selectNodesWithCredentials,
+  selectNodesWithTransportPath,
+  selectNodesWithTlsFingerprint,
+  selectNodesWithFlow,
   selectParserLog,
   selectDetectionLog,
   selectValidationFailureLog,
@@ -379,6 +383,65 @@ describe("selectNodesWithReality", () => {
 
   it("returns an empty array when no node uses Reality", () => {
     expect(selectNodesWithReality({ nodes: [node({ security: "tls" })] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithCredentials", () => {
+  it("keeps only nodes carrying a password and/or method (Extractor Screen's Credentials Extractor, P12-12)", () => {
+    const ss = node({ protocol: "shadowsocks", password: "s3cret", method: "aes-256-gcm" });
+    const trojan = node({ protocol: "trojan", password: "t-pass" });
+    const bare = node({ protocol: "vless" });
+    const state = { nodes: [ss, trojan, bare] };
+
+    expect(selectNodesWithCredentials(state)).toEqual([ss, trojan]);
+  });
+
+  it("returns an empty array when no node carries a password or method", () => {
+    expect(selectNodesWithCredentials({ nodes: [node()] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithTransportPath", () => {
+  it("keeps only nodes carrying a host and/or path (Extractor Screen's Transport Extractor, P12-12)", () => {
+    const ws = node({ network: "ws", host: "cdn.example.com", path: "/ws" });
+    const grpc = node({ network: "grpc", path: "/grpc-service" });
+    const tcp = node({ network: "tcp" });
+    const state = { nodes: [ws, grpc, tcp] };
+
+    expect(selectNodesWithTransportPath(state)).toEqual([ws, grpc]);
+  });
+
+  it("returns an empty array when no node carries a host or path", () => {
+    expect(selectNodesWithTransportPath({ nodes: [node()] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithTlsFingerprint", () => {
+  it("keeps only nodes carrying an alpn list and/or a fingerprint (Extractor Screen's TLS Fingerprint Extractor, P12-12)", () => {
+    const withAlpn = node({ security: "tls", alpn: ["h2", "http/1.1"] });
+    const withFingerprint = node({ security: "tls", fingerprint: "chrome" });
+    const plain = node({ security: "tls" });
+    const state = { nodes: [withAlpn, withFingerprint, plain] };
+
+    expect(selectNodesWithTlsFingerprint(state)).toEqual([withAlpn, withFingerprint]);
+  });
+
+  it("returns an empty array when no node carries alpn or fingerprint", () => {
+    expect(selectNodesWithTlsFingerprint({ nodes: [node(), node({ alpn: [] })] })).toEqual([]);
+  });
+});
+
+describe("selectNodesWithFlow", () => {
+  it("keeps only nodes carrying a flow (Extractor Screen's Flow Extractor, P12-12)", () => {
+    const withFlow = node({ protocol: "vless", security: "reality", flow: "xtls-rprx-vision" });
+    const withoutFlow = node({ protocol: "vless" });
+    const state = { nodes: [withFlow, withoutFlow] };
+
+    expect(selectNodesWithFlow(state)).toEqual([withFlow]);
+  });
+
+  it("returns an empty array when no node carries a flow", () => {
+    expect(selectNodesWithFlow({ nodes: [node()] })).toEqual([]);
   });
 });
 

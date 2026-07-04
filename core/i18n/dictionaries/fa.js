@@ -49,6 +49,13 @@ export const fa = {
   "common.fields.signals": "نشانه‌ها",
   "common.fields.compatible": "سازگار",
   "common.fields.dnsLeakRisk": "ریسک نشتی DNS",
+  "common.fields.method": "روش رمزنگاری",
+  "common.fields.password": "رمز عبور",
+  "common.fields.host": "Host",
+  "common.fields.path": "مسیر",
+  "common.fields.alpn": "ALPN",
+  "common.fields.fingerprint": "اثرانگشت TLS",
+  "common.fields.flow": "Flow",
   "common.reality.pbk": "PBK",
   "common.reality.sid": "SID",
   "common.reality.pbkPlausible": "معقول‌بودن PBK",
@@ -246,7 +253,7 @@ export const fa = {
   // extractor-screen.tsx
   "extractor.title": "استخراج‌کننده",
   "extractor.subtitle":
-    "شکل‌های خاصی از فیلدها را از لیست نودهای کاری استخراج می‌کند — UUIDها، آدرس‌های IP مستقیم، آدرس‌های دامنه، نتیجه‌ی Cloudflare Worker، و کلیدهای Reality.",
+    "شکل‌های خاصی از فیلدها را از لیست نودهای کاری استخراج می‌کند — UUIDها، آدرس‌های IP مستقیم، آدرس‌های دامنه، نتیجه‌ی Cloudflare Worker، کلیدهای Reality، اطلاعات ورود، تنظیمات انتقال، اثرانگشت TLS، و Flow ولس.",
   "extractor.uuid.title": "استخراج‌کننده‌ی UUID",
   "extractor.uuid.hint": "هیچ نودی UUID ندارد.",
   "extractor.ip.title": "استخراج‌کننده‌ی IP",
@@ -266,6 +273,14 @@ export const fa = {
   "extractor.dns.risk.medium": "متوسط",
   "extractor.dns.risk.high": "زیاد",
   "extractor.dns.risk.unknown": "نامشخص",
+  "extractor.credentials.title": "استخراج‌کننده‌ی اطلاعات ورود",
+  "extractor.credentials.hint": "هیچ نودی رمز عبور یا روش رمزنگاری ندارد.",
+  "extractor.transport.title": "استخراج‌کننده‌ی انتقال",
+  "extractor.transport.hint": "هیچ نودی Host یا مسیر انتقال ندارد.",
+  "extractor.tls.title": "استخراج‌کننده‌ی اثرانگشت TLS",
+  "extractor.tls.hint": "هیچ نودی فهرست ALPN یا اثرانگشت TLS ندارد.",
+  "extractor.flow.title": "استخراج‌کننده‌ی Flow",
+  "extractor.flow.hint": "هیچ نودی Flow ندارد.",
 
   // export-screen.tsx
   "export.title": "مرکز خروجی",

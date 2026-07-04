@@ -313,6 +313,64 @@ export function selectNodesWithReality(state) {
 }
 
 /**
+ * Nodes carrying a `password` and/or `method` (Extractor Screen's
+ * "Credentials Extractor") — real UNM auth fields for Shadowsocks (both),
+ * Trojan/Hysteria2 (`password` only). Never extracted as its own panel
+ * before this checkpoint (P12-12): the Extractor Screen's original six
+ * panels classify address/uuid shape, not authentication fields. This is
+ * the same Rule 11 boundary as {@link selectNodesWithUuid} — presence
+ * classification only, no new validity judgment (that stays `validation`'s).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithCredentials(state) {
+  return state.nodes.filter((n) => Boolean(n.password) || Boolean(n.method));
+}
+
+/**
+ * Nodes carrying a `host` and/or `path` (Extractor Screen's "Transport
+ * Extractor") — the WS/gRPC/HTTPUpgrade Header-Host and URL-path UNM
+ * fields, populated by all six core parsers (verified via grep before
+ * adding) whenever the source config uses one of those transports. Distinct
+ * from the Worker Extractor's `pathSegments` (a Worker-detection-specific
+ * decomposition of a URL that already looked like a Worker) — this
+ * surfaces the raw transport fields for every node that has them,
+ * regardless of whether Worker detection ever runs.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithTransportPath(state) {
+  return state.nodes.filter((n) => Boolean(n.host) || Boolean(n.path));
+}
+
+/**
+ * Nodes carrying an `alpn` list and/or a `fingerprint` (Extractor Screen's
+ * "TLS Fingerprint Extractor") — the uTLS/ALPN evasion fields real Xray/
+ * Sing-box/Clash TLS or Reality configs set to mimic a real browser's TLS
+ * handshake. Independent of the Reality Extractor (`pbk`/`sid`): a node can
+ * carry `fingerprint`/`alpn` under plain `security: "tls"` with no Reality
+ * involved at all, so this is not a subset/superset of that panel.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithTlsFingerprint(state) {
+  return state.nodes.filter((n) => (Array.isArray(n.alpn) && n.alpn.length > 0) || Boolean(n.fingerprint));
+}
+
+/**
+ * Nodes carrying a `flow` (Extractor Screen's "Flow Extractor") — VLESS's
+ * flow-control field (e.g. `xtls-rprx-vision`), populated by all six core
+ * parsers (verified via grep). Often paired with Reality but not always
+ * (flow is valid under plain TLS too), so this is a genuinely independent
+ * field lookup, not a re-display of the Reality Extractor's data.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithFlow(state) {
+  return state.nodes.filter((n) => Boolean(n.flow));
+}
+
+/**
  * Parser Logs — Developer Console's "Parser Logs" section (doc 07 §4.7).
  * A read-only log view over fields the Parser already wrote onto every
  * node (`metadata.parser`, `sourceType`, `createdAt`) — no new Core logic,

@@ -52,6 +52,14 @@
  * `.plain-list`/`.hint`/`.mono`/`.tag` as-is — no new CSS was needed. No
  * logic/state/handlers changed for the other five sections — same
  * selectors, same Worker/Reality bundle lookups as before this pass.
+ *
+ * P12-12 addition (Extractor Level System, 4 new panels — this checkpoint):
+ * Credentials/Transport/TLS-Fingerprint/Flow Extractor. Each is the exact
+ * same Rule 11 field-shape-classification pattern as UUID/IP/Domain above —
+ * a new `core/store/selectors.js` selector, no new Core logic. Brings the
+ * real Extractor count from 6 to 10 (grep-verified against
+ * `docs/blueprints/ULTIMATE_BLUEPRINT_INDEX.md` P12-12's addendum), meeting
+ * the 8-10 threshold that had kept this item Blocked.
  */
 import { useMemo } from "preact/hooks";
 import {
@@ -59,6 +67,10 @@ import {
   selectNodesWithIpAddress,
   selectNodesWithDomainAddress,
   selectNodesWithReality,
+  selectNodesWithCredentials,
+  selectNodesWithTransportPath,
+  selectNodesWithTlsFingerprint,
+  selectNodesWithFlow,
   selectAnalysisByNodeId,
 } from "../../core/store/selectors.js";
 import { createTranslator } from "../../core/i18n/translator.js";
@@ -78,6 +90,10 @@ export function ExtractorScreen() {
   const ipNodes = useMemo(() => selectNodesWithIpAddress({ nodes }), [nodes]);
   const domainNodes = useMemo(() => selectNodesWithDomainAddress({ nodes }), [nodes]);
   const realityNodes = useMemo(() => selectNodesWithReality({ nodes }), [nodes]);
+  const credentialsNodes = useMemo(() => selectNodesWithCredentials({ nodes }), [nodes]);
+  const transportNodes = useMemo(() => selectNodesWithTransportPath({ nodes }), [nodes]);
+  const tlsFingerprintNodes = useMemo(() => selectNodesWithTlsFingerprint({ nodes }), [nodes]);
+  const flowNodes = useMemo(() => selectNodesWithFlow({ nodes }), [nodes]);
   const workerNodes = useMemo(
     () => nodes.filter((n) => selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId)?.worker.applicable === true),
     [nodes, analysisByNodeId],
@@ -263,7 +279,7 @@ export function ExtractorScreen() {
             )}
           </div>
 
-          <div class="panel glass-panel" aria-label={t("extractor.dns.title")}>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.dns.title")}>
             <div class="panel-title">{t("extractor.dns.title")}</div>
             <div class="table-scroll">
               <table class="data-table">
@@ -291,6 +307,110 @@ export function ExtractorScreen() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.credentials.title")}>
+            <div class="panel-title">{t("extractor.credentials.title")}</div>
+            {credentialsNodes.length === 0 ? (
+              <p class="hint">{t("extractor.credentials.hint")}</p>
+            ) : (
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.method")}</th><th>{t("common.fields.password")}</th></tr>
+                  </thead>
+                  <tbody>
+                    {credentialsNodes.map((n) => (
+                      <tr key={n.nodeId}>
+                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                        <td class="mono">{n.address}</td>
+                        <td class="mono"><bdi>{n.port}</bdi></td>
+                        <td class="mono">{n.method ?? "—"}</td>
+                        <td class="mono">{n.password ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.transport.title")}>
+            <div class="panel-title">{t("extractor.transport.title")}</div>
+            {transportNodes.length === 0 ? (
+              <p class="hint">{t("extractor.transport.hint")}</p>
+            ) : (
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.network")}</th><th>{t("common.fields.host")}</th><th>{t("common.fields.path")}</th></tr>
+                  </thead>
+                  <tbody>
+                    {transportNodes.map((n) => (
+                      <tr key={n.nodeId}>
+                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                        <td class="mono">{n.address}</td>
+                        <td class="mono"><bdi>{n.port}</bdi></td>
+                        <td class="mono">{n.network}</td>
+                        <td class="mono">{n.host ?? "—"}</td>
+                        <td class="mono">{n.path ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.tls.title")}>
+            <div class="panel-title">{t("extractor.tls.title")}</div>
+            {tlsFingerprintNodes.length === 0 ? (
+              <p class="hint">{t("extractor.tls.hint")}</p>
+            ) : (
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.alpn")}</th><th>{t("common.fields.fingerprint")}</th></tr>
+                  </thead>
+                  <tbody>
+                    {tlsFingerprintNodes.map((n) => (
+                      <tr key={n.nodeId}>
+                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                        <td class="mono">{n.address}</td>
+                        <td class="mono"><bdi>{n.port}</bdi></td>
+                        <td>{n.alpn ? formatStringList(n.alpn) : "—"}</td>
+                        <td class="mono">{n.fingerprint ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div class="panel glass-panel" aria-label={t("extractor.flow.title")}>
+            <div class="panel-title">{t("extractor.flow.title")}</div>
+            {flowNodes.length === 0 ? (
+              <p class="hint">{t("extractor.flow.hint")}</p>
+            ) : (
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.flow")}</th></tr>
+                  </thead>
+                  <tbody>
+                    {flowNodes.map((n) => (
+                      <tr key={n.nodeId}>
+                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                        <td class="mono">{n.address}</td>
+                        <td class="mono"><bdi>{n.port}</bdi></td>
+                        <td class="mono">{n.flow}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}

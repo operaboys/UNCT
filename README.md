@@ -9,8 +9,10 @@
 > ۲۹۹ کلید دیکشنری در هر دو زبان، `tests/e2e/rtl-visual.spec.js` با ۱۳ تست Pass). چند فیکس
 > کنتراست/Responsive واقعی هم بعد از آن پیدا و رفع شدند (پایین‌تر). سپس Custom Parser API
 > (Phase 11) هم با دو Parser واقعی (SIP008، Hysteria2 Native Config) تا حد مکانیزم Parser
-> مستندشده پیش رفت. آنچه واقعاً هنوز باز است — `riskScore` نهایی، Custom **Exporter** API،
-> Extractor Level System — در «محدودیت‌های شناخته‌شده» پایین‌تر صادقانه ذکر شده.
+> مستندشده پیش رفت، و Extractor Level System (Phase 12) هم با ۴ Extractor واقعی جدید
+> (Credentials/Transport/TLS Fingerprint/Flow) به آستانه‌ی ۱۰ از ۱۰ رسید. آنچه واقعاً هنوز باز
+> است — `riskScore` نهایی، Custom **Exporter** API — در «محدودیت‌های شناخته‌شده» پایین‌تر
+> صادقانه ذکر شده.
 
 ## وضعیت کلی
 
@@ -22,13 +24,14 @@
   است — هیچ Exporter واقعی نوشته نشده.
 - از گروه Visualization (Phase 12، ۵ فیچر)، ۴ تا به‌طور کامل از Backlog حذف شدند (داده‌ی واقعی
   ندارند)؛ فقط Subscription Visualizer ساخته شد.
-- Extractor Level System (Phase 12) همچنان Blocked است — هر ۶ Extractor واقعی حالا فعال‌اند
-  (بند پایین)، ولی آستانه‌ی پیشنهادی ۸-۱۰ Extractor هنوز محقق نشده.
+- Extractor Level System (Phase 12) دیگر Blocked نیست — ۴ Extractor واقعی جدید
+  (Credentials/Transport/TLS Fingerprint/Flow) اضافه شد، عدد نهایی ۱۰ Extractor فعال از ۱۰ کل،
+  دقیقاً رسیده به آستانه‌ی پیشنهادی ۸-۱۰ (بند پایین).
 
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۱۵۱ تست در ۹۴ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+تست: **۱۱۵۹ تست در ۹۴ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
 موفق (`app.js` ~۳۲۰kb، `parser-worker.js` ~۹۹kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
 --omit=dev` صفر آسیب‌پذیری. (هر عدد بالا با اجرای واقعی `npm test`/`npm run typecheck`/
 `npm run build`/`npm audit` در همین چک‌پوینت دوباره تأیید شد، نه از حافظه.)
@@ -116,9 +119,9 @@ UNMNode است که در یک IndexedDB جدا (`core/storage/template-store.js`
 **Tier 3 (بررسی صادقانه‌ی Backlog قدیمی، قبل از هر کد جدید):**
 - Custom Parser/Export API → Parser سمت رفع‌شده (دو Parser واقعی + `core/plugin/README.md`)؛
   Exporter سمت همچنان Blocked (بالا).
-- Extractor Level System → هر ۶ Extractor واقعی (`ui/extractor/extractor-screen.tsx`) حالا
-  فعال‌اند (UUID/IP/Domain/Reality/Worker/DNS، هیچ `aria-disabled` باقی نمانده)، ولی آستانه‌ی
-  پیشنهادی ۸-۱۰ Extractor مجزا هنوز محقق نشده — Blocked با عدد دقیق، نه حدس.
+- Extractor Level System → ✅ **رفع Block** — ۴ Extractor واقعی جدید (Credentials/Transport/
+  TLS Fingerprint/Flow) اضافه شد؛ ۱۰ Extractor کاملاً فعال از ۱۰ کل
+  (`ui/extractor/extractor-screen.tsx`)، رسیده به آستانه‌ی پیشنهادی ۸-۱۰.
 - گروه Visualization (۵ فیچر) → ۴ تا (Node Relationship Map، Visual Topology Mapper،
   Cloudflare Topology View، Reality Visualizer) **به‌طور کامل حذف شدند**، چون هیچ داده‌ی
   واقعی چندموجودیتی/رابطه‌ای در UNM برایشان وجود ندارد (نه یک فیلد کم است، بلکه خودِ مفهوم
@@ -142,7 +145,7 @@ P12-12، P12-13).
 | 2 | **Converter** | Paste Area + File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
-| 5 | **Extractor** | هر ۶ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS. هیچ Placeholder غیرفعالی باقی نمانده |
+| 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
 | 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
@@ -271,9 +274,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 - **Custom Exporter API عمومی همچنان Blocked است** — طرف Parser رفع شد (دو Custom Parser واقعی
   + `core/plugin/README.md`، جزئیات بالا)؛ طرف Exporter مستقل است و هنوز هیچ Custom Exporter
   واقعی نوشته نشده، پس نوشتن راهنمای آن طرف هنوز حدس‌محور می‌بود.
-- **Extractor Level System (Basic/Advanced/Deep) Blocked است** — هر ۶ Extractor واقعی فعال‌اند
-  (بند بالا)، ولی آستانه‌ی پیشنهادی ۸-۱۰ Extractor مجزا هنوز محقق نشده؛ جزئیات در
-  `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
 - **۴ از ۵ فیچر گروه Visualization به‌طور کامل حذف شدند** (Node Relationship Map، Visual
   Topology Mapper، Cloudflare Topology View، Reality Visualizer) — نه Blocked، بلکه حذف کامل،
   چون هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی در UNM برایشان وجود ندارد. جزئیات در
@@ -312,6 +312,12 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   repeat(auto-fill, …)` در `.qr-grid` بود (ستون‌های خالی شبح، دقیقاً همان مشکلی که `.panel-grid`
   از قبل با `auto-fit` حل کرده بود)؛ رفع شد با تغییر به `auto-fit` + یک `max-width: 240px` روی
   خودِ `.qr-card` (commit `f8fb1e6`).
+- **Extractor Level System Block رفع شد** — بررسی مستقیم فیلدهای `UNMNode` (نه حدس اسم) ۴
+  گروه‌فیلد واقعی و مستقل پیدا کرد که در هیچ Extractor موجود استخراج نمی‌شدند: Credentials
+  (`password`/`method`)، Transport (`host`/`path`)، TLS Fingerprint (`alpn`/`fingerprint`)،
+  Flow (`flow`). هر ۴ با selector واقعی (`core/store/selectors.js`) و پنل جدول واقعی
+  (`ui/extractor/extractor-screen.tsx`) اضافه شدند — عدد نهایی ۱۰ Extractor فعال از ۱۰ کل،
+  دقیقاً روی آستانه‌ی پیشنهادی ۸-۱۰. جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
 
 ---
 
@@ -326,8 +332,7 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
    Custom Parser واقعی (SIP008 + Hysteria2 native config) و `core/plugin/README.md` رفع شد.
    Blocked تا یک Custom Exporter واقعی نوشته شود؛ مکانیزم زیرین (`exporter-contract.js`) از
    قبل کامل و تست‌شده است.
-3. **Extractor Level System (Basic/Advanced/Deep)** — Blocked تا شمار Extractorهای واقعی از ۶
-   به آستانه‌ی پیشنهادی ۸-۱۰ برسد.
 
-هیچ‌کدام Blocker معماری ندارند؛ هر سه صرفاً منتظر یک محرک بیرونی (تصمیم فرمول، یا حجم واقعی
-Plugin/Extractor بیشتر) هستند، نه کدنویسی ناتمام.
+هیچ‌کدام Blocker معماری ندارد؛ صرفاً منتظر یک محرک بیرونی (تصمیم فرمول، یا یک Custom Exporter
+واقعی) است، نه کدنویسی ناتمام. (Extractor Level System که سومین مورد همین فهرست بود، در همین
+چک‌پوینت با ۴ Extractor واقعی جدید رفع شد — بند «اصلاحات اخیر» پایین‌تر.)
