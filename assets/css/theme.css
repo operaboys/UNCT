@@ -436,6 +436,17 @@ code, kbd, samp, .mono {
   gap: 16px;
   margin-block-end: 22px;
 }
+/* The only 4-column grid in the stylesheet with no mobile breakpoint
+   (confirmed via grep -n "@media" -- `.content-grid` already collapses at
+   this same 660px point). 2x2 rather than `.content-grid`'s 1-column
+   collapse: these are short, number-heavy cards (not tall panels), so a
+   2x2 grid keeps related stats visually paired instead of stretching
+   into a long single-column list. */
+@media (max-width: 660px) {
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 .stat-card {
   padding: 20px;
 }
@@ -867,7 +878,13 @@ code, kbd, samp, .mono {
      overflows narrow viewports regardless of the currently selected
      option's own length — this is what was actually behind the "label
      wraps above the control" mobile issue found in an earlier Checkpoint,
-     not a flex/legend problem. */
+     not a flex/legend problem. `min-width: 0` is the other half of that
+     fix, missed at the time: as a flex item of `.field`, a <select>'s
+     default `min-width: auto` refuses to shrink below its own intrinsic
+     content width regardless of `max-width`, which is exactly why Export
+     Center's format <select> (the widest option list of any screen using
+     this class) still overflowed its card on narrow viewports. */
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1035,6 +1052,17 @@ code, kbd, samp, .mono {
   z-index: 1;
 }
 .qr-card svg {
+  /* The <svg>'s own width/height attrs (ui/export/export-screen.tsx) are
+     an absolute pixel size derived from moduleCount, entirely independent
+     of `.qr-card`'s actual (grid-driven, auto-fill) width -- nothing
+     constrained that intrinsic size to the card, so the code rendered as
+     an oversized square regardless of viewport. The SVG's own `viewBox`
+     already makes it freely scalable; this just lets it. Downloaded SVG
+     files are unaffected -- `handleDownloadQr` serializes markup from
+     `qrToSvgMarkup()` directly, not this rendered element's outerHTML. */
+  width: 100%;
+  height: auto;
+  max-width: 220px;
   border-radius: 8px;
 }
 .qr-card figcaption {
