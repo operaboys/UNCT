@@ -105,4 +105,18 @@ describe("exportHtmlReport", () => {
     expect(content).toContain("Node Count: 0");
     expect(content).toContain("Average Security Score: Not analyzed yet.");
   });
+
+  it("gives <body> an explicit white background so the report stays readable when previewed inside a Dark Mode host page (Checkpoint review item 3)", () => {
+    const { content } = exportHtmlReport([]);
+    // This document is intentionally independent of the live app's
+    // data-theme (a downloaded/previewed report must render the same
+    // regardless of the host page's theme) -- without an explicit
+    // background, the surrounding iframe/page's dark background would show
+    // through behind the report's dark (#222) text, killing contrast.
+    // Asserted on the DOMPurify-sanitized output, not the pre-sanitize
+    // string, so a future ADD_TAGS/ADD_ATTR change that started stripping
+    // <style> content would fail this test too.
+    expect(content).toContain("<style>");
+    expect(content).toMatch(/<style>[^<]*background:#fff[^<]*<\/style>/);
+  });
 });

@@ -150,7 +150,7 @@ function averageSecurityScore(analysisByNodeId) {
 }
 
 const REPORT_STYLE =
-  "body{font-family:sans-serif;margin:2rem;color:#222}" +
+  "body{font-family:sans-serif;margin:2rem;color:#222;background:#fff}" +
   "h1{margin-bottom:0}" +
   "table{border-collapse:collapse;margin:0.5rem 0}" +
   "th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}" +

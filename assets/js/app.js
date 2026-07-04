@@ -43,7 +43,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   <h3>Compatibility Report</h3>${Hh(r)}
   <h3>Warnings</h3>${Yh(e)}
   <h3>Recommendations</h3>${Wh(e)}
-</article>`}function Kh(e){let t=Object.values(e).map(r=>r.security.securityScore);return t.length===0?null:t.reduce((r,n)=>r+n,0)/t.length}var Jh="body{font-family:sans-serif;margin:2rem;color:#222}h1{margin-bottom:0}table{border-collapse:collapse;margin:0.5rem 0}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}.node-report{border-top:2px solid #888;padding-top:1rem;margin-top:1rem}.empty{color:#777;font-style:italic}";function ns(e,t={}){let r=Kh(t),n=`
+</article>`}function Kh(e){let t=Object.values(e).map(r=>r.security.securityScore);return t.length===0?null:t.reduce((r,n)=>r+n,0)/t.length}var Jh="body{font-family:sans-serif;margin:2rem;color:#222;background:#fff}h1{margin-bottom:0}table{border-collapse:collapse;margin:0.5rem 0}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}.node-report{border-top:2px solid #888;padding-top:1rem;margin-top:1rem}.empty{color:#777;font-style:italic}";function ns(e,t={}){let r=Kh(t),n=`
 <h1>UNCT Export Report</h1>
 <p>Export Date: ${gr(new Date().toISOString())} &middot; Node Count: ${e.length} &middot; UNM Version: ${gr("1.0")} &middot; Report Version: ${Fh}</p>
 <p>Average Security Score: ${r===null?"Not analyzed yet.":`${r.toFixed(1)}/100`}</p>
