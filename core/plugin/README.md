@@ -1,27 +1,31 @@
-# Writing a Custom Parser Plugin
+# Writing a Custom Parser or Exporter Plugin
 
-This guide is written from two REAL, working Custom Parsers — not a
-hypothetical template. Both live in `plugins/` and are loaded into the real
-app (not just their own unit tests):
+This guide is written from three REAL, working plugins — not a hypothetical
+template. All three live in `plugins/` and are loaded into the real app (not
+just their own unit tests):
 
 - `plugins/sip008-parser/` — SIP008 (official Shadowsocks JSON spec,
-  multi-node).
+  multi-node) → `UNMNode[]`.
 - `plugins/hysteria2-config-parser/` — Hysteria2's native client config JSON
-  (single-node).
+  (single-node) → `UNMNode`.
+- `plugins/sip008-exporter/` — the exact inverse of `sip008-parser`:
+  `UNMNode[]` → SIP008 JSON, the first real Custom **Exporter**.
 
-Read both alongside this guide — they show every pattern described below in
-context, including the one architectural constraint (below) every author
-needs to know before starting.
+Read all three alongside this guide — they show every pattern described
+below in context, including the one architectural constraint (below) every
+Parser author needs to know before starting.
 
-## Scope: Parser plugins only
+## Scope: both plugin types are now real
 
-This document covers **Custom Parser** plugins (`type: "parser"`). Custom
-**Exporter** plugins use the same `PluginRegistry`/`PluginLoader` mechanism
-(`core/plugin/exporter-contract.js` defines that contract), but no real
-Exporter plugin has been written yet — this guide makes no claims about that
-side of the API being validated by real-world use.
+This document covers **both** plugin types: Custom **Parser** plugins
+(`type: "parser"`, see the section below) and Custom **Exporter** plugins
+(`type: "exporter"`, see "Writing a Custom Exporter Plugin" further down).
+Both sections are grounded in a real, working implementation — neither is
+hypothetical.
 
-## The one constraint every author must know first
+## Writing a Custom Parser Plugin
+
+### The one constraint every author must know first
 
 Your plugin **cannot add a new `Protocol` or `SourceType` value**. Both are
 frozen enums in `core/types/unm.d.ts` (the Architecture Freeze zone,
@@ -46,7 +50,7 @@ If neither fits, your format cannot be a Custom Parser plugin without a real
 ADR first — this is a genuine limit of today's Plugin Isolation design, not
 an oversight in this guide.
 
-## The BaseParser contract
+### The BaseParser contract
 
 Your plugin's `implementation` must satisfy every method
 `core/parser/base/contract.js`'s `assertImplementsBaseParser()` checks for
@@ -68,7 +72,7 @@ immediately — not silently at first use):
 parser returns — do the same, or you'll validate every node twice for
 nothing.
 
-## Detection: score defensively
+### Detection: score defensively
 
 `detect()` runs against **every** raw input the user pastes, including ones
 meant for the six core parsers or another plugin. Both example plugins:
@@ -87,7 +91,7 @@ meant for the six core parsers or another plugin. Both example plugins:
 fallback tier uses — return a real confidence like `90` for a solid match,
 never a token nonzero value.
 
-## Registering your plugin
+### Registering your parser plugin
 
 Plugins are loaded through `createPluginLoader`/`createPluginRegistry`
 (`core/plugin/loader.js`/`registry.js`) — **never** register directly with
@@ -111,7 +115,7 @@ Worker) both already import `appPluginRegistry` and try it automatically
 when every core parser fails. You do not need to touch either of those
 files.
 
-## Testing
+### Testing your parser plugin
 
 Write real fixtures from the actual spec/docs of your format — never a
 fictional format (that is what `plugins/example-parser/` is for, and it is
@@ -127,3 +131,70 @@ producing the exact real UNMNode fields, `validateStructure()`, and
 including asserting a core parser still wins for a format it already owns
 even with your plugin also registered (Highest-Confidence-Wins applies
 across both tiers together).
+
+## Writing a Custom Exporter Plugin
+
+This section is written from the one real, working Custom Exporter —
+`plugins/sip008-exporter/`, the exact inverse of `plugins/sip008-parser/`
+(turns `UNMNode[]` back into a SIP008 JSON document instead of the other way
+around). Read it alongside this guide.
+
+### The ExporterPlugin contract
+
+Your plugin's `implementation` must satisfy `core/plugin/exporter-
+contract.js`'s `assertImplementsExporterPlugin()` (checked at `load()` time,
+same as the Parser side):
+
+| Member | Required | Purpose |
+|---|---|---|
+| `export(nodes): { content: string, skipped: SkippedEntry[] }` | always | Turn the given nodes into your output format's serialized text. |
+| `label?: string` | optional | Advisory-only display name (Hints-Are-Advisory-Only, doc 12 §2.1) — e.g. for a UI format dropdown. |
+| `mimeType?: string` | optional | Advisory-only, e.g. for a download's Blob type. |
+| `extension?: string` | optional | Advisory-only, e.g. for a download filename. |
+
+`SkippedEntry` is exactly `{ nodeId: string, reason: string }` — no
+`protocol` field (unlike core exporters' own `skipped` shape, `skip-
+reason.js`), so put whatever identifies the cause directly in `reason`.
+
+### The one constraint every Exporter author must know first
+
+Your format can only honestly represent whatever real UNM fields the nodes
+you're given actually carry. `sip008-exporter` can only represent
+`protocol: "shadowsocks"` nodes (SIP008 has no fields for VLESS/VMess/
+Reality/etc.) — every other node must be **skipped with a reason**, never
+silently dropped or fabricated with placeholder values (Rule 9, the same
+"Export Anything, Lose Nothing" principle doc 08 §1 requires of every core
+exporter). Decide your format's real representable scope before writing
+`export()`, the same way `sip008-exporter`'s header comment documents why it
+only accepts one protocol.
+
+### Registering your exporter plugin
+
+Same mechanism as Parser plugins — `createPluginLoader`/
+`createPluginRegistry`, **never** register directly with `core/exporter/`.
+Add it to `core/plugin/app-plugins.js` (the same shared registry, a separate
+namespace):
+
+```js
+import { yourExporter } from "../../plugins/your-exporter/index.js";
+// inside buildAppPluginRegistry():
+loader.load({ id: "your-exporter", type: "exporter", implementation: yourExporter });
+```
+
+Unlike Parser plugins, there is no automatic fallback-tier wiring for
+Exporters — `core/exporter/`'s own formats are never tried as a chain the
+way `ParserFactory`'s six parsers are. A UI screen that wants to offer your
+exporter calls `appPluginRegistry.getExporter("your-exporter").export(nodes)`
+directly, the way `ui/export/export-screen.tsx`'s `"sip008Plugin"` format
+case does — that one call site is the only integration point.
+
+### Testing your exporter plugin
+
+See `tests/plugin/sip008-exporter.test.js` for the expected coverage shape:
+ExporterPlugin contract-shape assertions, `export()` producing the exact
+real output format for representable nodes, skip behavior (with reason) for
+every unrepresentable case, and — the strongest correctness proof available
+for an Exporter whose paired Parser already exists — a real **round-trip**
+test: re-parsing your exporter's own output through the paired parser
+reproduces the same nodes, the same guarantee `core/exporter/subscription-
+builder.js` already established for Subscription Parser/Builder.

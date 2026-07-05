@@ -4,11 +4,17 @@
  * `reason` to every skipped node (`core/exporter/skip-reason.js`) — this
  * groups by that exact reason text (never re-deriving it) so the screen can
  * tell the user WHY, not just which nodes, in one line per distinct cause.
+ *
+ * `protocol` is optional: core exporters always attach it (`skip-reason.js`),
+ * but a Custom Exporter plugin's `SkippedEntry` (`core/plugin/exporter-
+ * contract.js`) only carries `{nodeId, reason}` per the ExporterPlugin
+ * contract — `formatSkipped` only ever reads `reason`, so both shapes work
+ * here without a second formatter.
  */
 
 export interface SkippedExportNode {
   nodeId: string;
-  protocol: string;
+  protocol?: string;
   reason: string;
 }
 

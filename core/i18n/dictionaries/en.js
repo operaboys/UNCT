@@ -293,6 +293,7 @@ export const en = {
   "export.format.analysisJson": "Analysis JSON",
   "export.format.clashYaml": "Clash YAML / Clash Meta / Mihomo / Provider File",
   "export.format.csv": "CSV",
+  "export.format.sip008Plugin": "SIP008 (Shadowsocks JSON, Custom Exporter Plugin)",
   "export.hint.noAnalyzedNodes": "No analyzed nodes yet — visit the Analyzer Screen first.",
   "export.status.copied": "Copied.",
   "export.status.copyFailed": "Copy failed.",

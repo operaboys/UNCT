@@ -133,6 +133,7 @@ satisfies the Extension Rule's acceptance criterion: "ماژول خارجی بد
   (deferred by design — needs a separate ADR before Phase 12).
 - Sandboxing is architectural, not VM-level; a malicious plugin with ESM import access could
   import `core/plugin/registry.js` directly. True sandboxing requires Worker isolation
+  (already available in Phase 5's infrastructure) and is the natural Phase 12 upgrade path.
 
 ---
 
@@ -191,19 +192,49 @@ authors in `core/plugin/README.md`, and is the main reason a *fully general* pub
 (one that could honestly support an arbitrary new native-config format) is not yet possible
 without a further ADR extending those unions — a real limit of today's design, not an oversight.
 
-### Decision: Parser-side API is now documented; Exporter side is explicitly NOT
+### Decision: Parser-side API is now documented; Exporter side was explicitly NOT (until now)
 
 With the condition met and the common pattern extracted from two real (not hypothetical)
 implementations, `core/plugin/README.md` is a real, usable guide for third-party Custom Parser
 authors — grounded in what was actually built, including the `SourceType` constraint above as a
 first-class caveat, not a footnote.
 
-This does **not** extend to Custom **Exporter** plugins. `core/plugin/exporter-contract.js`'s
-mechanism is unchanged and still has zero real implementations (only its own unit test) — the
-"two real Parsers OR one real Exporter" condition names two independent, alternative bars, and
-only the Parser bar has real evidence behind it today. A documented Exporter authoring guide
-would be exactly the guesswork this ADR's original Trade-offs section warned against. That half
-of P12-13's Block remains open.
+At that point this did **not** extend to Custom **Exporter** plugins. `core/plugin/exporter-
+contract.js`'s mechanism was unchanged and still had zero real implementations (only its own unit
+test) — the "two real Parsers OR one real Exporter" condition names two independent, alternative
+bars, and only the Parser bar had real evidence behind it. A documented Exporter authoring guide
+at that time would have been exactly the guesswork this ADR's original Trade-offs section warned
+against.
+
+## Addendum — a real Custom Exporter built; Exporter side of P12-13 now resolved
+
+A later checkpoint closed the remaining half of P12-13's condition: `plugins/sip008-exporter/` is
+a real Custom Exporter — the exact inverse of `plugins/sip008-parser/`, turning `UNMNode[]` back
+into the same official SIP008 JSON document instead of the other direction. It implements
+`ExporterPlugin` (`core/plugin/exporter-contract.js`), is registered via `createPluginLoader`/
+`createPluginRegistry` in `core/plugin/app-plugins.js` (never `core/exporter/` directly), and is
+covered by `tests/plugin/sip008-exporter.test.js` — including a real **round-trip** test
+(`sip008-exporter`'s output re-parsed by `sip008-parser` reproduces the same shadowsocks nodes),
+the same round-trip guarantee `core/exporter/subscription-builder.js` already established for
+Subscription Parser/Builder.
+
+Choosing the *same* spec already used for the Parser side (rather than a third, unrelated format)
+kept the choice defensible on the same grounds as the two Parsers: an official, verifiable spec
+(https://shadowsocks.org/guide/sip008.html), not a guessed reverse-engineered client dialect
+(Shadowrocket/Quantumult X/Surge all use undocumented proprietary line syntaxes for their own
+config export — none of them publish a spec the way shadowsocks.org does for SIP008).
+
+Verified end-to-end (not just in its own unit test): `ui/export/export-screen.tsx` calls
+`appPluginRegistry.getExporter("sip008-exporter").export(nodes)` directly from a real Format
+option in the Export Center Screen, confirmed with real Playwright screenshots showing the correct
+SIP008 JSON output for a shadowsocks node and a real skip message
+(`SIP008 only represents the Shadowsocks protocol...`) for a non-shadowsocks node in the same
+batch, in both Light and Dark themes.
+
+**Final decision:** both halves of P12-13's condition are now met with real, working
+implementations (two Custom Parsers, one Custom Exporter) — the Custom Parser/Exporter API is no
+longer Blocked. `core/plugin/README.md` now documents both plugin types, each grounded in a real
+implementation.
 
 See `ULTIMATE_BLUEPRINT_INDEX.md` P12-13's own addendum for the Backlog-tracking side of this
 same decision.

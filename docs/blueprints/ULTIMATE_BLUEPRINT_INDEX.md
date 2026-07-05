@@ -84,7 +84,7 @@
 | Rule/Route Analysis | Rule Analyzer, Clash Rule Inspector, Sing-box Route Inspector |
 | Builder Tools | Template Builder ✅ (P12-8), Subscription Builder ✅ (P12-9) |
 | Visualization | Subscription Visualizer ✅ (P12-11, بدون Chart Library — ADR-026) *(بقیه‌ی چهار مورد حذف شدند — بند زیر)* |
-| Extensibility | Custom Parser API / Custom Export API *(بررسی P12-13 — بند زیر)* |
+| Extensibility | Custom Parser API / Custom Export API ✅ **رفع Block (P12-13، بند زیر)** — دو Custom Parser + یک Custom Exporter واقعی |
 | UX Scaling | Extractor Level System ✅ **رفع Block (P12-12، بند زیر)** — ۱۰ Extractor کاملاً فعال از ۱۰ کل، رسیده به آستانه‌ی پیشنهادی ۸-۱۰ |
 
 ### P12-11 — وضعیت گروه Visualization *(بررسی جدید — پیش از هر تحقیق Library)*
@@ -178,7 +178,7 @@ Dependency). جزئیات کامل در `docs/adr/ADR-026-VISUALIZATION-GROUP-NO
 > ۵۳ تست سبز در این فایل، شامل ۸ تست جدید برای این ۴ selector). این دقیقاً بالای آستانه‌ی
 > پیشنهادی ۸-۱۰ است — **این آیتم دیگر Blocked نیست.**
 
-### P12-13 — وضعیت Custom Parser/Export API *(بررسی جدید)*
+### P12-13 — وضعیت Custom Parser/Export API *(✅ رفع Block — بند «اصلاح» پایین‌تر)*
 
 بررسی صورت گرفت: از پایان Phase 11 تا امروز، **هیچ Plugin واقعی اضافه نشده**. تنها چیزی که در
 `plugins/` وجود دارد `plugins/example-parser/index.js` است که در همان کامنت بالای فایلش صراحتاً
@@ -217,10 +217,39 @@ Registry موجود، بدون داشتن حداقل یک نمونه‌ی واق
 > اختصاصی گرفت). این محدودیت واقعی، نه فرضی، اکنون در `core/plugin/README.md` برای نویسندگان
 > آینده مستند شده است.
 >
-> **تصمیم نهایی:** سمت Parser این آیتم دیگر Blocked نیست — `core/plugin/README.md` یک راهنمای
-> واقعی و مستند برای نوشتن Custom Parser است، بر پایه‌ی دو نمونه‌ی واقعی، نه حدس. سمت Exporter
-> (نیمه‌ی دیگر شرط بالا) **همچنان کاملاً باز و Blocked است** — `core/plugin/exporter-contract.js`
-> هنوز هیچ پیاده‌سازی واقعی ندارد؛ جزئیات کامل در Addendum انتهای `ADR-020-PLUGIN-SYSTEM.md`.
+> **تصمیم (در آن بررسی):** سمت Parser این آیتم دیگر Blocked نبود — `core/plugin/README.md` یک
+> راهنمای واقعی و مستند برای نوشتن Custom Parser بود، بر پایه‌ی دو نمونه‌ی واقعی، نه حدس. سمت
+> Exporter (نیمه‌ی دیگر شرط بالا) در آن مقطع **همچنان کاملاً باز و Blocked** بود —
+> `core/plugin/exporter-contract.js` هیچ پیاده‌سازی واقعی نداشت.
+
+> **اصلاح (این چک‌پوینت) — Block کامل رفع شد، Custom Exporter واقعی نوشته شد:** بررسی مستقیم
+> فرمت‌های Export موجود (`core/exporter/index.js`: TXT, Xray/Sing-box/Normalized/Analysis JSON,
+> Clash YAML, CSV, ZIP, QR, HTML Report, Portable Package, Markdown, PDF, Excel) و فرمت‌های واقعی و
+> متداول حوزه‌ی V2Ray/Xray/پروکسی که هنوز پوشش نداشتند، به همان استدلال Parser منتهی شد: بهترین
+> گزینه یک Spec رسمی و قابل‌تأیید است، نه یک دیالکت حدسی کلاینت خاص (Shadowrocket/Quantumult
+> X/Surge هرکدام یک نحو خط‌به‌خط اختصاصی و مستندنشده دارند — هیچ‌کدام یک Spec رسمی مثل
+> shadowsocks.org منتشر نمی‌کنند).
+>
+> `plugins/sip008-exporter/` نوشته شد — دقیقاً عکس `plugins/sip008-parser/` موجود: `UNMNode[]` را
+> به همان سند رسمی JSON شادوساکس (SIP008) برمی‌گرداند. فقط نودهای `protocol: "shadowsocks"` قابل
+> نمایش‌اند (SIP008 فیلدی برای VLESS/VMess/Reality ندارد) — هر نود دیگر با یک `reason` واضح
+> Skip می‌شود (Rule 9، همان اصل «Export Anything, Lose Nothing» سند ۰۸ §۱). ثبت‌شده از طریق
+> `createPluginLoader`/`createPluginRegistry` در `core/plugin/app-plugins.js` (نه مستقیم
+> `core/exporter/`)، با تست واحد واقعی (`tests/plugin/sip008-exporter.test.js`) شامل یک تست
+> **Round-Trip واقعی**: خروجی `sip008-exporter` دوباره از `sip008-parser` عبور داده می‌شود و
+> دقیقاً همان نودهای شادوساکس را بازتولید می‌کند — همان تضمینی که
+> `core/exporter/subscription-builder.js` قبلاً برای Subscription Parser/Builder ثابت کرده بود.
+>
+> **تأیید واقعی End-to-End (نه فقط تست واحد):** `ui/export/export-screen.tsx` این Plugin را از
+> طریق `appPluginRegistry.getExporter("sip008-exporter").export(nodes)` مستقیماً به یک گزینه‌ی
+> واقعی در Export Center وصل می‌کند — با اسکرین‌شات واقعی Playwright (Light + Dark) تأیید شد: خروجی
+> صحیح JSON برای یک نود شادوساکس، و پیام Skip واقعی («SIP008 only represents the Shadowsocks
+> protocol...») برای یک نود vless در همان دسته.
+>
+> **تصمیم نهایی:** هر دو نیمه‌ی شرط P12-13 اکنون با پیاده‌سازی واقعی برآورده شده‌اند (دو Custom
+> Parser + یک Custom Exporter). **Custom Parser/Export API دیگر Blocked نیست.**
+> `core/plugin/README.md` اکنون هر دو نوع Plugin را مستند می‌کند، هرکدام بر پایه‌ی یک پیاده‌سازی
+> واقعی. جزئیات کامل در Addendum انتهای `ADR-020-PLUGIN-SYSTEM.md`.
 
 ---
 

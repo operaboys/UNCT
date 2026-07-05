@@ -8,10 +8,11 @@
 > شده، **و** بعد از آن، ترجمه‌ی واقعی فارسی + تأیید بصری RTL هر ۸ صفحه هم کامل شد (`core/i18n/`،
 > ۲۹۹ کلید دیکشنری در هر دو زبان، `tests/e2e/rtl-visual.spec.js` با ۱۳ تست Pass). چند فیکس
 > کنتراست/Responsive واقعی هم بعد از آن پیدا و رفع شدند (پایین‌تر). سپس Custom Parser API
-> (Phase 11) هم با دو Parser واقعی (SIP008، Hysteria2 Native Config) تا حد مکانیزم Parser
-> مستندشده پیش رفت، و Extractor Level System (Phase 12) هم با ۴ Extractor واقعی جدید
-> (Credentials/Transport/TLS Fingerprint/Flow) به آستانه‌ی ۱۰ از ۱۰ رسید. آنچه واقعاً هنوز باز
-> است — `riskScore` نهایی، Custom **Exporter** API — در «محدودیت‌های شناخته‌شده» پایین‌تر
+> (Phase 11) هم با دو Parser واقعی (SIP008، Hysteria2 Native Config)، و Custom Exporter API هم
+> با یک Exporter واقعی (SIP008 Exporter، عکس دقیق همان Parser) تا حد یک API مستندشده‌ی کامل
+> پیش رفت — Custom Parser/Export API دیگر Blocked نیست. Extractor Level System (Phase 12) هم
+> با ۴ Extractor واقعی جدید (Credentials/Transport/TLS Fingerprint/Flow) به آستانه‌ی ۱۰ از ۱۰
+> رسید. آنچه واقعاً هنوز باز است — فقط `riskScore` نهایی — در «محدودیت‌های شناخته‌شده» پایین‌تر
 > صادقانه ذکر شده.
 
 ## وضعیت کلی
@@ -19,9 +20,9 @@
 **Phase 0 تا Phase 12 کامل‌اند**، با این استثناهای مستند و آگاهانه (نه نقص، نه فراموشی):
 - `riskScore` نهایی (تجمیع Security+Compatibility+DNS+Reality در Final Report) هنوز تعریف
   نشده — طبق ADR-011، یک ADR جدا و آینده است.
-- Custom **Parser** API عمومی (Phase 11) دیگر Blocked نیست — دو Parser واقعی نوشته شد و
-  `core/plugin/README.md` مستند شد (بند پایین). Custom **Exporter** API همچنان کاملاً Blocked
-  است — هیچ Exporter واقعی نوشته نشده.
+- Custom Parser/Export API عمومی (Phase 11) دیگر Blocked نیست — دو Custom Parser واقعی
+  (SIP008، Hysteria2 Native Config) و یک Custom Exporter واقعی (SIP008 Exporter) نوشته شد،
+  هر دو با `core/plugin/README.md` مستند (بند پایین).
 - از گروه Visualization (Phase 12، ۵ فیچر)، ۴ تا به‌طور کامل از Backlog حذف شدند (داده‌ی واقعی
   ندارند)؛ فقط Subscription Visualizer ساخته شد.
 - Extractor Level System (Phase 12) دیگر Blocked نیست — ۴ Extractor واقعی جدید
@@ -31,8 +32,8 @@
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۱۵۹ تست در ۹۴ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
-موفق (`app.js` ~۳۲۰kb، `parser-worker.js` ~۹۹kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
+تست: **۱۱۶۷ تست در ۹۵ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+موفق (`app.js` ~۳۲۸kb، `parser-worker.js` ~۱۰۰kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
 --omit=dev` صفر آسیب‌پذیری. (هر عدد بالا با اجرای واقعی `npm test`/`npm run typecheck`/
 `npm run build`/`npm audit` در همین چک‌پوینت دوباره تأیید شد، نه از حافظه.)
 
@@ -53,7 +54,7 @@
 | Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme/Language در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شوند |
 | Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته، روی هویت بصری «Liquid Glass» بازطراحی، و کامل به فارسی ترجمه شده (i18n + RTL، بند پایین). Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ با CSS واکنش‌گرا (Media Query + Grid خودکار‌جمع‌شونده) پوشش داده شده و با چند فیکس واقعی Responsive بعد از بازطراحی تکمیل شد (بند «محدودیت‌های شناخته‌شده» پایین برای فهرست دقیق)؛ Dark Mode هم یک نسخه‌ی واقعی «Liquid Glass» تیره دارد که روی هر ۸ صفحه جداگانه Screenshot گرفته و تأیید شده |
 | Phase 10 — Analyzer Extended | ✅ کامل | هر ۷ ماژول ساخته شده و به `AnalysisBundle`/UI وصل‌اند (جدول پایین) |
-| Phase 11 — Plugin System | ✅ مکانیزم کامل / Parser API مستند / Exporter API Blocked | Loader/Registry/Exporter Contract (ADR-020) کامل و تست‌شده؛ دو Custom Parser واقعی نوشته شد و راهنمای نویسنده (`core/plugin/README.md`) مستند شد؛ Custom Exporter API همچنان Blocked — جزئیات پایین‌تر |
+| Phase 11 — Plugin System | ✅ کامل — Parser API و Exporter API هر دو مستند و رفع Block | Loader/Registry/Exporter Contract (ADR-020) کامل و تست‌شده؛ دو Custom Parser واقعی (SIP008، Hysteria2 Native Config) + یک Custom Exporter واقعی (SIP008 Exporter) نوشته شد؛ راهنمای نویسنده (`core/plugin/README.md`) هر دو نوع Plugin را مستند می‌کند — جزئیات پایین‌تر |
 | Phase 12 — Advanced/Backlog | ✅ کامل (۳ Tier) | هر ۳ Tier بررسی/پیاده‌سازی شدند؛ چند آیتم آگاهانه Blocked/حذف شدند نه ساخته — جزئیات پایین‌تر |
 
 ---
@@ -96,9 +97,15 @@ Converter Screen (هر دو فرمت با متن صحیح «Detected Format» ن
 استخراج و در `core/plugin/README.md` مستند شد — راهنمای واقعی برای نویسندگان Custom Parser
 شخص ثالث.
 
-**Custom Exporter API همچنان Blocked است** — طرف Exporter شرط P12-13 («یا یک Custom Exporter
-واقعی») مستقل از طرف Parser است و هنوز هیچ پیاده‌سازی واقعی Exporter وجود ندارد؛ نوشتن راهنما
-برای آن طرف دقیقاً همان حدس‌زنی‌ای می‌بود که ADR-020 هشدار داده بود. جزئیات کامل در
+**شرط Custom Exporter (رفع‌شده):** نیمه‌ی دوم شرط P12-13 هم برآورده شد — `plugins/sip008-
+exporter/` عکس دقیق `sip008-parser` است: `UNMNode[]` را به همان سند رسمی JSON شادوساکس
+برمی‌گرداند، فقط نودهای `protocol: "shadowsocks"` را نمایش می‌دهد و بقیه را با `reason` واضح
+Skip می‌کند (Rule 9)، از طریق `createPluginLoader`/`createPluginRegistry` در `core/plugin/app-
+plugins.js` ثبت شده (نه مستقیم `core/exporter/`)، و تست واحد واقعی دارد شامل یک تست Round-Trip
+واقعی (خروجی آن دوباره از `sip008-parser` عبور داده می‌شود و همان نودها را بازتولید می‌کند).
+`ui/export/export-screen.tsx` این Plugin را از طریق `appPluginRegistry.getExporter(...)` به یک
+گزینه‌ی واقعی در Export Center وصل می‌کند — با اسکرین‌شات واقعی Playwright (Light+Dark) تأیید
+شد. **Custom Parser/Export API دیگر Blocked نیست.** جزئیات کامل در
 `docs/adr/ADR-020-PLUGIN-SYSTEM.md` (Addendum) و `ULTIMATE_BLUEPRINT_INDEX.md` (P12-13).
 
 ---
@@ -117,8 +124,8 @@ UNMNode است که در یک IndexedDB جدا (`core/storage/template-store.js`
 هر دو در Subscription Center.
 
 **Tier 3 (بررسی صادقانه‌ی Backlog قدیمی، قبل از هر کد جدید):**
-- Custom Parser/Export API → Parser سمت رفع‌شده (دو Parser واقعی + `core/plugin/README.md`)؛
-  Exporter سمت همچنان Blocked (بالا).
+- Custom Parser/Export API → ✅ **رفع Block کامل** — دو Custom Parser واقعی + یک Custom
+  Exporter واقعی، هر دو با `core/plugin/README.md` مستند (بالا).
 - Extractor Level System → ✅ **رفع Block** — ۴ Extractor واقعی جدید (Credentials/Transport/
   TLS Fingerprint/Flow) اضافه شد؛ ۱۰ Extractor کاملاً فعال از ۱۰ کل
   (`ui/extractor/extractor-screen.tsx`)، رسیده به آستانه‌ی پیشنهادی ۸-۱۰.
@@ -271,9 +278,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   فیلد مستقل در `AnalysisBundle`/Extractor Screen است (ADR-022 Addendum)، ولی ترکیب
   Security+Compatibility+DNS+Reality در یک عدد نهایی `riskScore` طبق ADR-011 بند «Explicitly
   out of scope» همچنان یک ADR جدا و آینده است — نه این فاز.
-- **Custom Exporter API عمومی همچنان Blocked است** — طرف Parser رفع شد (دو Custom Parser واقعی
-  + `core/plugin/README.md`، جزئیات بالا)؛ طرف Exporter مستقل است و هنوز هیچ Custom Exporter
-  واقعی نوشته نشده، پس نوشتن راهنمای آن طرف هنوز حدس‌محور می‌بود.
 - **۴ از ۵ فیچر گروه Visualization به‌طور کامل حذف شدند** (Node Relationship Map، Visual
   Topology Mapper، Cloudflare Topology View، Reality Visualizer) — نه Blocked، بلکه حذف کامل،
   چون هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی در UNM برایشان وجود ندارد. جزئیات در
@@ -318,6 +322,14 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   Flow (`flow`). هر ۴ با selector واقعی (`core/store/selectors.js`) و پنل جدول واقعی
   (`ui/extractor/extractor-screen.tsx`) اضافه شدند — عدد نهایی ۱۰ Extractor فعال از ۱۰ کل،
   دقیقاً روی آستانه‌ی پیشنهادی ۸-۱۰. جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-12.
+- **Custom Exporter API Block رفع شد** — `plugins/sip008-exporter/` نوشته شد، عکس دقیق
+  `plugins/sip008-parser/` موجود: `UNMNode[]` را به همان سند رسمی JSON شادوساکس (SIP008)
+  برمی‌گرداند، فقط نودهای `protocol: "shadowsocks"` را نمایش می‌دهد و بقیه را با `reason` واضح
+  Skip می‌کند. ثبت‌شده از طریق `createPluginLoader`/`createPluginRegistry`
+  (`core/plugin/app-plugins.js`)، با تست Round-Trip واقعی
+  (`tests/plugin/sip008-exporter.test.js`)، و به یک گزینه‌ی واقعی در Export Center
+  (`ui/export/export-screen.tsx`) وصل شد — تأییدشده با اسکرین‌شات واقعی Playwright. جزئیات کامل
+  در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-13 و `docs/adr/ADR-020-PLUGIN-SYSTEM.md`.
 
 ---
 
@@ -328,11 +340,8 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 
 1. **`riskScore` نهایی (Final Report aggregation)** — نیاز به یک ADR جدا برای فرمول ترکیب
    Security+Compatibility+DNS+Reality دارد؛ هیچ ماژولی مالک این تجمیع نیست.
-2. **Custom Exporter API عمومی** — تنها نیمه‌ی باقی‌مانده‌ی شرط P12-13؛ طرف Parser با دو
-   Custom Parser واقعی (SIP008 + Hysteria2 native config) و `core/plugin/README.md` رفع شد.
-   Blocked تا یک Custom Exporter واقعی نوشته شود؛ مکانیزم زیرین (`exporter-contract.js`) از
-   قبل کامل و تست‌شده است.
 
-هیچ‌کدام Blocker معماری ندارد؛ صرفاً منتظر یک محرک بیرونی (تصمیم فرمول، یا یک Custom Exporter
-واقعی) است، نه کدنویسی ناتمام. (Extractor Level System که سومین مورد همین فهرست بود، در همین
-چک‌پوینت با ۴ Extractor واقعی جدید رفع شد — بند «اصلاحات اخیر» پایین‌تر.)
+این تنها مورد واقعاً باز باقی‌مانده در کل پروژه است — Blocker معماری ندارد، صرفاً منتظر یک
+تصمیم فرمول جدا است، نه کدنویسی ناتمام. (Custom Exporter API و Extractor Level System که پیش‌تر
+در همین فهرست بودند، هر دو در چک‌پوینت‌های اخیر با پیاده‌سازی واقعی رفع شدند — بند «اصلاحات
+اخیر» پایین‌تر.)

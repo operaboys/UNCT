@@ -56,12 +56,25 @@
  * `<iframe>`, replacing its previous inline `border:"1px solid #ccc"`). No
  * logic/state/handlers changed — same export functions, same sandboxed
  * iframe, same Blob download plumbing.
+ *
+ * P12-13 addition (Custom Exporter API, this checkpoint): the "SIP008 (...
+ * Custom Exporter Plugin)" format option calls the real
+ * `plugins/sip008-exporter/` plugin through `appPluginRegistry.getExporter`
+ * (`core/plugin/app-plugins.js`) — never `core/exporter/` directly — proving
+ * the Plugin System's Exporter side actually works end-to-end in the real
+ * running app, the same way `core/plugin/parse-with-plugins.js` already
+ * proved the Parser side on the Converter Screen. It is included in the
+ * regular format list (not a separate "test-only" control) because, unlike
+ * `plugins/example-parser/` (a fictional format explicitly excluded from
+ * `app-plugins.js`), this is a real, spec-backed exporter with real skip
+ * behavior for non-Shadowsocks nodes — legitimate to offer to a real user.
  */
 import { useMemo, useState } from "preact/hooks";
 import {
   exportTxt, exportXrayJson, exportSingboxJson, exportNormalizedJson, exportAnalysisJson, exportClashYaml, exportCsv,
   exportZip, exportQr, exportHtmlReport,
 } from "../../core/exporter/index.js";
+import { appPluginRegistry } from "../../core/plugin/app-plugins.js";
 import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
@@ -71,7 +84,12 @@ import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
 
 const QR_CELL_SIZE = 4;
 
-type Format = "txt" | "xrayJson" | "singboxJson" | "normalizedJson" | "analysisJson" | "clashYaml" | "csv";
+// "sip008Plugin" calls the real Custom Exporter plugin (plugins/sip008-
+// exporter/) through appPluginRegistry.getExporter — never core/exporter/
+// directly (ADR-020) — proving the Plugin System's Exporter side works
+// end-to-end in the real running app, the same way the Converter Screen
+// already proves the Parser side (core/plugin/parse-with-plugins.js).
+type Format = "txt" | "xrayJson" | "singboxJson" | "normalizedJson" | "analysisJson" | "clashYaml" | "csv" | "sip008Plugin";
 
 const FORMAT_LABEL_KEYS: Record<Format, string> = {
   txt: "export.format.txt",
@@ -81,6 +99,7 @@ const FORMAT_LABEL_KEYS: Record<Format, string> = {
   analysisJson: "export.format.analysisJson",
   clashYaml: "export.format.clashYaml",
   csv: "export.format.csv",
+  sip008Plugin: "export.format.sip008Plugin",
 };
 
 const FORMAT_FILE: Record<Format, { extension: string; mimeType: string }> = {
@@ -91,6 +110,7 @@ const FORMAT_FILE: Record<Format, { extension: string; mimeType: string }> = {
   analysisJson: { extension: "json", mimeType: "application/json" },
   clashYaml: { extension: "yaml", mimeType: "application/x-yaml" },
   csv: { extension: "csv", mimeType: "text/csv" },
+  sip008Plugin: { extension: "json", mimeType: "application/json" },
 };
 
 export function ExportScreen() {
@@ -110,6 +130,7 @@ export function ExportScreen() {
       case "csv": return { content: exportCsv(nodes), skipped: [] };
       case "normalizedJson": return { content: exportNormalizedJson(nodes), skipped: [] };
       case "analysisJson": return { content: exportAnalysisJson(analysisByNodeId), skipped: [] };
+      case "sip008Plugin": return appPluginRegistry.getExporter("sip008-exporter").export(nodes);
     }
   }, [nodes, format, analysisByNodeId]);
 

@@ -295,6 +295,7 @@ export const fa = {
   "export.format.analysisJson": "JSON تحلیل",
   "export.format.clashYaml": "Clash YAML / Clash Meta / Mihomo / فایل Provider",
   "export.format.csv": "CSV",
+  "export.format.sip008Plugin": "SIP008 (JSON شادوساکس، Custom Exporter Plugin)",
   "export.hint.noAnalyzedNodes": "هنوز نودی تحلیل نشده — ابتدا به صفحه‌ی تحلیل‌گر بروید.",
   "export.status.copied": "کپی شد.",
   "export.status.copyFailed": "کپی ناموفق بود.",

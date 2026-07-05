@@ -12,6 +12,7 @@ import { parseWithPlugins } from "../../core/plugin/parse-with-plugins.js";
 import { appPluginRegistry } from "../../core/plugin/app-plugins.js";
 import { sip008Parser } from "../../plugins/sip008-parser/index.js";
 import { hysteria2ConfigParser } from "../../plugins/hysteria2-config-parser/index.js";
+import { sip008Exporter } from "../../plugins/sip008-exporter/index.js";
 import { parseAndValidate } from "../../core/parser/parse-and-validate.js";
 
 const REAL_SIP008 = JSON.stringify({
@@ -29,6 +30,11 @@ describe("core/plugin/app-plugins.js — real app registry", () => {
 
   it("does NOT load the fictional example-parser plugin into the real app registry", () => {
     expect(appPluginRegistry.listParsers()).not.toContain("example-csv");
+  });
+
+  it("the real Custom Exporter is also registered, loaded via createPluginLoader", () => {
+    expect(appPluginRegistry.listExporters()).toEqual(["sip008-exporter"]);
+    expect(appPluginRegistry.getExporter("sip008-exporter")).toBe(sip008Exporter);
   });
 });
 
