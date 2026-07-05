@@ -207,6 +207,13 @@ export const en = {
   "subscription.securityRanking.title": "Security Ranking",
   "subscription.securityRanking.emptyHint": "No nodes analyzed yet — visit the Analyzer Screen to score nodes.",
   "subscription.securityRanking.scoreColumn": "Security Score",
+  "subscription.merge.title": "Merge Subscription",
+  "subscription.merge.hint":
+    "Paste a second config or subscription below and merge its nodes into the working Node List above — this ADDS to what's already there, it never replaces it. Run \"Deduplicate\" afterward if you want to drop any resulting duplicates.",
+  "subscription.merge.placeholder": "Paste a second config or subscription…",
+  "subscription.merge.importAndMerge": "Import & Merge",
+  "subscription.merge.merging": "Merging…",
+  "subscription.merge.addedPrefix": "Added",
   "subscription.listControls.title": "List Controls",
   "subscription.search.placeholder": "Search by protocol, address, or port…",
   "subscription.filter.protocolLabel": "Protocol",

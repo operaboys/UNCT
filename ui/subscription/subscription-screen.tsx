@@ -53,6 +53,7 @@ import { checkPort } from "../../core/network/port-check.js";
 import { buildSubscription } from "../../core/exporter/subscription-builder.js";
 import { useTemplateState, templateLibraryStore } from "../store/use-template-state.js";
 import { useNodeTagsState, nodeTagsStore } from "../store/use-node-tags-state.js";
+import { parseRawConfig } from "../store/parser-worker-client.js";
 
 type LatencyResult =
   | { status: "ok"; rtt: number }
@@ -123,6 +124,10 @@ export function SubscriptionScreen() {
   const [dedupRemovedCount, setDedupRemovedCount] = useState<number | null>(null);
   const [splitEncoding, setSplitEncoding] = useState<"base64" | "plain">("base64");
   const [splitResult, setSplitResult] = useState<{ content: string; skipped: { nodeId: string; protocol: string; reason: string }[] } | null>(null);
+  const [mergeText, setMergeText] = useState("");
+  const [isMerging, setIsMerging] = useState(false);
+  const [mergeError, setMergeError] = useState<string | null>(null);
+  const [mergeAddedCount, setMergeAddedCount] = useState<number | null>(null);
 
   async function handleTestLatency(nodeId: string, address: string, port: number) {
     setTestingNodeId(nodeId);
@@ -186,6 +191,31 @@ export function SubscriptionScreen() {
   async function handleCopySplit() {
     if (!splitResult) return;
     await navigator.clipboard.writeText(splitResult.content);
+  }
+
+  async function handleMerge() {
+    setIsMerging(true);
+    setMergeError(null);
+    try {
+      const result = await parseRawConfig(mergeText);
+      for (const node of result.nodes) {
+        parserStore.addNode(node);
+      }
+      // Deliberately NOT deduplicated automatically (per confirmed decision):
+      // Merge and Deduplicate stay two separate, single-purpose actions —
+      // the user runs the existing "Run Deduplicate" button afterward if
+      // they want that.
+      setMergeAddedCount(result.nodes.length);
+      setMergeText("");
+    } catch (err) {
+      // A genuine parse failure (Unknown Format, etc.) must never touch the
+      // EXISTING working list — Merge is additive-only, so an error here
+      // means "nothing new was added", not "something was lost".
+      setMergeAddedCount(null);
+      setMergeError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsMerging(false);
+    }
   }
 
   function toggleNodeSelected(nodeId: string) {
@@ -342,6 +372,37 @@ export function SubscriptionScreen() {
             </div>
           )}
         </div>
+      </div>
+
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.merge.title")}>
+        <div class="panel-title">{t("subscription.merge.title")}</div>
+        <p class="hint">
+          {t("subscription.merge.hint")}
+        </p>
+        <textarea
+          class="code-textarea"
+          style={{ marginBlockStart: "10px" }}
+          rows={6}
+          placeholder={t("subscription.merge.placeholder")}
+          value={mergeText}
+          onInput={(e) => setMergeText((e.target as HTMLTextAreaElement).value)}
+        />
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            onClick={handleMerge}
+            disabled={isMerging || mergeText.trim().length === 0}
+          >
+            {isMerging ? t("subscription.merge.merging") : t("subscription.merge.importAndMerge")}
+          </button>
+        </div>
+        {mergeError && <div class="alert alert--error" role="alert">{mergeError}</div>}
+        {mergeAddedCount !== null && (
+          <p class="hint" style={{ marginBlockStart: "10px" }}>
+            {t("subscription.merge.addedPrefix")} <bdi>{mergeAddedCount}</bdi> {t(mergeAddedCount === 1 ? "subscription.builder.nodeSingular" : "subscription.builder.nodePlural")}
+          </p>
+        )}
       </div>
 
       <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.listControls.title")}>

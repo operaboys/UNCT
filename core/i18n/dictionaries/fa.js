@@ -209,6 +209,13 @@ export const fa = {
   "subscription.securityRanking.title": "رتبه‌بندی امنیتی",
   "subscription.securityRanking.emptyHint": "هنوز نودی تحلیل نشده — برای امتیازدهی به صفحه‌ی تحلیل‌گر بروید.",
   "subscription.securityRanking.scoreColumn": "امتیاز امنیتی",
+  "subscription.merge.title": "ادغام Subscription",
+  "subscription.merge.hint":
+    "یک کانفیگ یا Subscription دوم را زیر پیست کنید و نودهایش را با Node List کاری بالا ادغام کنید — این فقط اضافه می‌کند، هرگز جایگزین نمی‌کند. اگر می‌خواهید تکراری‌های احتمالی حذف شوند، بعداً «حذف تکراری‌ها» را اجرا کنید.",
+  "subscription.merge.placeholder": "یک کانفیگ یا Subscription دوم را پیست کنید…",
+  "subscription.merge.importAndMerge": "درون‌ریزی و ادغام",
+  "subscription.merge.merging": "در حال ادغام…",
+  "subscription.merge.addedPrefix": "اضافه شد:",
   "subscription.listControls.title": "کنترل‌های لیست",
   "subscription.search.placeholder": "جستجو بر اساس پروتکل، آدرس یا پورت…",
   "subscription.filter.protocolLabel": "پروتکل",
