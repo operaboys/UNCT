@@ -954,6 +954,27 @@ code, kbd, samp, .mono {
 .tag--warning { background: rgba(255, 182, 72, 0.24); color: #92600a; }
 .tag--critical { background: rgba(229, 72, 77, 0.32); color: #7a0f0f; font-weight: 800; }
 
+/* Subscription Center "Tag Nodes" (doc 03 §2.2) — the small "×" remove
+   button inside a `.tag--info` chip. Inherits the chip's own text color
+   rather than a fixed one, so it stays readable against every `.tag--*`
+   variant and both themes without a separate override. */
+.tag-remove {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  margin-inline-start: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.tag-remove:hover {
+  opacity: 1;
+}
+
 /* ---------------------------------------------------------------------
  * Panel Grid (07-UI_UX_SYSTEM §4.3, Analyzer Screen redesign) — a
  * symmetric, wrapping grid for screens with many equal-weight panels
@@ -1000,6 +1021,14 @@ code, kbd, samp, .mono {
 }
 .input::placeholder {
   color: var(--unct-text-muted);
+}
+/* Compact variant for dense per-row contexts (Subscription Center's Tag
+   input, one per Node List row) — same `.input` base, smaller footprint. */
+.input--sm {
+  padding-block: 5px;
+  padding-inline: 10px;
+  font-size: 12px;
+  width: 140px;
 }
 
 .btn--sm {

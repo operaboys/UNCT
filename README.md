@@ -155,7 +155,7 @@ P12-12، P12-13).
 | 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports»، «Recent Exports» همگی واقعی. «Recent Exports» از `core/store/recent-exports-state.js` (LocalStorage، مستقل از parserStore/analyzerStore) می‌خواند؛ هر ۴ عملیات دانلود در Export Center بعد از موفقیت واقعی یک ورودی به آن اضافه می‌کنند |
 | 2 | **Converter** | Paste Area + File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
-| 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
+| 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** (دکمه‌ی واقعی، همان معیار `duplicateKey` موجود) + **Split Subscription** (خروجی جدا از نودهای انتخاب‌شده) + **Tag Nodes** (`core/store/node-tags-state.js`، مستقل از UNM) — همگی واقعی. **Merge Subscription** همچنان Deferred (نیازمند سطح جدیدی از UI Import داخل همین صفحه؛ به‌عمد به چک‌پوینت بعد موکول شد، نه یک محدودیت معماری). بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
@@ -167,7 +167,7 @@ P12-12، P12-13).
 
 `core/i18n/` (ADR-019) کامل و به هر ۸ صفحه + نوار ناوبری (`ui/components/nav.tsx`) وصل است:
 
-- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۳۲۵ کلید در هر دو زبان** (شمارش
+- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۳۳۵ کلید در هر دو زبان** (شمارش
   واقعی با `Object.keys`، نه تخمین) — `tests/i18n/dictionaries.test.js` عدم‌تطابق کلید بین دو
   زبان و رشته‌ی خالی را رد می‌کند.
 - تمام متن هر ۸ صفحه (نه فقط برچسب‌ها) از طریق `t()`/`createTranslator` resolve می‌شود؛ نوار
@@ -365,6 +365,20 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   صادقانه‌ی «تنها پارسر واجد شرایط» نشان داده می‌شود، نه جدول خالی گمراه‌کننده (Rule 9). تست
   واحد واقعی با یک کانفیگ sing-box واقعی که Xray هم رویش به Threshold می‌رسد (بدون Mock) در
   `tests/parser/parse-and-validate.test.js` و `tests/worker/parser-worker.test.js`.
+- **سه مورد از چهار «Deferred» باقی‌مانده‌ی Subscription Center رفع شدند** (تحلیل مقدماتی تأیید
+  کرد هیچ‌کدام نیاز به ADR ندارند): **Deduplicate Nodes** — دکمه‌ی واقعی «Run Deduplicate» که
+  دقیقاً همان معیار تست‌شده‌ی `duplicateKey` (`core/analyzer/extended/subscription-analyzer.js`،
+  اکنون Export شده) را برای نگه‌داشتن قدیمی‌ترین نود هر گروه و حذف بقیه از طریق
+  `selectDeduplicatedNodes` (`core/store/selectors.js`) به‌کار می‌برد. **Split Subscription** —
+  از همان مکانیزم انتخاب چک‌باکسی و `buildSubscription` که Subscription Builder از قبل
+  استفاده می‌کند، برای ساخت یک خروجی جدا از زیرمجموعه‌ی انتخاب‌شده. **Tag Nodes** — طبق تصمیم
+  کاربر، گزینه‌ی «Store مستقل» (نه فیلد روی UNMNode): `core/store/node-tags-state.js`، دقیقاً
+  با الگوی `recent-exports-state.js` (نگاشت `nodeId -> string[]`، LocalStorage)، بدون سقف تعداد
+  Tag و بدون نیاز به ADR (چون `nodeId` پایدار است، Rule 4). یک `pruneOrphans()` بعد از
+  Deduplicate، Tagهای یتیم را پاک می‌کند. **Merge Subscription** به یک چک‌پوینت جدا موکول شد —
+  نیاز به یک سطح جدید UI Import (Textarea + Parse) دارد که واقعاً بزرگ‌تر از سه مورد دیگر است،
+  نه یک محدودیت معماری. تست‌های واحد کامل در `tests/store/selectors.test.js`
+  (`selectDeduplicatedNodes`) و `tests/store/node-tags-state.test.js`.
 
 ---
 

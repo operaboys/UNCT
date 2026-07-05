@@ -36,6 +36,7 @@ import {
   selectDetectionLog,
   selectValidationFailureLog,
   selectDiagnosticsSortedBySeverity,
+  selectDeduplicatedNodes,
 } from "../../core/store/selectors.js";
 
 /** @param {Record<string, unknown>} [overrides] */
@@ -596,5 +597,47 @@ describe("selectDiagnosticsSortedBySeverity", () => {
 
   it("returns an empty array for an empty collection", () => {
     expect(selectDiagnosticsSortedBySeverity({ nodes: [] })).toEqual([]);
+  });
+});
+
+describe("selectDeduplicatedNodes", () => {
+  it("keeps exactly one node per duplicateKey group — the earliest by createdAt", () => {
+    const older = { ...node({ uuid: "same-uuid" }), createdAt: "2024-01-01T00:00:00.000Z" };
+    const newer = { ...node({ uuid: "same-uuid" }), createdAt: "2024-06-01T00:00:00.000Z" };
+
+    expect(selectDeduplicatedNodes({ nodes: [newer, older] })).toEqual([older]);
+  });
+
+  it("does NOT flag same address+port as duplicate when the credential differs (matches subscription-analyzer's own criterion)", () => {
+    const a = node({ uuid: "uuid-a" });
+    const b = node({ uuid: "uuid-b" });
+
+    const result = selectDeduplicatedNodes({ nodes: [a, b] });
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(expect.arrayContaining([a, b]));
+  });
+
+  it("preserves the original relative order of state.nodes (a filter, not a re-sort)", () => {
+    const solo = node({ address: "solo.example.com", uuid: "solo-uuid" });
+    const older = { ...node({ uuid: "dup-uuid" }), createdAt: "2024-01-01T00:00:00.000Z" };
+    const newer = { ...node({ uuid: "dup-uuid" }), createdAt: "2024-06-01T00:00:00.000Z" };
+
+    const result = selectDeduplicatedNodes({ nodes: [newer, solo, older] });
+
+    // `newer` (index 0) loses to `older` (index 2) within the dup group, so
+    // the surviving nodes, in original relative order, are solo then older.
+    expect(result.map((n) => n.nodeId)).toEqual([solo.nodeId, older.nodeId]);
+  });
+
+  it("returns every node unchanged when there are no duplicates", () => {
+    const a = node({ address: "a.example.com", uuid: "uuid-a" });
+    const b = node({ address: "b.example.com", uuid: "uuid-b" });
+
+    expect(selectDeduplicatedNodes({ nodes: [a, b] })).toEqual([a, b]);
+  });
+
+  it("returns an empty array for an empty collection", () => {
+    expect(selectDeduplicatedNodes({ nodes: [] })).toEqual([]);
   });
 });

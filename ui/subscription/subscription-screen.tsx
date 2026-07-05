@@ -37,10 +37,11 @@ import {
   selectNodesSortedByField,
   selectNodesGroupedByProtocol,
   selectSubscriptionSummary,
+  selectDeduplicatedNodes,
 } from "../../core/store/selectors.js";
 import { createTranslator } from "../../core/i18n/translator.js";
 import { PROTOCOLS } from "../../core/unm/schema/enums.js";
-import { useParserState } from "../store/use-parser-state.js";
+import { parserStore, useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore, formatDeadNodesCandidate, formatScore } from "./format.js";
@@ -51,6 +52,7 @@ import { lookupGeoIp } from "../../core/network/geoip.js";
 import { checkPort } from "../../core/network/port-check.js";
 import { buildSubscription } from "../../core/exporter/subscription-builder.js";
 import { useTemplateState, templateLibraryStore } from "../store/use-template-state.js";
+import { useNodeTagsState, nodeTagsStore } from "../store/use-node-tags-state.js";
 
 type LatencyResult =
   | { status: "ok"; rtt: number }
@@ -112,10 +114,15 @@ export function SubscriptionScreen() {
   const [portCheckByNodeId, setPortCheckByNodeId] = useState<Record<string, PortCheckResult>>({});
   const [portCheckLoadingNodeId, setPortCheckLoadingNodeId] = useState<string | null>(null);
   const templates = useTemplateState();
+  const { tagsByNodeId } = useNodeTagsState();
+  const [newTagByNodeId, setNewTagByNodeId] = useState<Record<string, string>>({});
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set());
   const [builderEncoding, setBuilderEncoding] = useState<"base64" | "plain">("base64");
   const [builderResult, setBuilderResult] = useState<{ content: string; skipped: { nodeId: string; protocol: string; reason: string }[] } | null>(null);
+  const [dedupRemovedCount, setDedupRemovedCount] = useState<number | null>(null);
+  const [splitEncoding, setSplitEncoding] = useState<"base64" | "plain">("base64");
+  const [splitResult, setSplitResult] = useState<{ content: string; skipped: { nodeId: string; protocol: string; reason: string }[] } | null>(null);
 
   async function handleTestLatency(nodeId: string, address: string, port: number) {
     setTestingNodeId(nodeId);
@@ -136,6 +143,49 @@ export function SubscriptionScreen() {
     const result = await checkPort({ address, port });
     setPortCheckByNodeId((prev) => ({ ...prev, [nodeId]: result }));
     setPortCheckLoadingNodeId(null);
+  }
+
+  function handleDeduplicate() {
+    const deduped = selectDeduplicatedNodes({ nodes });
+    setDedupRemovedCount(nodes.length - deduped.length);
+    parserStore.setNodes(deduped);
+    nodeTagsStore.pruneOrphans(deduped.map((n) => n.nodeId));
+  }
+
+  function handleTagInputChange(nodeId: string, value: string) {
+    setNewTagByNodeId((prev) => ({ ...prev, [nodeId]: value }));
+  }
+
+  function handleAddTag(nodeId: string) {
+    const value = newTagByNodeId[nodeId];
+    if (!value) return;
+    nodeTagsStore.addTag(nodeId, value);
+    setNewTagByNodeId((prev) => ({ ...prev, [nodeId]: "" }));
+  }
+
+  function handleRemoveTag(nodeId: string, tag: string) {
+    nodeTagsStore.removeTag(nodeId, tag);
+  }
+
+  function handleSplitSelected() {
+    const selectedNodes = nodes.filter((n) => selectedNodeIds.has(n.nodeId));
+    setSplitResult(buildSubscription(selectedNodes, { encoding: splitEncoding }));
+  }
+
+  function handleDownloadSplit() {
+    if (!splitResult) return;
+    const blob = new Blob([splitResult.content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "split-subscription.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopySplit() {
+    if (!splitResult) return;
+    await navigator.clipboard.writeText(splitResult.content);
   }
 
   function toggleNodeSelected(nodeId: string) {
@@ -232,6 +282,22 @@ export function SubscriptionScreen() {
             <div class="kv-row"><dt>{t("subscription.overview.invalidNodes")}</dt><dd><bdi>{summary.invalidNodeIds.length}</bdi></dd></div>
             <div class="kv-row"><dt>{t("subscription.overview.deadNodesCandidate")}</dt><dd>{formatDeadNodesCandidate(summary.deadNodesCandidate)}</dd></div>
           </dl>
+          {summary.duplicateNodeCount > 0 && (
+            <button type="button" class="btn btn--ghost btn--sm" style={{ marginBlockStart: "12px" }} onClick={handleDeduplicate}>
+              {t("subscription.overview.runDeduplicate")}
+            </button>
+          )}
+          {dedupRemovedCount !== null && (
+            <p class="hint" style={{ marginBlockStart: "10px" }}>
+              {dedupRemovedCount === 0 ? (
+                t("subscription.overview.deduplicateNoneRemoved")
+              ) : (
+                <>
+                  {t("subscription.overview.deduplicateRemovedPrefix")} <bdi>{dedupRemovedCount}</bdi> {t(dedupRemovedCount === 1 ? "subscription.builder.nodeSingular" : "subscription.builder.nodePlural")}
+                </>
+              )}
+            </p>
+          )}
         </div>
 
         <div class="panel glass-panel" aria-label={t("subscription.protocolDistribution.title")}>
@@ -366,13 +432,59 @@ export function SubscriptionScreen() {
               <div style={{ fontWeight: 700, fontSize: "13px", marginBlockEnd: "8px" }}>
                 {protocol} (<bdi>{groupNodes.length}</bdi>)
               </div>
-              <NodeTable t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+              <NodeTable t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
             </div>
           ))
         ) : (
           <div style={{ marginBlockStart: "14px" }}>
-            <NodeTable t={t} nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} />
+            <NodeTable t={t} nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
           </div>
+        )}
+      </div>
+
+      <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("subscription.split.title")}>
+        <div class="panel-title">{t("subscription.split.title")}</div>
+        <p class="hint">
+          {t("subscription.split.hint")}
+        </p>
+        <p class="hint" style={{ marginBlockStart: "6px" }}>
+          {t("subscription.split.selectedPrefix")} <bdi>{selectedNodeIds.size}</bdi> {t(selectedNodeIds.size === 1 ? "subscription.builder.nodeSingular" : "subscription.builder.nodePlural")}.
+        </p>
+        <div class="form-actions">
+          <label class="field">
+            {t("subscription.builder.encodingLabel")}
+            <select
+              class="select"
+              value={splitEncoding}
+              onChange={(e) => setSplitEncoding((e.target as HTMLSelectElement).value as "base64" | "plain")}
+            >
+              <option value="base64">{t("subscription.builder.base64")}</option>
+              <option value="plain">{t("subscription.builder.plainText")}</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="btn btn--primary"
+            onClick={handleSplitSelected}
+            disabled={selectedNodeIds.size === 0}
+          >
+            {t("subscription.split.splitSelected")}
+          </button>
+        </div>
+
+        {splitResult && (
+          <>
+            <div class="form-actions">
+              <button type="button" class="btn btn--ghost" onClick={handleDownloadSplit}>{t("common.actions.download")}</button>
+              <button type="button" class="btn btn--ghost" onClick={handleCopySplit}>{t("common.actions.copyToClipboard")}</button>
+            </div>
+            <textarea class="code-textarea" style={{ marginBlockStart: "14px" }} readOnly rows={10} value={splitResult.content} />
+            {splitResult.skipped.length > 0 && (
+              <p class="hint" style={{ marginBlockStart: "10px" }}>
+                {t("common.skippedPrefix")}{splitResult.skipped.map((s) => `${s.protocol} (${s.reason})`).join(", ")}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -481,6 +593,11 @@ function NodeTable({
   selectedNodeIds,
   onToggleSelected,
   onSaveAsTemplate,
+  tagsByNodeId,
+  newTagByNodeId,
+  onTagInputChange,
+  onAddTag,
+  onRemoveTag,
 }: {
   t: (key: string) => string;
   nodes: ReturnType<typeof useParserState>;
@@ -497,13 +614,18 @@ function NodeTable({
   selectedNodeIds: Set<string>;
   onToggleSelected: (nodeId: string) => void;
   onSaveAsTemplate: (node: ReturnType<typeof useParserState>[number]) => void;
+  tagsByNodeId: Readonly<Record<string, readonly string[]>>;
+  newTagByNodeId: Record<string, string>;
+  onTagInputChange: (nodeId: string, value: string) => void;
+  onAddTag: (nodeId: string) => void;
+  onRemoveTag: (nodeId: string, tag: string) => void;
 }) {
   return (
     <div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
-            <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th>
+            <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th><th>{t("subscription.nodeList.tagsColumn")}</th>
           </tr>
         </thead>
         <tbody>
@@ -576,6 +698,32 @@ function NodeTable({
                 <td class="mono"><bdi>{n.createdAt}</bdi></td>
                 <td>
                   <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>{t("subscription.nodeList.saveAsTemplate")}</button>
+                </td>
+                <td>
+                  {(tagsByNodeId[n.nodeId] ?? []).map((tag) => (
+                    <span class="tag tag--info" key={tag} style={{ marginInlineEnd: "4px" }}>
+                      {tag}
+                      <button
+                        type="button"
+                        class="tag-remove"
+                        aria-label={t("subscription.nodeList.removeTag")}
+                        onClick={() => onRemoveTag(n.nodeId, tag)}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    class="input input--sm"
+                    style={{ marginBlockStart: "4px" }}
+                    placeholder={t("subscription.nodeList.addTagPlaceholder")}
+                    value={newTagByNodeId[n.nodeId] ?? ""}
+                    onInput={(e) => onTagInputChange(n.nodeId, (e.target as HTMLInputElement).value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onAddTag(n.nodeId);
+                    }}
+                  />
                 </td>
               </tr>
             );

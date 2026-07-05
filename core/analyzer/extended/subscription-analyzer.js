@@ -71,10 +71,15 @@
  * WireGuard nodes to the same address:port are still flagged duplicate by
  * protocol+address+port alone. This is a known, accepted limitation, not a
  * new validation feature to build here.
+ * Exported (not just an internal helper) so `core/store/selectors.js#
+ * selectDeduplicatedNodes` (Subscription Center's "Deduplicate Nodes", doc 03
+ * §2.2) can reuse the EXACT same tested criterion for the actual removal
+ * action, rather than a second, potentially-drifting definition of
+ * "duplicate" living in the Selector layer.
  * @param {UNMNode} node
  * @returns {string}
  */
-function duplicateKey(node) {
+export function duplicateKey(node) {
   return `${node.protocol}|${node.address}|${node.port}|${node.uuid ?? node.password ?? ""}`;
 }
 

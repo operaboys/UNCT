@@ -23,7 +23,7 @@
 import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
 import { normalizeText } from "../i18n/normalize.js";
 import { getErrorDef, compareSeverity } from "../errors/index.js";
-import { analyzeSubscription } from "../analyzer/extended/subscription-analyzer.js";
+import { analyzeSubscription, duplicateKey } from "../analyzer/extended/subscription-analyzer.js";
 
 /**
  * @param {ParserState} state
@@ -478,4 +478,29 @@ export function selectDiagnosticsSortedBySeverity(state) {
  */
 export function selectSubscriptionSummary(state, analyzerState = { analysisByNodeId: {} }) {
   return analyzeSubscription(state.nodes, analyzerState.analysisByNodeId);
+}
+
+/**
+ * Deduplicate Nodes (doc 03 §2.2) — a pure FILTER, not a new judgment
+ * (Rule 11): keeps exactly one node per `duplicateKey` group, reusing the
+ * exact same identity criterion `selectSubscriptionSummary`'s
+ * `duplicateNodeCount` already reports (`core/analyzer/extended/
+ * subscription-analyzer.js`), so "how many are duplicates" and "which ones
+ * get removed" can never drift apart. Within a group, keeps the node with
+ * the EARLIEST `createdAt` (first imported) — ties broken by whichever was
+ * encountered first in `state.nodes`. Output preserves the original
+ * relative order of `state.nodes` (a filter, not a re-sort).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectDeduplicatedNodes(state) {
+  /** @type {Map<string, UNMNode>} */
+  const bestByKey = new Map();
+  for (const n of state.nodes) {
+    const key = duplicateKey(n);
+    const current = bestByKey.get(key);
+    if (!current || n.createdAt < current.createdAt) bestByKey.set(key, n);
+  }
+  const keepIds = new Set([...bestByKey.values()].map((n) => n.nodeId));
+  return state.nodes.filter((n) => keepIds.has(n.nodeId));
 }
