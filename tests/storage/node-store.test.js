@@ -143,10 +143,14 @@ describe("createNodeStore — no hardcoded shape (Rule 9)", () => {
 
     const fetched = await store.getNode(parsed.nodeId);
     expect(fetched?.analysis).toEqual(bundle);
-    // The Bundle's actual keys — NOT spec-05 AnalysisObject's keys (riskScore,
-    // compatibilityScore, ...) — proving nothing here assumed/coerced the type.
+    // The Bundle's actual keys — still NOT spec-05 AnalysisObject's full shape
+    // (no cloudflareDetected/workerDetected/cleanIPDetected/realityDetected,
+    // and riskScore/compatibilityScore sit alongside the raw per-module
+    // sub-bundles, not replacing them) — proving nothing here assumed/coerced
+    // the type. `compatibilityScore`/`riskScore` (ADR-027) are now real,
+    // computed fields, not fabricated ones.
     expect(Object.keys(fetched?.analysis ?? {}).sort()).toEqual(
-      ["cleanIp", "cloudflare", "compatibility", "completeness", "dns", "network", "protocol", "reality", "rules", "security", "tls", "worker"].sort(),
+      ["cleanIp", "cloudflare", "compatibility", "compatibilityScore", "completeness", "dns", "network", "protocol", "reality", "riskScore", "rules", "security", "tls", "worker"].sort(),
     );
     await store.close();
   });

@@ -213,7 +213,40 @@ WorkerManager.getStats()
 | 61–80 | Poor |
 | 81–100 | Critical |
 
-> ⏳ **Flag باز (بازبینی اولویت ۲ — باید قبل از شروع Phase 6 مشخص شود، نه الان):** جدول بالا فقط خروجی نهایی `riskScore` را طبقه‌بندی می‌کند، ولی **فرمول تولید `riskScore` هنوز تعریف نشده** (مثلاً چه درصدی از Security/Compatibility/DNS/Reality در آن سهیم است). الان برای Phase 1 تا 5 مشکلی ایجاد نمی‌کند، چون `riskScore` هنوز محاسبه نمی‌شود؛ ولی این فرمول باید قبل از پیاده‌سازی واقعی Phase 6 (سند 09) به‌صورت دقیق نوشته شود — احتمالاً به‌عنوان یک Section مجزا در همین سند، نه الان.
+> ✅ **Flag رفع شد (ADR-027):** فرمول تولید `riskScore` اکنون در بخش ۳.۱ زیر، به‌صورت دقیق و
+> کامل، مشخص شده است.
+
+### 3.1 فرمول `riskScore` و `compatibilityScore` (ADR-027)
+
+> این بخش همان Section مجزایی است که یادداشت بالا از قبل پیش‌بینی کرده بود. جزئیات کامل استدلال
+> (چرا این وزن‌ها، چرا Reality یک ترم مستقل چهارم نیست، چرا `null`/`unknown` به میانه‌ی عددی ۵۰
+> نگاشت می‌شوند) در `docs/adr/ADR-027-RISK-SCORE-FORMULA.md` است؛ اینجا فقط فرمول نهایی برای
+> ارجاع سریع تکرار می‌شود.
+
+**پیش‌نیاز — `compatibilityScore`** (از خروجی `analyzeCompatibility()`، §2.6، فقط از روی
+`clients`، نه `platforms` — چون `platforms` عملاً از `clients` مشتق می‌شود و دوباره‌شمردن همان
+داده خواهد بود):
+
+```
+value(true) = 100, value(false) = 0, value(null) = 50   (میانه‌ی عددی — بدون قضاوت)
+compatibilityScore = round(میانگین value(...) روی هر ۶ کلاینت نام‌برده در §2.6)
+```
+
+**`riskScore` نهایی** — دقیقاً سه ورودی مستقل (نه چهار — سهم Reality از قبل به‌طور کامل داخل
+`securityScore` و `compatibilityScore` جذب شده؛ استدلال کامل در ADR-027):
+
+```
+securityRisk      = 100 - securityScore        (ADR-011)
+compatibilityRisk = 100 - compatibilityScore   (بالا)
+dnsRisk           = { none:0, low:25, medium:50, high:100, unknown:50 }[dnsLeakRisk]  (ADR-022)
+
+riskScore = clamp(round(0.5*securityRisk + 0.2*compatibilityRisk + 0.3*dnsRisk), 0, 100)
+```
+
+وزن‌ها ثابت‌اند (نه Config قابل‌تنظیم): Security ۵۰٪ (پهن‌ترین و مستقیم‌ترین معیار ریسک واقعی)،
+DNS ۳۰٪ (یک مسیر ریسک واقعی و مستقل که `securityScore` اصلاً نمی‌بیند)، Compatibility ۲۰٪
+(اسمش صراحتاً در Scope اصلی این بخش بود، ولی مفهوماً ملایم‌تر است — عدم سازگاری یک شکست
+Usability است، نه Exposure). پیاده‌سازی: `core/analyzer/risk-score.js`.
 
 ---
 

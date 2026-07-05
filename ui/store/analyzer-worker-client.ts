@@ -126,6 +126,8 @@ export interface AnalysisBundle {
   worker: WorkerAnalysis;
   rules: RuleAnalysis;
   dns: DnsLeakRisk;
+  compatibilityScore: number;
+  riskScore: number;
 }
 
 export interface AnalyzeResult {

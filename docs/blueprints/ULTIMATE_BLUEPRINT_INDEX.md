@@ -253,6 +253,42 @@ Registry موجود، بدون داشتن حداقل یک نمونه‌ی واق
 
 ---
 
+## `riskScore` / `compatibilityScore` — رفع آخرین Flag باز معماری کل پروژه (ADR-027)
+
+این مورد، برخلاف موارد P12-N بالا، جزو «دسته ۳ — Backlog» نبود؛ از ابتدا یک Flag باز مستند در
+خودِ سند ۰۶ (Analyzer Engine) §۳ بود ("فرمول تولید `riskScore` هنوز تعریف نشده")، هم‌طراز با
+Flagی که `ADR-011` برای `securityScore` بست. با بسته‌شدن آن هم، دیگر هیچ Flag باز معماری‌ای —
+نه در سند ۰۶، نه در جدول «دسته ۳» بالا — باقی نمانده.
+
+بررسی مستقیم کد نشان داد قبل از نوشتن فرمول `riskScore`، یک پیش‌نیاز حل‌نشده وجود داشت:
+`compatibilityScore` (فیلد منجمد `AnalysisObject`، سند ۰۵ §۴) هرگز محاسبه نمی‌شد —
+`analyzeCompatibility()` (سند ۰۶ §۲.۶) فقط نگاشت `{platforms, clients}` (`boolean | null`) تولید
+می‌کرد، نه یک عدد ۰-۱۰۰. `ADR-027` هر دو زیرمسئله را حل کرد:
+
+- **`compatibilityScore`**: میانگین ۶ کلاینت نام‌برده در `clients` (نه `platforms`، چون
+  `platforms` عملاً از `clients` مشتق می‌شود و دوباره‌شمردن همان داده خواهد بود) —
+  `true`→۱۰۰, `false`→۰, `null`→۵۰ (میانه‌ی عددی خنثی، تعمیم همان فلسفه‌ی «`null` = خنثی» که
+  Validation Engine از قبل برای `ValidationObject` دارد).
+- **`riskScore`**: میانگین وزنی سه ورودی مستقل — Security ۵۰٪ (پهن‌ترین معیار)، DNS ۳۰٪ (یک
+  مسیر ریسک واقعی که `securityScore` اصلاً نمی‌بیند)، Compatibility ۲۰٪ (اسمش صراحتاً در Scope
+  اصلی بود، ولی مفهوماً یک شکست Usability است، نه Exposure).
+
+**یافته‌ی معماری واقعی این ADR** (نه فرض): سهم Reality — که سند ۰۶ §۳ به‌عنوان ورودی چهارم نام
+برده بود — از قبل به‌طور کامل هم داخل `securityScore` (شمارش `reality.issues.length`، طبق
+`ADR-011`) و هم داخل `compatibilityScore` (`REALITY_CLIENT_SUPPORT` در `compatibility-
+analyzer.js`) جذب شده بود. اضافه‌کردن یک ترم مستقل چهارم برای Reality دقیقاً همان دوباره‌شماری‌ای
+می‌بود که `ADR-011` قبلاً برایش هشدار داده بود. این با یک تست یکپارچگی واقعی
+(`tests/analyzer/analyze-node.test.js`) اثبات شد: تفاوت `riskScore` بین دو نود Reality که فقط در
+یک فیلد (pbk موجود/غایب) فرق دارند، دقیقاً برابر است با سهم همان تغییر از طریق وزن ۵۰٪
+Security — نه بیشتر.
+
+پیاده‌سازی در `core/analyzer/risk-score.js`، وصل‌شده به `analyzeNode()` (`AnalysisBundle` دو
+فیلد جدید گرفت: `compatibilityScore`، `riskScore`)، و نمایش در Analyzer Screen — تأییدشده با
+اسکرین‌شات واقعی Playwright (عدد نمایش‌داده‌شده با محاسبه‌ی دستی فرمول دقیقاً یکی بود). جزئیات
+کامل در `docs/blueprints/06-ANALYZER_ENGINE.md` §۳.۱ و `docs/adr/ADR-027-RISK-SCORE-FORMULA.md`.
+
+---
+
 ## نکته‌ی صادقانه درباره‌ی نسخه‌ی اصلی این سند
 
 نسخه‌ی قبلی، ساختاری ۱۰ سطحی (Level 1 تا Level 10) با اسم‌هایی مثل `PRODUCT_VISION`، `EVENT_FLOW_MAP`، `SECURITY_BLUEPRINT`، `CODING_STANDARDS` و غیره فهرست می‌کرد که **هیچ‌کدام به‌صورت فایل واقعی وجود نداشتند**. این الگو با اصل «هر قابلیت باید در Blueprint ثبت شود» (که مستلزم وجود واقعی سند است، نه فقط اسم) همخوانی نداشت. به همین دلیل این فهرست حذف و با فهرست واقعی بالا جایگزین شد.
@@ -295,7 +331,8 @@ Registry موجود، بدون داشتن حداقل یک نمونه‌ی واق
 
 | Field | Value |
 |---|---|
-| نسخه | v2.3 |
+| نسخه | v2.4 |
+| اصلاحات نسبت به v2.3 | (ADR-027) رفع آخرین Flag باز معماری کل پروژه: فرمول `riskScore`/`compatibilityScore` (سند ۰۶ §۳.۱) — دیگر هیچ Flag باز معماری‌ای در هیچ سندی از دسته ۱ باقی نمانده |
 | اصلاحات نسبت به v2.2 | (ADR-024) به‌روزرسانی Backlog Latency Tester: مرزبندی Privacy/Network به‌صورت عمومی در سند ۰۱ و ADR-024 حل شد — نیازی به ADR جداگانه برای هر قابلیت آنلاین مشابه نیست |
 | اصلاحات نسبت به v2.1 | (بازبینی نهایی) افزودن Hard Rule برای جلوگیری از Limbo Trap در دسته‌ی نیمه‌قطعی؛ افزودن دو سطح ADR (Lightweight/Full)؛ ثبت رسمی Gap شناخته‌شده‌ی Build & Bundling Strategy (متصل به Flag موجود در IMPLEMENTATION_BLUEPRINT) |
 | 💭 یادآوری فرآیندی (خارج از محدوده‌ی محتوای بلوپرینت) | پیشنهاد شد نسخه‌ی این Index با Git Tag/Release Version پروژه همگام بماند (مثلاً همزمان با `v1.0.0-alpha`) — این یک Process Practice است، نه محتوای معماری؛ تصمیم اجرایی با مهدی |

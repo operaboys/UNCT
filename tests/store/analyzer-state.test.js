@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { createAnalyzerStore } from "../../core/store/analyzer-state.js";
+import { computeCompatibilityScore, computeRiskScore } from "../../core/analyzer/risk-score.js";
 
 /**
  * @typedef {import("../../core/analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
@@ -15,6 +16,12 @@ import { createAnalyzerStore } from "../../core/store/analyzer-state.js";
  * @returns {AnalysisBundle}
  */
 function bundle(securityScore, issues = []) {
+  const compatibility = {
+    platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
+    clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
+  };
+  const dns = "unknown";
+  const compatibilityScore = computeCompatibilityScore(compatibility);
   return {
     completeness: { missingFields: [], presentOptionalFields: [], completenessScore: 100 },
     protocol: { protocol: "vless", recognized: true },
@@ -22,15 +29,14 @@ function bundle(securityScore, issues = []) {
     tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
     reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
     security: { securityScore, issues },
-    compatibility: {
-      platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
-      clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
-    },
+    compatibility,
     cloudflare: { likelyCloudflareWorker: false, confidence: "low", signals: [] },
     cleanIp: { isCleanIpPattern: false, confidence: "low", signals: [] },
     worker: { applicable: false, workerDomain: null, pathSegments: [], uuidSegment: null, parameters: {}, encodedDataFindings: [] },
     rules: { applicable: false, totalCount: 0, byCategory: {}, duplicateCount: 0, duplicates: [] },
-    dns: "unknown",
+    dns,
+    compatibilityScore,
+    riskScore: computeRiskScore({ securityScore, compatibilityScore, dnsLeakRisk: dns }),
   };
 }
 

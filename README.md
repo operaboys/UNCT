@@ -12,14 +12,17 @@
 > با یک Exporter واقعی (SIP008 Exporter، عکس دقیق همان Parser) تا حد یک API مستندشده‌ی کامل
 > پیش رفت — Custom Parser/Export API دیگر Blocked نیست. Extractor Level System (Phase 12) هم
 > با ۴ Extractor واقعی جدید (Credentials/Transport/TLS Fingerprint/Flow) به آستانه‌ی ۱۰ از ۱۰
-> رسید. آنچه واقعاً هنوز باز است — فقط `riskScore` نهایی — در «محدودیت‌های شناخته‌شده» پایین‌تر
-> صادقانه ذکر شده.
+> رسید. در آخرین چک‌پوینت، **`riskScore` نهایی هم با یک ADR رسمی (ADR-027) و پیاده‌سازی واقعی
+> رفع شد** — `compatibilityScore` (پیش‌نیازش) و `riskScore` هر دو فرمول‌بندی، پیاده، تست، و به
+> Analyzer Screen وصل شدند. **این آخرین مورد باز شناخته‌شده‌ی کل پروژه بود — دیگر هیچ مورد باز
+> شناخته‌شده‌ای در سطح معماری (doc06 §3 / Phase 6-12) باقی نمانده.**
 
 ## وضعیت کلی
 
-**Phase 0 تا Phase 12 کامل‌اند**، با این استثناهای مستند و آگاهانه (نه نقص، نه فراموشی):
-- `riskScore` نهایی (تجمیع Security+Compatibility+DNS+Reality در Final Report) هنوز تعریف
-  نشده — طبق ADR-011، یک ADR جدا و آینده است.
+**Phase 0 تا Phase 12 کامل‌اند.** آخرین مورد باز پروژه (`riskScore` نهایی) هم در همین چک‌پوینت
+رفع شد — جزئیات زیر مستند و آگاهانه‌اند (نه نقص، نه فراموشی):
+- `riskScore` و `compatibilityScore` (پیش‌نیازش) هر دو فرمول‌بندی و پیاده‌سازی شدند (ADR-027) —
+  جزئیات کامل در بند پایین. **این آخرین Flag باز معماری کل پروژه بود.**
 - Custom Parser/Export API عمومی (Phase 11) دیگر Blocked نیست — دو Custom Parser واقعی
   (SIP008، Hysteria2 Native Config) و یک Custom Exporter واقعی (SIP008 Exporter) نوشته شد،
   هر دو با `core/plugin/README.md` مستند (بند پایین).
@@ -32,8 +35,8 @@
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۱۶۷ تست در ۹۵ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
-موفق (`app.js` ~۳۲۸kb، `parser-worker.js` ~۱۰۰kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
+تست: **۱۱۸۱ تست در ۹۶ فایل** (Vitest)، همگی Pass؛ `tsc --noEmit` بدون خطا؛ `npm run build`
+موفق (`app.js` ~۳۲۹kb، `parser-worker.js` ~۱۰۰kb، `converter-worker.js` ~۵۱kb)؛ `npm audit
 --omit=dev` صفر آسیب‌پذیری. (هر عدد بالا با اجرای واقعی `npm test`/`npm run typecheck`/
 `npm run build`/`npm audit` در همین چک‌پوینت دوباره تأیید شد، نه از حافظه.)
 
@@ -49,7 +52,7 @@
 | Phase 3 — Primary Parsers | ✅ کامل | Xray، URL، Subscription Parser |
 | Phase 4 — Extended Parsers | ✅ کامل | Sing-box، Clash/Clash.Meta، WireGuard Parser — Foundation Gate سطح Raw-config با Pass Rate ۱۰۰٪ روی دیتاست ۱۰۰تایی |
 | Phase 5 — Web Worker Engine | ✅ کامل | `worker-manager.js` (Pool، Cancellation، Versioning) + `parser.worker.js` + `analyzer.worker.js` + `converter.worker.js` واقعی‌اند و هر سه به Converter Screen وصل‌اند (Parse از طریق `parser.worker.js`، Convert از طریق `converter.worker.js`، هر دو با Fallback به Main Thread فقط زیر `file://`، طبق ADR-016). **استثنا:** Export Center مسیر جدایی دارد و مستقیماً `core/exporter/` را روی Main Thread صدا می‌زند، نه از طریق این Worker Pool (بخش محدودیت‌ها) |
-| Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer |
+| Phase 6 — Analyzer Engine (Core) | ✅ کامل | هر ۶ ماژول قطعی سند ۰۶: Completeness، Protocol، Network، TLS، Reality، Security Analyzer؛ `compatibilityScore`/`riskScore` (سند ۰۶ §۳.۱، ADR-027) هم فرمول‌بندی و پیاده شدند |
 | Phase 7 — Converter Engine | ✅ کامل | UNM→URL، UNM→Xray JSON، UNM→Sing-box JSON، UNM→Clash YAML، Batch Conversion، `ConversionObject` |
 | Phase 8 — Storage Layer | ✅ کامل | `core/storage/` (IndexedDB Adapter + Node Store + Template Store — بخش Phase 12) به UI وصل است: نودهای Parser State و Template Library هر دو Write-Through در پس‌زمینه Persist و با `hydrate()` روی mount بازخوانی می‌شوند — نودها/Templateها با Refresh/Restart مرورگر از بین نمی‌روند (تأییدشده با تست واقعی روی مرورگر). Theme/Language در Settings هم جدا، از طریق `core/storage/local-adapter.js` Persist می‌شوند |
 | Phase 9 — UI Layer + Export Engine | ✅ کامل (با محدودیت‌های Scope مشخص) | هر ۸ صفحه‌ی اصلی سند ۰۷ ساخته، روی هویت بصری «Liquid Glass» بازطراحی، و کامل به فارسی ترجمه شده (i18n + RTL، بند پایین). Export Engine کامل (جدول پایین). جزئیات هر صفحه پایین‌تر. معیار «Mobile Optimized» سند ۰۹ با CSS واکنش‌گرا (Media Query + Grid خودکار‌جمع‌شونده) پوشش داده شده و با چند فیکس واقعی Responsive بعد از بازطراحی تکمیل شد (بند «محدودیت‌های شناخته‌شده» پایین برای فهرست دقیق)؛ Dark Mode هم یک نسخه‌ی واقعی «Liquid Glass» تیره دارد که روی هر ۸ صفحه جداگانه Screenshot گرفته و تأیید شده |
@@ -72,7 +75,8 @@
 | Worker Analyzer | ✅ کامل | Analyzer Screen — «Worker Analysis» + Extractor Screen — «Worker Extractor» |
 | Rule Analyzer (P12-5) | ✅ کامل | Analyzer Screen — «Route Rules Analysis» |
 | Subscription Analyzer | ✅ کامل (سطح-مجموعه، نه AnalysisBundle) | Subscription Center — Summary + Protocol Distribution (نمودار میله‌ای، P12-11) |
-| DNS Analyzer | ✅ کامل، به `AnalysisBundle` وصل (فیلد مستقل `dns`، ADR-022 Addendum) | Extractor Screen — «DNS Extractor» (Badge رنگی برای none/low/medium/high/unknown). تجمیع در `riskScore` نهایی همچنان یک گام آینده است — طبق ADR-011، هرگز در `securityScore` ادغام نمی‌شود |
+| DNS Analyzer | ✅ کامل، به `AnalysisBundle` وصل (فیلد مستقل `dns`، ADR-022 Addendum) | Extractor Screen — «DNS Extractor» (Badge رنگی برای none/low/medium/high/unknown). تجمیع در `riskScore` نهایی اکنون واقعی و پیاده‌شده است (ADR-027) — هرگز در `securityScore` ادغام نمی‌شود، طبق ADR-011 |
+| Risk Score / Compatibility Score | ✅ کامل (ADR-027، آخرین Flag باز پروژه) | Analyzer Screen — «Risk Score» زیر Security Analysis، «Compatibility Score» بالای جدول Platform & Client Compatibility |
 
 ---
 
@@ -274,10 +278,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 
 این بخش صادقانه است — هرچیزی که در عمل ساخته نشده یا کامل وصل نیست، اینجاست:
 
-- **`riskScore` نهایی (Final Report aggregation) هنوز تعریف نشده** — `dnsLeakRisk` اکنون یک
-  فیلد مستقل در `AnalysisBundle`/Extractor Screen است (ADR-022 Addendum)، ولی ترکیب
-  Security+Compatibility+DNS+Reality در یک عدد نهایی `riskScore` طبق ADR-011 بند «Explicitly
-  out of scope» همچنان یک ADR جدا و آینده است — نه این فاز.
 - **۴ از ۵ فیچر گروه Visualization به‌طور کامل حذف شدند** (Node Relationship Map، Visual
   Topology Mapper، Cloudflare Topology View، Reality Visualizer) — نه Blocked، بلکه حذف کامل،
   چون هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی در UNM برایشان وجود ندارد. جزئیات در
@@ -330,18 +330,28 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   (`tests/plugin/sip008-exporter.test.js`)، و به یک گزینه‌ی واقعی در Export Center
   (`ui/export/export-screen.tsx`) وصل شد — تأییدشده با اسکرین‌شات واقعی Playwright. جزئیات کامل
   در `ULTIMATE_BLUEPRINT_INDEX.md` بخش P12-13 و `docs/adr/ADR-020-PLUGIN-SYSTEM.md`.
+- **`riskScore` نهایی رفع شد — آخرین Flag باز کل پروژه** — یک ADR رسمی جدید
+  (`docs/adr/ADR-027-RISK-SCORE-FORMULA.md`) هر دو زیرمسئله را حل کرد: (الف) `compatibilityScore`
+  (پیش‌نیاز، تا امروز اصلاً محاسبه نمی‌شد) از میانگین ۶ کلاینت نام‌برده در `CompatibilityAnalysis`
+  (`true`→۱۰۰, `false`→۰, `null`→۵۰ خنثی)، (ب) `riskScore` از میانگین وزنی سه ورودی مستقل —
+  Security ۵۰٪، DNS ۳۰٪، Compatibility ۲۰٪. یافته‌ی معماری واقعی این ADR: سهم Reality از قبل
+  به‌طور کامل داخل `securityScore` (شمارش `reality.issues`) و `compatibilityScore`
+  (`REALITY_CLIENT_SUPPORT`) جذب شده بود — پس یک ترم چهارم مجزا برای Reality اضافه نشد (اثبات‌شده
+  با تست یکپارچگی واقعی در `tests/analyzer/analyze-node.test.js`). پیاده‌سازی در
+  `core/analyzer/risk-score.js`، وصل به `analyzeNode()`، و نمایش در Analyzer Screen (ردیف
+  «Risk Score» زیر Security Analysis، ردیف «Compatibility Score» بالای جدول Platform & Client
+  Compatibility) — تأییدشده با اسکرین‌شات واقعی Playwright. جزئیات کامل در سند ۰۶ §۳.۱ و
+  `docs/adr/ADR-027-RISK-SCORE-FORMULA.md`.
 
 ---
 
 ## گام بعدی واقعی
 
-فاز نهایی طراحی بصری و فاز i18n/RTL هر دو کامل شدند. آنچه از کل پروژه صادقانه هنوز باز است
-(بخش «محدودیت‌های شناخته‌شده» بالا، نه یک فاز جدید):
+**هیچ مورد باز شناخته‌شده‌ای در سطح معماری/Roadmap این پروژه باقی نمانده.** فاز نهایی طراحی
+بصری، فاز i18n/RTL، Custom Parser/Export API، Extractor Level System، و در نهایت `riskScore`
+(آخرین Flag باز، doc06 §3 / ADR-027) — همگی با پیاده‌سازی واقعی، تست، و اسکرین‌شات واقعی
+Playwright تأیید و بسته شدند (فهرست کامل در بند «اصلاحات اخیر» بالاتر).
 
-1. **`riskScore` نهایی (Final Report aggregation)** — نیاز به یک ADR جدا برای فرمول ترکیب
-   Security+Compatibility+DNS+Reality دارد؛ هیچ ماژولی مالک این تجمیع نیست.
-
-این تنها مورد واقعاً باز باقی‌مانده در کل پروژه است — Blocker معماری ندارد، صرفاً منتظر یک
-تصمیم فرمول جدا است، نه کدنویسی ناتمام. (Custom Exporter API و Extractor Level System که پیش‌تر
-در همین فهرست بودند، هر دو در چک‌پوینت‌های اخیر با پیاده‌سازی واقعی رفع شدند — بند «اصلاحات
-اخیر» پایین‌تر.)
+آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Recent Exports/Alternative Candidates
+Placeholder، Drag-Drop بدون E2E، حذف کامل گروه Visualization، مسیر جدای Export Center) همگی
+تصمیم‌های Scope مستند و آگاهانه‌اند — نه Blocker، نه کار ناتمام؛ جزئیات دقیق همان‌جا.

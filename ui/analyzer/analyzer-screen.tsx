@@ -41,6 +41,17 @@
  * Dashboard's asymmetric master-detail `.content-grid`, not a duplicate of
  * it. No logic/state/handlers changed here — same `handleAnalyze`, same
  * selectors, same six-module bundle read-out as before this pass.
+ *
+ * P12-14 addition (`riskScore`/`compatibilityScore`, ADR-027, this
+ * checkpoint): `riskScore` is added as a new row directly under
+ * `securityScore` in "Security Analysis" (the two numbers are read together
+ * most naturally); `compatibilityScore` is added as a new row above the
+ * existing Platform/Client tables in "Platform & Client Compatibility" — it
+ * is the numeric summary of exactly that section's own data. Both are
+ * per-node numbers (like `securityScore`), so they belong here, not on the
+ * Dashboard (whose only score aggregate, `selectAverageSecurityScore`, is a
+ * cross-node average — a different kind of number, out of this checkpoint's
+ * scope). See `core/analyzer/risk-score.js` for the formulas.
  */
 import { useMemo, useState } from "preact/hooks";
 import { selectAnalysisByNodeId } from "../../core/store/selectors.js";
@@ -152,6 +163,7 @@ export function AnalyzerScreen() {
             <div class="panel-title">{t("analyzer.securityAnalysis.title")}</div>
             <dl class="kv-list">
               <div class="kv-row"><dt>{t("analyzer.securityAnalysis.securityScore")}</dt><dd>{formatScore(bundle.security.securityScore)}</dd></div>
+              <div class="kv-row"><dt>{t("analyzer.securityAnalysis.riskScore")}</dt><dd>{formatScore(bundle.riskScore)}</dd></div>
               <div class="kv-row"><dt>{t("analyzer.fields.issues")}</dt><dd>{formatStringList(bundle.security.issues)}</dd></div>
               <div class="kv-row"><dt>{t("analyzer.securityAnalysis.tlsApplicable")}</dt><dd>{formatTriState(bundle.tls.applicable)}</dd></div>
               <div class="kv-row"><dt>{t("analyzer.securityAnalysis.tlsCoherent")}</dt><dd>{formatTriState(bundle.tls.coherent)}</dd></div>
@@ -273,6 +285,9 @@ export function AnalyzerScreen() {
       {selectedNode && bundle && (
         <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label={t("analyzer.compatibility.title")}>
           <div class="panel-title">{t("analyzer.compatibility.title")}</div>
+          <dl class="kv-list" style={{ marginBlockEnd: "14px" }}>
+            <div class="kv-row"><dt>{t("analyzer.compatibility.compatibilityScore")}</dt><dd>{formatScore(bundle.compatibilityScore)}</dd></div>
+          </dl>
           <div class="table-scroll">
             <table class="data-table data-table--center" aria-label={t("analyzer.compatibility.platformsCaption")}>
               <caption class="hint" style={{ textAlign: "start", marginBlockEnd: "8px" }}>{t("analyzer.compatibility.platformsCaption")}</caption>

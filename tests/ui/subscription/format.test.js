@@ -7,6 +7,7 @@
 import { describe, it, expect } from "vitest";
 import { createNode } from "../../../core/unm/create-node.js";
 import { sortNodesBySecurityScore, formatNodeSecurityScore } from "../../../ui/subscription/format.js";
+import { computeCompatibilityScore, computeRiskScore } from "../../../core/analyzer/risk-score.js";
 
 /** @param {Record<string, unknown>} [overrides] */
 function node(overrides = {}) {
@@ -27,6 +28,12 @@ function node(overrides = {}) {
  * @returns {AnalysisBundle}
  */
 function bundle(securityScore) {
+  const compatibility = {
+    platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
+    clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
+  };
+  const dns = "unknown";
+  const compatibilityScore = computeCompatibilityScore(compatibility);
   return {
     completeness: { missingFields: [], presentOptionalFields: [], completenessScore: 100 },
     protocol: { protocol: "vless", recognized: true },
@@ -34,15 +41,14 @@ function bundle(securityScore) {
     tls: { securityType: "none", applicable: false, coherent: true, knownFingerprint: null, issues: [] },
     reality: { applicable: false, compatible: true, pbkPlausible: null, sidPlausible: null, issues: [] },
     security: { securityScore, issues: [] },
-    compatibility: {
-      platforms: { android: true, ios: true, windows: true, linux: true, macos: true },
-      clients: { xray: true, "sing-box": true, "clash-meta": true, nekobox: true, v2rayng: true, hiddify: true },
-    },
+    compatibility,
     cloudflare: { likelyCloudflareWorker: false, confidence: "low", signals: [] },
     cleanIp: { isCleanIpPattern: false, confidence: "low", signals: [] },
     worker: { applicable: false, workerDomain: null, pathSegments: [], uuidSegment: null, parameters: {}, encodedDataFindings: [] },
     rules: { applicable: false, totalCount: 0, byCategory: {}, duplicateCount: 0, duplicates: [] },
-    dns: "unknown",
+    dns,
+    compatibilityScore,
+    riskScore: computeRiskScore({ securityScore, compatibilityScore, dnsLeakRisk: dns }),
   };
 }
 

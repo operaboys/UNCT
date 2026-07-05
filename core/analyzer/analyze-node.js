@@ -15,24 +15,23 @@
  * Worker is a thin wrapper around this, mirroring how `converter.worker.js`
  * wraps `convertBatch` (ADR-003).
  *
- * What it returns (and deliberately does NOT): the six §1 modules together
- * can fill exactly ONE of `AnalysisObject`'s frozen fields today —
- * `securityScore` (06 §1.2 / ADR-011) — plus the honestly-derivable
- * `realityDetected` (security === "reality"); the Compatibility Analyzer maps
- * onto `AnalysisObject.compatibilityScore` conceptually but does not produce
- * that single 0-100 number itself (06 §3's risk-scoring formula is still an
- * open flag, not this module's job to resolve). The DNS Analyzer (ADR-022)
- * fills `AnalysisObject.dnsLeakRisk` directly — that field needs no
- * aggregation, unlike `riskScore` below. The remaining `AnalysisObject`
- * fields (`riskScore`, `compatibilityScore`, `cloudflareDetected`,
- * `workerDetected`, `cleanIPDetected`) come from the rest of §2's
- * semi-definitive modules and the Final Report aggregation — future phases —
- * so this module returns the analyzers' raw verdict bundle rather than
- * fabricating those values into a full `AnalysisObject` (Rule 9: never invent
- * data). Assembling the complete `AnalysisObject` is a later phase's job once
- * its remaining inputs exist. ADR-011 §"Explicitly out of scope" is explicit
- * that `dnsLeakRisk` must never be folded into `securityScore` — it stays its
- * own independent bundle field, exactly like `cloudflare`/`cleanIp`/`worker`.
+ * What it returns (and deliberately does NOT): every §1/§2.6 module together
+ * can fill four of `AnalysisObject`'s frozen fields today — `securityScore`
+ * (06 §1.2 / ADR-011), `compatibilityScore` and `riskScore` (06 §3.1 /
+ * ADR-027, computed by `risk-score.js` from `security`/`compatibility`/`dns`
+ * below — see that module for why Reality is deliberately NOT a fourth,
+ * separate input), and the honestly-derivable `realityDetected`
+ * (security === "reality"); the DNS Analyzer (ADR-022) fills
+ * `AnalysisObject.dnsLeakRisk` directly. The remaining `AnalysisObject`
+ * fields (`cloudflareDetected`, `workerDetected`, `cleanIPDetected`) come from
+ * the rest of §2's semi-definitive modules and the Final Report aggregation
+ * (doc 06 §4, Summary/Warnings/Recommendations/Suggestions) — a future,
+ * still-entirely-unbuilt phase — so this module returns the analyzers' raw
+ * verdict bundle plus the two ADR-027 scores rather than fabricating a full
+ * `AnalysisObject` (Rule 9: never invent data). ADR-011 §"Explicitly out of
+ * scope" is explicit that `dnsLeakRisk` must never be folded into
+ * `securityScore` — it stays its own independent bundle field, exactly like
+ * `cloudflare`/`cleanIp`/`worker`.
  *
  * @typedef {import("../types/unm").UNMNode} UNMNode
  * @typedef {import("../types/unm").DnsLeakRisk} DnsLeakRisk
@@ -47,7 +46,7 @@
  * @typedef {import("./types").CleanIpAnalysis} CleanIpAnalysis
  * @typedef {import("./types").WorkerAnalysis} WorkerAnalysis
  * @typedef {import("./types").RuleAnalysis} RuleAnalysis
- * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis, cloudflare: CloudflareAnalysis, cleanIp: CleanIpAnalysis, worker: WorkerAnalysis, rules: RuleAnalysis, dns: DnsLeakRisk }} AnalysisBundle
+ * @typedef {{ completeness: CompletenessResult, protocol: ProtocolAnalysis, network: NetworkAnalysis, tls: TlsAnalysis, reality: RealityAnalysis, security: SecurityAnalysis, compatibility: CompatibilityAnalysis, cloudflare: CloudflareAnalysis, cleanIp: CleanIpAnalysis, worker: WorkerAnalysis, rules: RuleAnalysis, dns: DnsLeakRisk, compatibilityScore: number, riskScore: number }} AnalysisBundle
  */
 
 import { analyzeCompleteness } from "./core/data-completeness.js";
@@ -62,6 +61,7 @@ import { analyzeCleanIp } from "./extended/clean-ip-analyzer.js";
 import { analyzeWorker } from "./extended/worker-analyzer.js";
 import { analyzeRules } from "./extended/rule-analyzer.js";
 import { analyzeDnsLeakRisk } from "./extended/dns-analyzer.js";
+import { computeCompatibilityScore, computeRiskScore } from "./risk-score.js";
 
 /**
  * Run all six Phase 6 Core analyzers plus the Phase 10 Extended analyzers
@@ -83,7 +83,12 @@ export function analyzeNode(node) {
   const worker = analyzeWorker(node, cloudflare);
   const rules = analyzeRules(node);
   const dns = analyzeDnsLeakRisk(node);
-  return { completeness, protocol, network, tls, reality, security, compatibility, cloudflare, cleanIp, worker, rules, dns };
+  const compatibilityScore = computeCompatibilityScore(compatibility);
+  const riskScore = computeRiskScore({ securityScore: security.securityScore, compatibilityScore, dnsLeakRisk: dns });
+  return {
+    completeness, protocol, network, tls, reality, security, compatibility, cloudflare, cleanIp, worker, rules, dns,
+    compatibilityScore, riskScore,
+  };
 }
 
 /**

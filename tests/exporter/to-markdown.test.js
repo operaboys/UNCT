@@ -42,6 +42,8 @@ const fakeBundle = {
   worker: /** @type {any} */ ({}),
   rules: /** @type {any} */ ({}),
   dns: "unknown",
+  compatibilityScore: 50,
+  riskScore: 50,
 };
 
 describe("exportMarkdown", () => {
