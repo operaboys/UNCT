@@ -79,6 +79,7 @@ import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
+import { recentExportsStore } from "../store/use-recent-exports-state.js";
 import { formatSkipped, type SkippedExportNode } from "./format.js";
 import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
 
@@ -164,6 +165,8 @@ export function ExportScreen() {
     a.download = `export.${extension}`;
     a.click();
     URL.revokeObjectURL(url);
+    const exportedCount = nodes.length - skipped.length;
+    if (exportedCount > 0) recentExportsStore.addExport(format, exportedCount);
   }
 
   async function handleCopy() {
@@ -183,6 +186,8 @@ export function ExportScreen() {
     a.download = "export.zip";
     a.click();
     URL.revokeObjectURL(url);
+    const exportedCount = nodes.length - zipSkipped.length;
+    if (exportedCount > 0) recentExportsStore.addExport("zip", exportedCount);
   }
 
   function handleDownloadQr(nodeId: string, matrix: readonly (readonly boolean[])[], moduleCount: number) {
@@ -194,6 +199,7 @@ export function ExportScreen() {
     a.download = `qr-${nodeId}.svg`;
     a.click();
     URL.revokeObjectURL(url);
+    recentExportsStore.addExport("qr", 1);
   }
 
   function handleDownloadHtmlReport() {
@@ -204,6 +210,7 @@ export function ExportScreen() {
     a.download = "report.html";
     a.click();
     URL.revokeObjectURL(url);
+    recentExportsStore.addExport("html", nodes.length);
   }
 
   return (

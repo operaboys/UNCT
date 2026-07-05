@@ -10,11 +10,20 @@
  * Doc 07 §4.1 lists six sections: Quick Stats, Recent Imports, Recent
  * Exports, Node Summary, Health Overview, Warnings. This redesign keeps the
  * exact same real-vs-placeholder boundaries the previous version already
- * established (see git history for the reasoning) — "Recent Exports" still
- * has no backing data anywhere in the app and is omitted rather than shown
- * empty; "Quick Stats"/"Node Summary"/"Health Overview" are now the stat
- * row + Protocol Mix panel; "Warnings" appears only when there are any
- * (Rule 9: no empty section pretending to be informative).
+ * established (see git history for the reasoning) — "Quick Stats"/
+ * "Node Summary"/"Health Overview" are now the stat row + Protocol Mix
+ * panel; "Warnings" appears only when there are any (Rule 9: no empty
+ * section pretending to be informative).
+ *
+ * "Recent Exports" is the one documented exception to "nothing here is a
+ * new computation": it reads `core/store/recent-exports-state.js`, a small
+ * LocalStorage-backed store (Storage Responsibility Matrix,
+ * IMPLEMENTATION_BLUEPRINT §3 — "Recent Settings") that `ui/export/
+ * export-screen.tsx` writes one entry to after each successful download.
+ * It holds only Export metadata (format/node count/timestamp), is
+ * completely independent from `parserStore`/`analyzerStore`, and — like
+ * Recent Imports — shows a real empty-state hint rather than nothing when
+ * no export has happened yet (Rule 9).
  *
  * `.glass-panel`/`.signal-ring`/`.protocol-badge` all come from
  * `assets/css/theme.css` (07-UI_UX_SYSTEM §2) — nothing here re-implements
@@ -37,6 +46,7 @@ import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
+import { useRecentExportsState } from "../store/use-recent-exports-state.js";
 import { Logo } from "../components/logo.js";
 import {
   formatAverageScore,
@@ -50,10 +60,28 @@ import {
 
 const RECENT_IMPORTS_LIMIT = 5;
 
+/** Mirrors `ui/export/export-screen.tsx`'s `FORMAT_LABEL_KEYS` plus the
+ * three multi-node/whole-report formats (zip/qr/html) that screen also
+ * writes to Recent Exports but doesn't itself need a dictionary key for. */
+const EXPORT_FORMAT_LABEL_KEYS: Record<string, string> = {
+  txt: "export.format.txt",
+  xrayJson: "export.format.xrayJson",
+  singboxJson: "export.format.singboxJson",
+  normalizedJson: "export.format.normalizedJson",
+  analysisJson: "export.format.analysisJson",
+  clashYaml: "export.format.clashYaml",
+  csv: "export.format.csv",
+  sip008Plugin: "export.format.sip008Plugin",
+  zip: "export.format.zip",
+  qr: "export.format.qr",
+  html: "export.format.html",
+};
+
 export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
   useSettingsState();
+  const { entries: recentExports } = useRecentExportsState();
   const t = createTranslator(settingsStore);
 
   const validCount = useMemo(() => selectValidNodeIds({ nodes }).length, [nodes]);
@@ -194,6 +222,27 @@ export function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) 
         </div>
 
         <div>
+          <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("dashboard.recentExports.title")}>
+            <div class="panel-title">
+              {t("dashboard.recentExports.title")}
+              <button type="button" class="see-all" onClick={() => onNavigate?.("export")}>{t("dashboard.recentExports.seeAll")} <span class="cta-arrow">&rarr;</span></button>
+            </div>
+            {recentExports.length === 0 ? (
+              <p class="hint">{t("dashboard.recentExports.emptyHint")}</p>
+            ) : (
+              recentExports.map((entry, i) => (
+                <div class="node-item" key={`${entry.timestamp}-${i}`}>
+                  <span class="tag tag--info">{t(EXPORT_FORMAT_LABEL_KEYS[entry.format] ?? entry.format)}</span>
+                  <div class="node-info">
+                    <div class="node-meta">
+                      <bdi>{entry.nodeCount}</bdi> {t(entry.nodeCount === 1 ? "dashboard.recentExports.nodeCountSingular" : "dashboard.recentExports.nodeCountPlural")} &middot; {formatRelativeTime(entry.timestamp)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
           <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("dashboard.protocolMix.title")}>
             <div class="panel-title">{t("dashboard.protocolMix.title")}</div>
             {protocolShareBars.length === 0 ? (

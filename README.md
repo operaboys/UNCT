@@ -152,7 +152,7 @@ P12-12، P12-13).
 
 | # | صفحه | وضعیت واقعی |
 |---|---|---|
-| 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports» همگی واقعی. «Recent Exports» همچنان Placeholder غیرفعال — هیچ ماژولی هنوز Log فعالیت Export را ثبت نمی‌کند |
+| 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports»، «Recent Exports» همگی واقعی. «Recent Exports» از `core/store/recent-exports-state.js` (LocalStorage، مستقل از parserStore/analyzerStore) می‌خواند؛ هر ۴ عملیات دانلود در Export Center بعد از موفقیت واقعی یک ورودی به آن اضافه می‌کنند |
 | 2 | **Converter** | Paste Area + File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder — همگی واقعی. Tag، Merge، Split، Deduplicate همچنان Deferred. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
@@ -167,7 +167,7 @@ P12-12، P12-13).
 
 `core/i18n/` (ADR-019) کامل و به هر ۸ صفحه + نوار ناوبری (`ui/components/nav.tsx`) وصل است:
 
-- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۲۹۹ کلید در هر دو زبان** (شمارش
+- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۳۲۵ کلید در هر دو زبان** (شمارش
   واقعی با `Object.keys`، نه تخمین) — `tests/i18n/dictionaries.test.js` عدم‌تطابق کلید بین دو
   زبان و رشته‌ی خالی را رد می‌کند.
 - تمام متن هر ۸ صفحه (نه فقط برچسب‌ها) از طریق `t()`/`createTranslator` resolve می‌شود؛ نوار
@@ -287,8 +287,8 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   صدا می‌زند؛ یک تصمیم Scope جداست، نه باگ.
 - **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** — یک نتیجه‌ی معماری، نه محدودیت:
   منطق Detect/Normalize داخل خود هر Parser و `core/unm/mapper/` پیاده شده.
-- **«Recent Exports» (Dashboard) و «Alternative Candidates» (Developer Console)** همچنان
-  Placeholder غیرفعال‌اند — هیچ ماژولی این داده را ثبت نمی‌کند (Rule 9: عدم جعل داده).
+- **«Alternative Candidates» (Developer Console)** همچنان Placeholder غیرفعال است — هیچ
+  ماژولی رتبه‌بندی گذرای Parserهای رقیب را ثبت نمی‌کند (Rule 9: عدم جعل داده).
 - **Drag-Drop Zone فقط Unit Test دارد، نه E2E** — تصمیم آگاهانه: شبیه‌سازی یک Drag واقعی از
   خارج صفحه در هیچ ابزار خودکارسازی مرورگری ممکن نیست؛ جزئیات کامل در کامنت پایانی
   `tests/e2e/file-upload.spec.js`.
@@ -342,6 +342,18 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   «Risk Score» زیر Security Analysis، ردیف «Compatibility Score» بالای جدول Platform & Client
   Compatibility) — تأییدشده با اسکرین‌شات واقعی Playwright. جزئیات کامل در سند ۰۶ §۳.۱ و
   `docs/adr/ADR-027-RISK-SCORE-FORMULA.md`.
+- **«Recent Exports» (Dashboard) رفع شد** — یک ماژول جدید و کاملاً مستقل
+  (`core/store/recent-exports-state.js`) دقیقاً با الگوی `settings-state.js` (LocalStorage،
+  Write-Through Sync، سقف ۱۰ ورودی با حذف قدیمی‌ترین) نوشته شد؛ فقط متادیتای Export (فرمت،
+  تعداد نود، Timestamp) را نگه می‌دارد — نه خودِ محتوا، و نه هیچ ارتباطی با
+  `parserStore`/`analyzerStore`. هر ۴ تابع دانلود در Export Center
+  (`ui/export/export-screen.tsx`: `handleDownload`, `handleDownloadZip`, `handleDownloadQr`,
+  `handleDownloadHtmlReport`) فقط بعد از یک Export واقعاً موفق (با محاسبه‌ی
+  `nodes.length - skipped.length`، یا بدون‌قید برای QR/HTML Report که ساختاراً هرگز Skip
+  نمی‌شوند) یک ورودی ثبت می‌کنند. پنل Dashboard دقیقاً با الگوی بصری «Recent Imports» اضافه شد،
+  شامل حالت خالی صادقانه (Rule 9). کامنت بالای `dashboard-screen.tsx` به‌روزرسانی شد تا این را
+  به‌عنوان اولین استثنای مستند «nothing here is a new computation» توضیح دهد. تست واحد کامل در
+  `tests/store/recent-exports-state.test.js` (شامل تست سقف ۱۰ ورودی).
 
 ---
 
@@ -352,6 +364,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 (آخرین Flag باز، doc06 §3 / ADR-027) — همگی با پیاده‌سازی واقعی، تست، و اسکرین‌شات واقعی
 Playwright تأیید و بسته شدند (فهرست کامل در بند «اصلاحات اخیر» بالاتر).
 
-آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Recent Exports/Alternative Candidates
-Placeholder، Drag-Drop بدون E2E، حذف کامل گروه Visualization، مسیر جدای Export Center) همگی
-تصمیم‌های Scope مستند و آگاهانه‌اند — نه Blocker، نه کار ناتمام؛ جزئیات دقیق همان‌جا.
+آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Alternative Candidates Placeholder،
+Drag-Drop بدون E2E، حذف کامل گروه Visualization، مسیر جدای Export Center) همگی تصمیم‌های
+Scope مستند و آگاهانه‌اند — نه Blocker، نه کار ناتمام؛ جزئیات دقیق همان‌جا.
