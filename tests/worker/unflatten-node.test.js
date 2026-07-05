@@ -70,6 +70,20 @@ describe("unflattenNode — exact inverse of flattenNode", () => {
     expect(restored.analysis).toEqual(node.analysis);
   });
 
+  it("round-trips metadata.alternativeCandidates (ADR-028)", () => {
+    const base = applyValidation(createNode({
+      sourceType: "vless-url", protocol: "vless", address: "e.example.com", port: 443, uuid: "uuid-3",
+    }));
+    const node = {
+      ...base,
+      metadata: { ...base.metadata, alternativeCandidates: [{ name: "xray", confidence: 55 }] },
+    };
+
+    const restored = unflattenNode(flattenNode(node));
+
+    expect(restored.metadata.alternativeCandidates).toEqual([{ name: "xray", confidence: 55 }]);
+  });
+
   it("deep-freezes the reconstructed node and its sub-objects (Rule 8)", () => {
     const node = applyValidation(createNode({
       sourceType: "ss-url", protocol: "shadowsocks", address: "d.example.com", port: 8388,

@@ -5,7 +5,7 @@
  * selectors do).
  */
 import { describe, it, expect } from "vitest";
-import { createNode, withValidation } from "../../core/unm/create-node.js";
+import { createNode, withValidation, withAlternativeCandidates } from "../../core/unm/create-node.js";
 import { computeCompatibilityScore, computeRiskScore } from "../../core/analyzer/risk-score.js";
 import {
   selectAllNodes,
@@ -475,13 +475,28 @@ describe("selectDetectionLog", () => {
     const state = { nodes: [a, b] };
 
     expect(selectDetectionLog(state)).toEqual([
-      { nodeId: a.nodeId, parser: "xray-parser", confidence: 95 },
-      { nodeId: b.nodeId, parser: "url-parser", confidence: 75 },
+      { nodeId: a.nodeId, parser: "xray-parser", confidence: 95, alternativeCandidates: [] },
+      { nodeId: b.nodeId, parser: "url-parser", confidence: 75, alternativeCandidates: [] },
     ]);
   });
 
   it("returns an empty array for an empty collection", () => {
     expect(selectDetectionLog({ nodes: [] })).toEqual([]);
+  });
+
+  it("surfaces real alternativeCandidates (ADR-028) instead of defaulting to [] when the node has them", () => {
+    const a = withAlternativeCandidates(
+      node({ metadata: { parser: "xray-parser", confidence: 95 } }),
+      [{ name: "singbox-parser", confidence: 80 }, { name: "url-parser", confidence: 60 }],
+    );
+    const state = { nodes: [a] };
+
+    expect(selectDetectionLog(state)).toEqual([
+      {
+        nodeId: a.nodeId, parser: "xray-parser", confidence: 95,
+        alternativeCandidates: [{ name: "singbox-parser", confidence: 80 }, { name: "url-parser", confidence: 60 }],
+      },
+    ]);
   });
 });
 

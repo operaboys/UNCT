@@ -389,23 +389,26 @@ export function selectParserLog(state) {
 
 /**
  * Detection Logs / Detection Metadata Viewer — Developer Console (doc 07
- * §4.7), surfacing 04-PARSER_ENGINE Stage 02's "Detection Metadata". Only
- * the Confidence Score (`metadata.confidence`, real and persisted by every
- * parser's `normalize()`) is exposed here — NOT "Alternative Candidates":
- * `core/parser/factory.js#parseWithFallback` computes ranked candidates
- * transiently while choosing a parser, but never returns or persists them
- * (`core/parser/parse-and-validate.js` only keeps `{ name, extraction,
- * recovered }`). Per Rule 9 (never fabricate), Alternative Candidates has
- * no real data source anywhere today, so the UI must render that half as a
- * disabled placeholder rather than this selector inventing a value.
+ * §4.7), surfacing 04-PARSER_ENGINE Stage 02's "Detection Metadata": both
+ * halves of the same section, the winning parser's Confidence Score
+ * (`metadata.confidence`) AND the "Alternative Candidates" that also
+ * cleared the threshold but weren't picked (`metadata.alternativeCandidates`,
+ * ADR-028). One selector rather than two separate ones — both fields are
+ * per-node facts about the exact same "how was this node's format detected"
+ * question, read from the same node loop, so splitting them into a second
+ * selector would just duplicate the iteration for no real separation of
+ * concerns. Falls back to `[]` for nodes with no `alternativeCandidates`
+ * (Custom Parser plugin nodes never went through `parseWithFallback`'s
+ * ranking at all — absent, not a fabricated empty detection run).
  * @param {ParserState} state
- * @returns {readonly { nodeId: string, parser: string, confidence: number }[]}
+ * @returns {readonly { nodeId: string, parser: string, confidence: number, alternativeCandidates: readonly { name: string, confidence: number }[] }[]}
  */
 export function selectDetectionLog(state) {
   return state.nodes.map((n) => ({
     nodeId: n.nodeId,
     parser: n.metadata.parser,
     confidence: n.metadata.confidence,
+    alternativeCandidates: n.metadata.alternativeCandidates ?? [],
   }));
 }
 

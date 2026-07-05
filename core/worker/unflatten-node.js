@@ -39,7 +39,7 @@ const CONVERSION_KEYS = [
 const META_KEYS = [
   "metaParser", "metaConfidence", "metaSourceFile", "metaSourceLine",
   "metaFormatVersion", "metaWarnings", "metaErrors", "metaRecoveryActions",
-  "metaOriginalMappings",
+  "metaOriginalMappings", "metaAlternativeCandidates",
 ];
 
 /**
@@ -73,6 +73,7 @@ export function unflattenNode(flat) {
     errors: flat.metaErrors,
     recoveryActions: flat.metaRecoveryActions,
     originalMappings: flat.metaOriginalMappings,
+    alternativeCandidates: flat.metaAlternativeCandidates,
   };
 
   /** @type {Record<string, unknown>} */

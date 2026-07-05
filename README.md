@@ -159,7 +159,7 @@ P12-12، P12-13).
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
-| 8 | **Developer Console** | ۶ از ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021). فقط نیمه‌ی «Alternative Candidates» (از Detection Logs) Placeholder غیرفعال است — هیچ ماژولی رتبه‌بندی گذرای Parserهای رقیب را نگه نمی‌دارد |
+| 8 | **Developer Console** | هر ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021 + «Alternative Candidates» از Detection Logs، ADR-028) — رتبه‌بندی واقعی Parserهای رقیب که به Threshold رسیدند اما انتخاب نشدند، از `metadata.alternativeCandidates` |
 
 ---
 
@@ -287,8 +287,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   صدا می‌زند؛ یک تصمیم Scope جداست، نه باگ.
 - **`core/normalizer/` و `core/detector/` از ساختار حذف شدند** — یک نتیجه‌ی معماری، نه محدودیت:
   منطق Detect/Normalize داخل خود هر Parser و `core/unm/mapper/` پیاده شده.
-- **«Alternative Candidates» (Developer Console)** همچنان Placeholder غیرفعال است — هیچ
-  ماژولی رتبه‌بندی گذرای Parserهای رقیب را ثبت نمی‌کند (Rule 9: عدم جعل داده).
 - **Drag-Drop Zone فقط Unit Test دارد، نه E2E** — تصمیم آگاهانه: شبیه‌سازی یک Drag واقعی از
   خارج صفحه در هیچ ابزار خودکارسازی مرورگری ممکن نیست؛ جزئیات کامل در کامنت پایانی
   `tests/e2e/file-upload.spec.js`.
@@ -354,6 +352,19 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   شامل حالت خالی صادقانه (Rule 9). کامنت بالای `dashboard-screen.tsx` به‌روزرسانی شد تا این را
   به‌عنوان اولین استثنای مستند «nothing here is a new computation» توضیح دهد. تست واحد کامل در
   `tests/store/recent-exports-state.test.js` (شامل تست سقف ۱۰ ورودی).
+- **«Alternative Candidates» (Developer Console) رفع شد** — یک Lightweight ADR جدید
+  (`docs/adr/ADR-028-ALTERNATIVE-CANDIDATES-METADATA.md`) رتبه‌بندی‌ای را که
+  `core/parser/factory.js#parseWithFallback` از قبل محاسبه می‌کرد (ولی گذرا بود و هرگز نگه
+  داشته نمی‌شد) روی یک فیلد اختیاری جدید `metadata.alternativeCandidates` نگه می‌دارد — بدون
+  هیچ تغییری در منطق انتخاب/Fallback Parser یا در `metadata.confidence` (برنده‌ی خودش دست‌نخورده
+  می‌ماند). این تغییر هم در مسیر اصلی مرورگر (`core/worker/parser.worker.js` +
+  `unflatten-node.js`، Worker پیش‌فرض طبق ADR-016) و هم در Fallback تک‌رشته‌ای
+  (`core/parser/parse-and-validate.js`) وصل شد — نه فقط یکی. `selectDetectionLog`
+  (`core/store/selectors.js`) گسترش یافت تا هر دو نیمه‌ی «Detection Logs» را با هم برگرداند.
+  در UI، اگر نودی فقط یک Candidate واجد شرایط داشت (پارسر دیگری به Threshold نرسید)، پیام
+  صادقانه‌ی «تنها پارسر واجد شرایط» نشان داده می‌شود، نه جدول خالی گمراه‌کننده (Rule 9). تست
+  واحد واقعی با یک کانفیگ sing-box واقعی که Xray هم رویش به Threshold می‌رسد (بدون Mock) در
+  `tests/parser/parse-and-validate.test.js` و `tests/worker/parser-worker.test.js`.
 
 ---
 
@@ -364,6 +375,6 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
 (آخرین Flag باز، doc06 §3 / ADR-027) — همگی با پیاده‌سازی واقعی، تست، و اسکرین‌شات واقعی
 Playwright تأیید و بسته شدند (فهرست کامل در بند «اصلاحات اخیر» بالاتر).
 
-آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Alternative Candidates Placeholder،
-Drag-Drop بدون E2E، حذف کامل گروه Visualization، مسیر جدای Export Center) همگی تصمیم‌های
+آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Drag-Drop بدون E2E، حذف کامل گروه
+Visualization، مسیر جدای Export Center) همگی تصمیم‌های
 Scope مستند و آگاهانه‌اند — نه Blocker، نه کار ناتمام؛ جزئیات دقیق همان‌جا.

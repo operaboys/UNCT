@@ -147,3 +147,22 @@ export function createNode(input) {
 export function withValidation(node, validation) {
   return deepFreeze({ ...node, validation, updatedAt: ISO_NOW() });
 }
+
+/**
+ * Produce a NEW node with `metadata.alternativeCandidates` set — structural
+ * sharing per Rule 8, mirrors `withValidation` above. ADR-028 (Lightweight):
+ * exposes the parser candidates ranking `ParserFactory.parseWithFallback`
+ * already computes, without touching `metadata.confidence` (the winner's own
+ * score) or any selection logic.
+ *
+ * @param {UNMNode} node
+ * @param {readonly { name: string, confidence: number }[]} alternativeCandidates
+ * @returns {Readonly<UNMNode>}
+ */
+export function withAlternativeCandidates(node, alternativeCandidates) {
+  return deepFreeze({
+    ...node,
+    metadata: { ...node.metadata, alternativeCandidates },
+    updatedAt: ISO_NOW(),
+  });
+}

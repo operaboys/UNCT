@@ -349,8 +349,8 @@ export const en = {
     "Running in main-thread fallback mode (file:// origin) — Worker pool metrics unavailable. Parse something from an HTTP server to see live stats.",
   "devconsole.detectionLogs.title": "Detection Logs",
   "devconsole.detectionLogs.alternativeCandidates.title": "Alternative Candidates",
-  "devconsole.detectionLogs.alternativeCandidates.hint":
-    "Not available yet — alternative parser candidates aren't kept once a node has been parsed.",
+  "devconsole.detectionLogs.alternativeCandidates.onlyEligible":
+    "Only eligible parser — no other candidate reached the confidence threshold.",
 
   // settings-screen.tsx
   "settings.title": "Settings",

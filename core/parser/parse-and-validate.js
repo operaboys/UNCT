@@ -32,6 +32,7 @@ import { registerUrlParser } from "./url/index.js";
 import { registerSubscriptionParser } from "./subscription/index.js";
 import { registerWireguardParser } from "./wireguard/index.js";
 import { applyValidation } from "../validator/apply-validation.js";
+import { withAlternativeCandidates } from "../unm/create-node.js";
 import { appPluginRegistry } from "../plugin/app-plugins.js";
 import { parseWithPlugins } from "../plugin/parse-with-plugins.js";
 
@@ -57,9 +58,15 @@ const factory = buildFactory();
  */
 export function parseAndValidate(raw) {
   try {
-    const { name, extraction, recovered } = factory.parseWithFallback(raw);
+    const { name, extraction, recovered, candidates } = factory.parseWithFallback(raw);
     const parser = factory.get(name);
-    const nodes = normalizeAll(parser, extraction).map(applyValidation);
+    // Every candidate that reached the confidence threshold but was NOT the
+    // selected parser (ADR-028) — `metadata.confidence` above stays exactly
+    // the winner's own score, this is a separate, additive field.
+    const alternativeCandidates = candidates.filter((c) => c.name !== name);
+    const nodes = normalizeAll(parser, extraction)
+      .map(applyValidation)
+      .map((node) => withAlternativeCandidates(node, alternativeCandidates));
     return { parserName: name, recovered, nodes };
   } catch (coreError) {
     const pluginResult = parseWithPlugins(raw, appPluginRegistry);

@@ -75,7 +75,10 @@ describe("ParserFactory — recovery fallback chain (12 §5)", () => {
     factory.register("secondary", makeMockParser({ detect: () => 60 }));
 
     const result = factory.parseWithFallback("input");
-    expect(result).toEqual({ name: "primary", extraction: { fields: { ok: true } }, recovered: false });
+    expect(result).toEqual({
+      name: "primary", extraction: { fields: { ok: true } }, recovered: false,
+      candidates: [{ name: "primary", confidence: 95 }, { name: "secondary", confidence: 60 }],
+    });
   });
 
   it("falls back to the primary's own recover() when parse() throws", () => {
@@ -87,7 +90,10 @@ describe("ParserFactory — recovery fallback chain (12 §5)", () => {
     }));
 
     const result = factory.parseWithFallback("input");
-    expect(result).toEqual({ name: "primary", extraction: { fields: { recovered: true } }, recovered: true });
+    expect(result).toEqual({
+      name: "primary", extraction: { fields: { recovered: true } }, recovered: true,
+      candidates: [{ name: "primary", confidence: 95 }],
+    });
   });
 
   it("moves to the secondary candidate when the primary fails parse() and recover()", () => {
@@ -102,7 +108,10 @@ describe("ParserFactory — recovery fallback chain (12 §5)", () => {
     }));
 
     const result = factory.parseWithFallback("input");
-    expect(result).toEqual({ name: "secondary", extraction: { fields: { from: "secondary" } }, recovered: false });
+    expect(result).toEqual({
+      name: "secondary", extraction: { fields: { from: "secondary" } }, recovered: false,
+      candidates: [{ name: "primary", confidence: 95 }, { name: "secondary", confidence: 70 }],
+    });
   });
 
   it("throws the last error when every candidate fails parse() and recover()", () => {

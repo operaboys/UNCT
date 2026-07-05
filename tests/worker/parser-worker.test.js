@@ -14,6 +14,7 @@ import { handleParserJob, flattenNode } from "../../core/worker/parser.worker.js
 import { createWorkerManager } from "../../core/worker/worker-manager.js";
 import { createMockWorkerFactory } from "../setup/worker-mock.js";
 import { VALID, ALL_SAMPLES } from "../baseline-dataset/raw-config-dataset.js";
+import { SINGLE_VMESS } from "../singbox/fixtures.js";
 
 /** Worker envelope results are intentionally `unknown` outside the Worker (10-PERFORMANCE_ENGINE §3) — tests narrow at the assertion site. @param {unknown} value */
 function asRecord(value) {
@@ -68,6 +69,17 @@ describe("handleParserJob — direct invocation (pure, no Worker globals)", () =
     const response = await handleParserJob({ jobId: "j4", generationId: 1, payload: {} });
     expect(response.ok).toBe(false);
     expect(response.error?.message).toMatch(/WORKER_CONTRACT_VIOLATION/);
+  });
+
+  it("threads metaAlternativeCandidates through the DEFAULT Worker path too (ADR-028, not just the file:// main-thread fallback)", async () => {
+    const response = await handleParserJob({
+      jobId: "j5", generationId: 1, track: "import", payload: { raw: SINGLE_VMESS },
+    });
+    const result = asRecord(response.result);
+    expect(result.parserName).toBe("singbox");
+    const [node] = result.nodes;
+    expect(node.metaAlternativeCandidates).toEqual([{ name: "xray", confidence: 55 }]);
+    expect(node.metaConfidence).toBe(95);
   });
 
   it("flattenNode is exported and directly testable on its own", () => {

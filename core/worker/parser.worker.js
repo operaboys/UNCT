@@ -34,6 +34,7 @@ import { registerUrlParser } from "../parser/url/index.js";
 import { registerSubscriptionParser } from "../parser/subscription/index.js";
 import { registerWireguardParser } from "../parser/wireguard/index.js";
 import { applyValidation } from "../validator/apply-validation.js";
+import { withAlternativeCandidates } from "../unm/create-node.js";
 import { appPluginRegistry } from "../plugin/app-plugins.js";
 import { parseWithPlugins } from "../plugin/parse-with-plugins.js";
 import { createWorkerEntry } from "./shared/handler-envelope.js";
@@ -76,6 +77,7 @@ export function flattenNode(node) {
     metaErrors: metadata.errors,
     metaRecoveryActions: metadata.recoveryActions,
     metaOriginalMappings: metadata.originalMappings,
+    metaAlternativeCandidates: metadata.alternativeCandidates,
   };
 }
 
@@ -88,9 +90,15 @@ function processParserPayload(payload) {
     throw new Error("parser.worker: payload.raw must be a string (WORKER_CONTRACT_VIOLATION)");
   }
   try {
-    const { name, extraction, recovered } = factory.parseWithFallback(raw);
+    const { name, extraction, recovered, candidates } = factory.parseWithFallback(raw);
     const parser = factory.get(name);
-    const nodes = normalizeAll(parser, extraction).map(applyValidation);
+    // Every candidate that reached the confidence threshold but was NOT the
+    // selected parser (ADR-028) — `metaConfidence` above stays exactly the
+    // winner's own score, this is a separate, additive field.
+    const alternativeCandidates = candidates.filter((c) => c.name !== name);
+    const nodes = normalizeAll(parser, extraction)
+      .map(applyValidation)
+      .map((node) => withAlternativeCandidates(node, alternativeCandidates));
     return { parserName: name, recovered, nodes: nodes.map(flattenNode) };
   } catch (coreError) {
     const pluginResult = parseWithPlugins(raw, appPluginRegistry);

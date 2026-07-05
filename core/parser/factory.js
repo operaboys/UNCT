@@ -128,7 +128,7 @@ export function createParserFactory() {
    * Detection runs — covers every execution path and every parser type
    * without duplicating the normalization call anywhere else.
    * @param {string} input
-   * @returns {{ name: string, extraction: RawExtraction, recovered: boolean }}
+   * @returns {{ name: string, extraction: RawExtraction, recovered: boolean, candidates: Candidate[] }}
    * @throws {Error} if every candidate (parse + recover) fails, or if no
    *   candidate reaches the confidence threshold ("Unknown Format")
    */
@@ -145,7 +145,7 @@ export function createParserFactory() {
     for (const { name } of candidates) {
       const parser = get(name);
       try {
-        return { name, extraction: parser.parse(normalized), recovered: false };
+        return { name, extraction: parser.parse(normalized), recovered: false, candidates };
       } catch (err) {
         lastError = err;
         /** @type {ParseError} */
@@ -155,7 +155,7 @@ export function createParserFactory() {
           cause: err,
         };
         const recovered = parser.recover(normalized, parseError);
-        if (recovered) return { name, extraction: recovered, recovered: true };
+        if (recovered) return { name, extraction: recovered, recovered: true, candidates };
       }
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError));

@@ -40,6 +40,11 @@ export interface MetadataObject {
   errors: string[];              // never null — always an array
   recoveryActions: string[];     // Fuzzy Recovery changes recorded here
   originalMappings: Record<string, string>; // synonym-name -> canonical UNM name
+  // Optional, Lightweight-ADR addition (ADR-028): other parsers that also
+  // cleared the confidence threshold during Stage 02 detection but were not
+  // selected — Highest-Confidence-Wins (12 §4) still picks exactly one
+  // winner, `confidence` above is still that winner's own score alone.
+  alternativeCandidates?: readonly { name: string; confidence: number }[];
 }
 
 /** Analysis Object — spec 05 §4. Filled by the Analyzer Engine (optional). */

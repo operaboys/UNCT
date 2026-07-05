@@ -4,7 +4,7 @@
  * Warnings, Errors, Recovery Logs, Validation Logs, Performance Logs,
  * Detection Logs / Detection Metadata Viewer.
  *
- * Five of the seven are built entirely on values Core already computed —
+ * All seven are built entirely on values Core already computed —
  * Recovery Logs on the pre-existing `selectAggregatedRecoveryActions`
  * (already used by the Converter Screen), Warnings/Errors merged into one
  * severity-sorted view on `selectDiagnosticsSortedBySeverity` (recovers each
@@ -14,13 +14,16 @@
  * `selectValidationFailureLog`, `core/store/selectors.js`) that only read
  * fields the Parser/Validation Engine already wrote onto every node.
  *
- * One sub-part has no real data source anywhere in the app today:
- * - Alternative Candidates (the other half of "Detection Logs / Detection
- *   Metadata Viewer", doc 04 Stage 02): `core/parser/factory.js`'s
- *   `parseWithFallback` ranks candidate parsers transiently while choosing
- *   one, but `core/parser/parse-and-validate.js` never keeps that ranking
- *   past parser selection — only Confidence Score survives onto the node
- *   (`metadata.confidence`). Per Rule 9, this half is not fabricated.
+ * "Alternative Candidates" (the other half of "Detection Logs / Detection
+ * Metadata Viewer", doc 04 Stage 02) is now real data too (ADR-028):
+ * `core/parser/factory.js`'s `parseWithFallback` already ranked candidate
+ * parsers while choosing one — that ranking now survives onto
+ * `metadata.alternativeCandidates` (both the main-thread pipeline and the
+ * default Worker path, `core/worker/parser.worker.js`/`unflatten-node.js`),
+ * and `selectDetectionLog` exposes it alongside Confidence Score. A node
+ * whose detection had only one eligible parser gets an honest "only
+ * eligible parser" row rather than an empty table implying missing data
+ * (Rule 9).
  *
  * Performance Logs is now fully wired via `usePerformanceState()` (Phase 12
  * P12-2 — ADR-021, `core/worker/worker-manager.js` getStats()).
@@ -32,9 +35,7 @@
  * only new CSS this step adds is three severity tag modifiers (.tag--info/
  * .tag--warning/.tag--critical, assets/css/theme.css) for the real
  * `ErrorSeverity` values Warnings & Errors already reads — "error" reuses
- * the existing `.tag--invalid` rather than a redundant duplicate. No logic/
- * state/handlers changed — same selectors, same Performance Logs pool
- * stats, same Alternative Candidates placeholder.
+ * the existing `.tag--invalid` rather than a redundant duplicate.
  */
 import { useMemo } from "preact/hooks";
 import {
@@ -222,11 +223,33 @@ export function DevConsoleScreen() {
                 </tbody>
               </table>
             </div>
-            <div aria-disabled="true" style={{ marginBlockStart: "16px" }}>
+            <div style={{ marginBlockStart: "16px" }}>
               <div class="panel-title" style={{ fontSize: "13px" }}>{t("devconsole.detectionLogs.alternativeCandidates.title")}</div>
-              <p class="hint">
-                {t("devconsole.detectionLogs.alternativeCandidates.hint")}
-              </p>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>
+                  </thead>
+                  <tbody>
+                    {detectionLog.flatMap((entry) =>
+                      entry.alternativeCandidates.length === 0
+                        ? [
+                            <tr key={entry.nodeId}>
+                              <td class="mono">{entry.nodeId}</td>
+                              <td colSpan={2} class="hint">{t("devconsole.detectionLogs.alternativeCandidates.onlyEligible")}</td>
+                            </tr>,
+                          ]
+                        : entry.alternativeCandidates.map((c, i) => (
+                            <tr key={`${entry.nodeId}-${i}`}>
+                              <td class="mono">{entry.nodeId}</td>
+                              <td>{c.name}</td>
+                              <td>{formatScore(c.confidence)}</td>
+                            </tr>
+                          )),
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </>

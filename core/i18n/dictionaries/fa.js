@@ -351,8 +351,8 @@ export const fa = {
     "در حالت جایگزین تک‌رشته‌ای اجرا می‌شود (مبدأ file://) — آمار استخر Worker در دسترس نیست. برای مشاهده‌ی آمار زنده، چیزی را از طریق یک سرور HTTP تجزیه کنید.",
   "devconsole.detectionLogs.title": "گزارش‌های شناسایی",
   "devconsole.detectionLogs.alternativeCandidates.title": "گزینه‌های جایگزین",
-  "devconsole.detectionLogs.alternativeCandidates.hint":
-    "هنوز در دسترس نیست — گزینه‌های جایگزین تجزیه‌گر پس از تجزیه‌شدن یک نود نگه‌داشته نمی‌شوند.",
+  "devconsole.detectionLogs.alternativeCandidates.onlyEligible":
+    "تنها پارسر واجد شرایط — هیچ گزینه‌ی دیگری به آستانه‌ی اطمینان نرسید.",
 
   // settings-screen.tsx
   "settings.title": "تنظیمات",
