@@ -523,6 +523,26 @@ code, kbd, samp, .mono {
   padding: 0;
 }
 
+/* A titled sub-section nested inside a bigger `.glass-panel` (e.g. Developer
+   Console's "Alternative Candidates" living inside the "Detection Logs"
+   panel — conceptually one topic, per that screen's own header comment, so
+   kept in one panel rather than split into two — but visually
+   indistinguishable from a second independent table once both are
+   `VirtualTable`s of real data). A top border + background tint + extra
+   padding makes the boundary between the parent table and this subsection
+   unambiguous without promoting it to its own `.glass-panel`. */
+.panel-subsection {
+  margin-block-start: 20px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid rgba(33, 27, 61, 0.1);
+}
+.panel-subsection .panel-title {
+  background: rgba(124, 92, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-block-end: 12px;
+}
+
 /* RTL fix (docs/architecture/RTL-GUIDELINES.md): `.cta-arrow` wraps every
    literal "forward/continue" arrow glyph (&rarr;, Dashboard's "See all"/
    Quick Actions buttons). The glyph itself is a fixed Unicode character --
@@ -858,6 +878,12 @@ code, kbd, samp, .mono {
   margin: 0;
   font-weight: 600;
   text-align: end;
+  /* Long unbroken values (Base64 Encoded Data, Cloudflare/Worker Analysis
+     signal strings, etc.) otherwise overflow this flex item's default
+     content-based min-width and get visually clipped by `.glass-panel`'s
+     own `overflow: hidden` instead of wrapping to the next line. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .plain-list {
@@ -948,6 +974,11 @@ code, kbd, samp, .mono {
   padding-inline: 10px;
   border-block-end: 1px solid rgba(33, 27, 61, 0.06);
   font-weight: 500;
+  /* Long unbroken values (e.g. Extractor's Worker Encoded Data, Base64
+     strings with no natural break point) otherwise force the whole table
+     wider than its container instead of wrapping inside their own cell —
+     the same fix applied to `.kv-row dd` above, for the table equivalent. */
+  overflow-wrap: anywhere;
 }
 .data-table tr:last-child td {
   border-block-end: none;

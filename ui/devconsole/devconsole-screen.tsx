@@ -23,7 +23,14 @@
  * and `selectDetectionLog` exposes it alongside Confidence Score. A node
  * whose detection had only one eligible parser gets an honest "only
  * eligible parser" row rather than an empty table implying missing data
- * (Rule 9).
+ * (Rule 9). It stays nested inside the same "Detection Logs" panel rather
+ * than its own `.glass-panel` — the two questions ("what was detected" /
+ * "what else was considered") are one topic, not two independent Logs
+ * sections doc 07 §4.7 never separately named. 2026-07-05 addendum: at real
+ * data volumes (both now `VirtualTable`s) the two looked indistinguishable
+ * without a clearer boundary between them, so the subsection now sits in a
+ * `.panel-subsection` (top border + tinted title background,
+ * `assets/css/theme.css`) — a visual, not structural, separation.
  *
  * Performance Logs is now fully wired via `usePerformanceState()` (Phase 12
  * P12-2 — ADR-021, `core/worker/worker-manager.js` getStats()).
@@ -246,7 +253,7 @@ export function DevConsoleScreen() {
                 </>
               )}
             />
-            <div style={{ marginBlockStart: "16px" }}>
+            <div class="panel-subsection">
               <div class="panel-title" style={{ fontSize: "13px" }}>{t("devconsole.detectionLogs.alternativeCandidates.title")}</div>
               <VirtualTable
                 items={alternativeCandidateRows}
