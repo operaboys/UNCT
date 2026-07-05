@@ -103,4 +103,98 @@ test.describe("Subscription Center — Node List virtualization (5000+ nodes)", 
     const mountedRowCount = await page.locator(".data-table tbody tr").count();
     expect(mountedRowCount).toBeLessThan(NODE_COUNT / 2);
   });
+
+  test("the column header stays visible (sticky) after scrolling deep into the flat Node List", async ({ page }) => {
+    // A same-day follow-on fix: `.table-scroll--virtual`'s bounded height
+    // meant the real crash fix above also made the <thead> scroll out of
+    // view after ~11 rows, with no way to tell which column was which.
+    // Only 300 nodes are needed here — this is a layout check, not a scale
+    // check (the 5000-node test above already covers scale).
+    test.setTimeout(60_000);
+    await page.goto("/index.html");
+    await page.getByRole("button", { name: "Converter", exact: true }).click();
+    await page.locator("textarea").first().fill(buildSyntheticNodeList(300));
+    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Parse", exact: true })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
+    await expect(page.locator('[aria-label="Overview"] dl dd').first()).toHaveText("300", { timeout: 30_000 });
+
+    const scrollContainer = page.locator(".table-scroll--virtual").first();
+    await expect(scrollContainer).toBeVisible();
+    const headerCell = page.locator(".data-table thead th").first();
+
+    const beforeBox = await headerCell.boundingBox();
+    const containerBox = await scrollContainer.boundingBox();
+
+    await scrollContainer.evaluate((el) => { el.scrollTop = 2000; });
+    await page.waitForTimeout(300);
+
+    const afterBox = await headerCell.boundingBox();
+
+    // Real sticky behaviour: the header's position is unchanged by the
+    // scroll (still pinned at the container's top), not scrolled away with
+    // the rows underneath it.
+    expect(afterBox?.y).toBeCloseTo(beforeBox?.y ?? -1, 0);
+    expect(afterBox?.y).toBeCloseTo(containerBox?.y ?? -1, 0);
+
+    // The header must still show real column text, not just be positioned
+    // correctly with empty/hidden content.
+    await expect(headerCell).toHaveText(/Include/i);
+  });
+
+  test("Group mode does not nest independent scrollboxes per protocol, and every row renders (no virtualization truncation)", async ({ page }) => {
+    // The second same-day follow-on fix: Group mode used to reuse the same
+    // bounded/virtualized `NodeTable` per protocol group — 3+ protocols meant
+    // 3+ independent nested scrollboxes. `NodeTableGrouped` now renders every
+    // group directly (no bounded height, no virtualization), matching every
+    // other data-table in the app.
+    test.setTimeout(60_000);
+    const uuid = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    const lines = [];
+    for (let i = 0; i < 40; i++) {
+      const host = `vl-${i}.example.com`;
+      lines.push(`vless://${uuid}@${host}:443?security=tls&type=tcp&sni=${host}#vl-${i}`);
+    }
+    for (let i = 0; i < 40; i++) {
+      const host = `tr-${i}.example.com`;
+      lines.push(`trojan://secretpass@${host}:443?security=tls&type=tcp&sni=${host}#tr-${i}`);
+    }
+    for (let i = 0; i < 40; i++) {
+      const host = `ss-${i}.example.com`;
+      const userInfo = Buffer.from(`aes-256-gcm:secret${i}`).toString("base64");
+      lines.push(`ss://${userInfo}@${host}:8388#ss-${i}`);
+    }
+
+    await page.goto("/index.html");
+    await page.getByRole("button", { name: "Converter", exact: true }).click();
+    await page.locator("textarea").first().fill(lines.join("\n"));
+    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Parse", exact: true })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
+    await expect(page.locator('[aria-label="Overview"] dl dd').first()).toHaveText("120", { timeout: 30_000 });
+
+    await page.locator("label.field", { hasText: "Group by protocol" }).locator("input[type=checkbox]").check();
+    await page.waitForTimeout(300);
+
+    // No bounded/virtualized scroll container anywhere in Group mode.
+    await expect(page.locator(".table-scroll--virtual")).toHaveCount(0);
+
+    // 3 separate protocol tables (one per group) — this is exactly what
+    // makes the OLD bounded-per-group implementation nest 3 independent
+    // scrollboxes; confirms the test scenario is real, not a false negative.
+    await expect(page.locator(".data-table")).toHaveCount(3);
+
+    // Every row across all 3 groups is really in the DOM — Group mode must
+    // never silently window/truncate a group's rows.
+    const mountedRowCount = await page.locator(".data-table tbody tr").count();
+    expect(mountedRowCount).toBe(120);
+
+    // A node from each of the 3 protocol groups is really present — scoped
+    // to the whole Node List panel (which wraps all 3 group tables) since
+    // `.data-table` itself now resolves to 3 separate elements.
+    const nodeListPanel = page.locator('[aria-label="Node List"]');
+    await expect(nodeListPanel).toContainText("vl-39.example.com");
+    await expect(nodeListPanel).toContainText("tr-39.example.com");
+    await expect(nodeListPanel).toContainText("ss-39.example.com");
+  });
 });

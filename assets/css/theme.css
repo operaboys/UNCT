@@ -915,6 +915,18 @@ code, kbd, samp, .mono {
   max-height: 640px;
   overflow-y: auto;
 }
+/* Sticky column headers ONLY inside the bounded/virtualized scroll container
+   — every other `.table-scroll` in the app has no max-height, so the whole
+   page scrolls past its header naturally (no fix needed there). Needs its
+   own background (matching `.glass-panel`'s own, not `.data-table th`'s
+   transparent default) so scrolled-past rows don't show through the header
+   while it sits pinned at the top. */
+.table-scroll--virtual .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.42);
+}
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1283,6 +1295,9 @@ code, kbd, samp, .mono {
 }
 :root[data-theme="dark"] .embed-frame {
   border-color: rgba(255, 255, 255, 0.14);
+}
+:root[data-theme="dark"] .table-scroll--virtual .data-table th {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Status/severity colors: brighter text tones so each tag/alert stays

@@ -24,7 +24,26 @@
  * native table layout already handled it — no CSS Grid rewrite. Every
  * per-row feature (checkbox selection, Test/Check/Lookup buttons, Save as
  * Template, Tag add/remove) is untouched; only which `<tr>`s get mounted
- * changed.
+ * changed. `NodeTableRow` (the shared per-`<tr>` body) and
+ * `NodeTableHeaderRow` were split out so both the virtualized flat view
+ * (`NodeTable`) and the grouped-by-protocol view (`NodeTableGrouped`, below)
+ * render byte-identical rows.
+ *
+ * Two follow-on fixes (2026-07-05, same day, independent review): (1)
+ * `.table-scroll--virtual`'s bounded `max-height` meant the `<thead>` scrolled
+ * out of view after a handful of rows with no way to tell which column was
+ * which — `assets/css/theme.css` now pins it with `position: sticky` inside
+ * that one bounded container only (every other `.table-scroll` in the app is
+ * unbounded — the whole page scrolls past its header, nothing to fix there).
+ * (2) Group mode used to reuse `NodeTable` per protocol, meaning 5-6 protocols
+ * meant 5-6 independent bounded scrollboxes nested in the page — genuinely
+ * disorienting, and unnecessary: each group is a subset of the already
+ * Search/Filtered list, nowhere near the size that actually crashed the tab.
+ * `NodeTableGrouped` renders every row directly (no bounded height, no
+ * virtualization) — the page scrolls past each group's full table, exactly
+ * like every other data-table in the app and like Group mode looked before
+ * Virtual List existed. The flat view's crash fix is completely unaffected —
+ * `NodeTable` itself did not change.
  *
  * Visual design (final visual design phase, Subscription Center step):
  * restyled onto the same Liquid Glass system as Dashboard/Converter/
@@ -506,7 +525,7 @@ export function SubscriptionScreen() {
               <div style={{ fontWeight: 700, fontSize: "13px", marginBlockEnd: "8px" }}>
                 {protocol} (<bdi>{groupNodes.length}</bdi>)
               </div>
-              <NodeTable t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
+              <NodeTableGrouped t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
             </div>
           ))
         ) : (
@@ -659,28 +678,7 @@ const NODE_ROW_ESTIMATE_HEIGHT = 56;
 const NODE_ROW_OVERSCAN = 12;
 const NODE_TABLE_COLUMN_COUNT = 12;
 
-function NodeTable({
-  t,
-  nodes,
-  analysisByNodeId,
-  latencyByNodeId,
-  testingNodeId,
-  onTestLatency,
-  geoIpByNodeId,
-  geoIpLoadingNodeId,
-  onGeoIpLookup,
-  portCheckByNodeId,
-  portCheckLoadingNodeId,
-  onPortCheck,
-  selectedNodeIds,
-  onToggleSelected,
-  onSaveAsTemplate,
-  tagsByNodeId,
-  newTagByNodeId,
-  onTagInputChange,
-  onAddTag,
-  onRemoveTag,
-}: {
+type NodeTableProps = {
   t: (key: string) => string;
   nodes: ReturnType<typeof useParserState>;
   analysisByNodeId: AnalysisByNodeId;
@@ -701,7 +699,151 @@ function NodeTable({
   onTagInputChange: (nodeId: string, value: string) => void;
   onAddTag: (nodeId: string) => void;
   onRemoveTag: (nodeId: string, tag: string) => void;
+};
+
+function NodeTableHeaderRow({ t }: { t: (key: string) => string }) {
+  return (
+    <tr>
+      <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th><th>{t("subscription.nodeList.tagsColumn")}</th>
+    </tr>
+  );
+}
+
+// One <tr> — shared verbatim between the virtualized flat view (`NodeTable`,
+// where `rowRef`/`dataIndex` wire it into the Virtualizer's measurement) and
+// the grouped view (`NodeTableGrouped`, plain `.map()`, neither prop set).
+function NodeTableRow({
+  n,
+  rowRef,
+  dataIndex,
+  t,
+  analysisByNodeId,
+  latencyByNodeId,
+  testingNodeId,
+  onTestLatency,
+  geoIpByNodeId,
+  geoIpLoadingNodeId,
+  onGeoIpLookup,
+  portCheckByNodeId,
+  portCheckLoadingNodeId,
+  onPortCheck,
+  selectedNodeIds,
+  onToggleSelected,
+  onSaveAsTemplate,
+  tagsByNodeId,
+  newTagByNodeId,
+  onTagInputChange,
+  onAddTag,
+  onRemoveTag,
+}: Omit<NodeTableProps, "nodes"> & {
+  n: ReturnType<typeof useParserState>[number];
+  rowRef?: (el: HTMLTableRowElement | null) => void;
+  dataIndex?: number;
 }) {
+  const latency = latencyByNodeId[n.nodeId];
+  const isTesting = testingNodeId === n.nodeId;
+  const geoIp = geoIpByNodeId[n.nodeId];
+  const isLookingUp = geoIpLoadingNodeId === n.nodeId;
+  const portCheck = portCheckByNodeId[n.nodeId];
+  const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
+  return (
+    <tr ref={rowRef} data-index={dataIndex}>
+      <td>
+        <input
+          type="checkbox"
+          checked={selectedNodeIds.has(n.nodeId)}
+          onChange={() => onToggleSelected(n.nodeId)}
+        />
+      </td>
+      <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+      <td class="mono">{n.address}</td>
+      <td class="mono"><bdi>{n.port}</bdi></td>
+      <td>
+        {n.validation.overallValid ? (
+          <span class="tag tag--valid">{t("common.fields.valid")}</span>
+        ) : (
+          <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
+        )}
+      </td>
+      <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
+      <td>
+        <button
+          type="button"
+          class="btn btn--ghost btn--sm"
+          disabled={isTesting}
+          onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
+        >
+          {isTesting ? t("subscription.nodeList.testing") : t("subscription.nodeList.test")}
+        </button>
+        {latency !== undefined && !isTesting && (
+          <span class="hint">{" "}{formatLatency(latency)}</span>
+        )}
+      </td>
+      <td>
+        <button
+          type="button"
+          class="btn btn--ghost btn--sm"
+          disabled={isCheckingPort}
+          onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
+        >
+          {isCheckingPort ? t("subscription.nodeList.checking") : t("subscription.nodeList.check")}
+        </button>
+        {portCheck !== undefined && !isCheckingPort && (
+          <span class="hint">{" "}{formatPortCheck(portCheck)}</span>
+        )}
+      </td>
+      <td>
+        <button
+          type="button"
+          class="btn btn--ghost btn--sm"
+          disabled={isLookingUp}
+          onClick={() => onGeoIpLookup(n.nodeId, n.address)}
+        >
+          {isLookingUp ? t("subscription.nodeList.loading") : t("subscription.nodeList.lookup")}
+        </button>
+        {geoIp !== undefined && !isLookingUp && (
+          <span class="hint">{" "}{formatGeoIp(geoIp)}</span>
+        )}
+      </td>
+      <td class="mono"><bdi>{n.createdAt}</bdi></td>
+      <td>
+        <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>{t("subscription.nodeList.saveAsTemplate")}</button>
+      </td>
+      <td>
+        {(tagsByNodeId[n.nodeId] ?? []).map((tag) => (
+          <span class="tag tag--info" key={tag} style={{ marginInlineEnd: "4px" }}>
+            {tag}
+            <button
+              type="button"
+              class="tag-remove"
+              aria-label={t("subscription.nodeList.removeTag")}
+              onClick={() => onRemoveTag(n.nodeId, tag)}
+            >
+              &times;
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          class="input input--sm"
+          style={{ marginBlockStart: "4px" }}
+          placeholder={t("subscription.nodeList.addTagPlaceholder")}
+          value={newTagByNodeId[n.nodeId] ?? ""}
+          onInput={(e) => onTagInputChange(n.nodeId, (e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onAddTag(n.nodeId);
+          }}
+        />
+      </td>
+    </tr>
+  );
+}
+
+// Flat (ungrouped) Node List — virtualized (doc 14 §1/§2, ADR-029): only the
+// rows inside `.table-scroll--virtual`'s bounded viewport (+ overscan) are
+// real `<tr>`s. This is the path the 5000+-node crash fix targets.
+function NodeTable(props: NodeTableProps) {
+  const { t, nodes } = props;
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: nodes.length,
@@ -717,118 +859,52 @@ function NodeTable({
   return (
     <div class="table-scroll table-scroll--virtual" ref={scrollRef}>
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th><th>{t("subscription.nodeList.tagsColumn")}</th>
-          </tr>
-        </thead>
+        <thead><NodeTableHeaderRow t={t} /></thead>
         <tbody>
           {paddingTop > 0 && (
             <tr aria-hidden="true"><td style={{ height: `${paddingTop}px`, padding: 0, border: "none" }} colSpan={NODE_TABLE_COLUMN_COUNT} /></tr>
           )}
           {virtualRows.map((virtualRow) => {
             const n = nodes[virtualRow.index];
-            const latency = latencyByNodeId[n.nodeId];
-            const isTesting = testingNodeId === n.nodeId;
-            const geoIp = geoIpByNodeId[n.nodeId];
-            const isLookingUp = geoIpLoadingNodeId === n.nodeId;
-            const portCheck = portCheckByNodeId[n.nodeId];
-            const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
             return (
-              <tr key={n.nodeId} ref={rowVirtualizer.measureElement} data-index={virtualRow.index}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedNodeIds.has(n.nodeId)}
-                    onChange={() => onToggleSelected(n.nodeId)}
-                  />
-                </td>
-                <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                <td class="mono">{n.address}</td>
-                <td class="mono"><bdi>{n.port}</bdi></td>
-                <td>
-                  {n.validation.overallValid ? (
-                    <span class="tag tag--valid">{t("common.fields.valid")}</span>
-                  ) : (
-                    <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
-                  )}
-                </td>
-                <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn--ghost btn--sm"
-                    disabled={isTesting}
-                    onClick={() => onTestLatency(n.nodeId, n.address, n.port)}
-                  >
-                    {isTesting ? t("subscription.nodeList.testing") : t("subscription.nodeList.test")}
-                  </button>
-                  {latency !== undefined && !isTesting && (
-                    <span class="hint">{" "}{formatLatency(latency)}</span>
-                  )}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn--ghost btn--sm"
-                    disabled={isCheckingPort}
-                    onClick={() => onPortCheck(n.nodeId, n.address, n.port)}
-                  >
-                    {isCheckingPort ? t("subscription.nodeList.checking") : t("subscription.nodeList.check")}
-                  </button>
-                  {portCheck !== undefined && !isCheckingPort && (
-                    <span class="hint">{" "}{formatPortCheck(portCheck)}</span>
-                  )}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn--ghost btn--sm"
-                    disabled={isLookingUp}
-                    onClick={() => onGeoIpLookup(n.nodeId, n.address)}
-                  >
-                    {isLookingUp ? t("subscription.nodeList.loading") : t("subscription.nodeList.lookup")}
-                  </button>
-                  {geoIp !== undefined && !isLookingUp && (
-                    <span class="hint">{" "}{formatGeoIp(geoIp)}</span>
-                  )}
-                </td>
-                <td class="mono"><bdi>{n.createdAt}</bdi></td>
-                <td>
-                  <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>{t("subscription.nodeList.saveAsTemplate")}</button>
-                </td>
-                <td>
-                  {(tagsByNodeId[n.nodeId] ?? []).map((tag) => (
-                    <span class="tag tag--info" key={tag} style={{ marginInlineEnd: "4px" }}>
-                      {tag}
-                      <button
-                        type="button"
-                        class="tag-remove"
-                        aria-label={t("subscription.nodeList.removeTag")}
-                        onClick={() => onRemoveTag(n.nodeId, tag)}
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  ))}
-                  <input
-                    type="text"
-                    class="input input--sm"
-                    style={{ marginBlockStart: "4px" }}
-                    placeholder={t("subscription.nodeList.addTagPlaceholder")}
-                    value={newTagByNodeId[n.nodeId] ?? ""}
-                    onInput={(e) => onTagInputChange(n.nodeId, (e.target as HTMLInputElement).value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") onAddTag(n.nodeId);
-                    }}
-                  />
-                </td>
-              </tr>
+              <NodeTableRow
+                key={n.nodeId}
+                {...props}
+                n={n}
+                rowRef={rowVirtualizer.measureElement}
+                dataIndex={virtualRow.index}
+              />
             );
           })}
           {paddingBottom > 0 && (
             <tr aria-hidden="true"><td style={{ height: `${paddingBottom}px`, padding: 0, border: "none" }} colSpan={NODE_TABLE_COLUMN_COUNT} /></tr>
           )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Grouped-by-protocol Node List (one instance per protocol group). Renders
+// every row directly — no bounded height, no virtualization. A bounded
+// `.table-scroll--virtual` per group would nest N independent scrollboxes
+// (one per protocol) inside the page, which is disorienting long before a
+// group is anywhere near large enough to need virtualizing (each group is a
+// subset of the already-Search/Filtered node list, typically far under the
+// full-list sizes that actually crashed the tab). Plain `.table-scroll`
+// (no vertical bound) matches every other data-table in the app — the page
+// itself scrolls past each group's full table, exactly like before Virtual
+// List existed.
+function NodeTableGrouped(props: NodeTableProps) {
+  const { t, nodes } = props;
+  return (
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><NodeTableHeaderRow t={t} /></thead>
+        <tbody>
+          {nodes.map((n) => (
+            <NodeTableRow key={n.nodeId} {...props} n={n} />
+          ))}
         </tbody>
       </table>
     </div>
