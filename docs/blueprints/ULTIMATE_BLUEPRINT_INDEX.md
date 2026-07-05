@@ -325,13 +325,36 @@ Security — نه بیشتر.
 
 > 🔗 این Gap با Flag باز موجود در سند `IMPLEMENTATION_BLUEPRINT` (تنش Single-HTML/No-Build-Step + htm/TypeScript) یکی است، نه یک مشکل جدا. وقتی آن ADR مشترک نوشته شد، خروجی آن باید به‌صورت یک سند یا بخش رسمی (مثلاً `BUILD_PIPELINE_SPEC` یا یک بخش بزرگ در `IMPLEMENTATION_BLUEPRINT`) ثبت شود — مشخص‌کننده‌ی Bundler انتخابی (در صورت وجود)، نحوه‌ی Inline کردن Workerها (چون Single HTML نمی‌تواند فایل Worker جدا Load کند)، و Minify/Inject شدن CSS/JS. **این سند هنوز نوشته نشده و نباید قبل از آن ADR نوشته شود.**
 
+> ✅ **این Gap حل شد (بازبینی ۲۰۲۶-۰۷-۰۵) — با ADR-014 + ADR-016، نه یک سند جدید
+> `BUILD_PIPELINE_SPEC`:** آن سند جداگانه هرگز لازم نشد، چون خروجی واقعی Bundler به‌جای نیاز به
+> یک بخش تازه، مستقیم داخل همین دو ADR که از قبل وجود داشتند مستند شد.
+>
+> - **Bundler انتخابی:** `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` —
+>   `esbuild`، فقط برای `ui/` + Assembly نهایی. `core/` کاملاً دست‌نخورده و بدون Build می‌ماند
+>   (`npm test`/`tsc --noEmit` مستقیم روی سورس خام اجرا می‌شوند).
+> - **Worker Inlining — راه‌حل واقعی ساده‌تر از چیزی بود که نگارش اصلی این Gap پیش‌بینی کرده
+>   بود:** ADR-014 صراحتاً این زیرسؤال را باز گذاشت («تا اولین‌بار که واقعاً یک صفحه‌ی Phase 9 یک
+>   Worker وصل کند») و `docs/adr/ADR-016-CONVERTER-SCREEN-WORKER-ROUTING.md` آن را بست. به‌جای
+>   Inline کردن Worker داخل یک فایل HTML واحد (چیزی که فنی اصلاً ممکن نیست — یک `Worker` باید از
+>   یک URL جدا Construct شود)، راه‌حل واقعی این بود: هر Worker (`parser.worker.js`,
+>   `converter.worker.js`) به‌صورت یک فایل ES Module مستقل، جدا از `app.js`، Bundle می‌شود
+>   (`scripts/build.js` خطوط ۷۷-۹۴؛ `entryPoints`/`outfile` مجزا برای هرکدام، خروجی در
+>   `assets/js/parser-worker.js` و `assets/js/converter-worker.js`). مشکل واقعی که حل نیاز
+>   داشت `file://` بود، نه Inlining: زیر `file://`، `new Worker(...)` synchronously throw
+>   می‌کند (نه یک محدودیت اندازه یا محتوا). راه‌حل: یک Feature-Detection ساده با try/catch دور
+>   `createWorkerManager` (`ui/store/parser-worker-client.ts`) — وقتی throw می‌کند، Parse/Convert
+>   به Main Thread برمی‌گردد. تأییدشده با یک Benchmark واقعی Playwright (ADR-016)، نه فرض.
+> - **نتیجه:** هیچ Bundle واحد/Inline-همه‌چیز لازم نبود؛ چند فایل مستقل (`app.js` + دو Worker
+>   جدا) در کنار `index.html`، دقیقاً همان چیزی است که پروژه امروز می‌سازد و Ship می‌کند.
+
 ---
 
 ## Document Control
 
 | Field | Value |
 |---|---|
-| نسخه | v2.4 |
+| نسخه | v2.5 |
+| اصلاحات نسبت به v2.4 | (اصلاح مستندسازی، بدون تغییر کد) بستن رسمی «Gap شناخته‌شده — Build & Bundling Strategy» که از مرحله‌ی Architecture Baseline باقی مانده و به‌روز نشده بود؛ راه‌حل واقعی (ADR-014 + ADR-016) از مدت‌ها پیش پیاده‌سازی و Ship شده بود، فقط این سند و `IMPLEMENTATION_BLUEPRINT.md` هنوز آن را «باز» نشان می‌دادند |
 | اصلاحات نسبت به v2.3 | (ADR-027) رفع آخرین Flag باز معماری کل پروژه: فرمول `riskScore`/`compatibilityScore` (سند ۰۶ §۳.۱) — دیگر هیچ Flag باز معماری‌ای در هیچ سندی از دسته ۱ باقی نمانده |
 | اصلاحات نسبت به v2.2 | (ADR-024) به‌روزرسانی Backlog Latency Tester: مرزبندی Privacy/Network به‌صورت عمومی در سند ۰۱ و ADR-024 حل شد — نیازی به ADR جداگانه برای هر قابلیت آنلاین مشابه نیست |
 | اصلاحات نسبت به v2.1 | (بازبینی نهایی) افزودن Hard Rule برای جلوگیری از Limbo Trap در دسته‌ی نیمه‌قطعی؛ افزودن دو سطح ADR (Lightweight/Full)؛ ثبت رسمی Gap شناخته‌شده‌ی Build & Bundling Strategy (متصل به Flag موجود در IMPLEMENTATION_BLUEPRINT) |
