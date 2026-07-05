@@ -1,20 +1,26 @@
 /**
  * Real end-to-end coverage at the same scale a real user actually hit
- * (~3000 nodes) for the three screens reported laggy in that report:
- * Export Center (QR computed/rendered for every node unconditionally),
- * Developer Console (five tables rendered via plain Preact `.map()` over
- * their full arrays), and the Analyzer Screen (a suspected — but, per
+ * (~3000 nodes) for the screens reported laggy: Export Center (QR
+ * computed/rendered for every node unconditionally), Developer Console
+ * (five tables rendered via plain Preact `.map()` over their full arrays),
+ * the Analyzer Screen (a suspected — but, per
  * `tests/worker/worker-manager.test.js`'s new regression tests and this
  * checkpoint's real timing measurement below, NOT computation-bound —
- * stuck-loading report). Driven against the real built bundle
- * (`assets/js/app.js`, rebuilt by `npm run test:e2e`'s `pretest:e2e` hook)
- * in a real Chromium, not jsdom.
+ * stuck-loading report), and — added in the 2026-07-05 follow-up checkpoint,
+ * after the first pass missed them — the Converter Screen's Normalized
+ * Object table and the Extractor Screen's panels, plus a regression test for
+ * Subscription Center's Security Ranking table (found unvirtualized, and
+ * O(n^2) via a per-row `nodes.find()`, during that follow-up's systematic
+ * 8-screen audit). Driven against the real built bundle (`assets/js/app.js`,
+ * rebuilt by `npm run test:e2e`'s `pretest:e2e` hook) in a real Chromium, not
+ * jsdom.
  *
  * Real measurement taken while investigating: `analyzeBatch()` alone (no
  * Worker/UI overhead) processes 3000 real nodes in ~57ms — computation was
- * never the bottleneck for any of these three screens; all three lagged
- * purely on RENDER cost (Export Center/DevConsole) or, for Analyze, a
- * suspected Promise-settlement gap (see `core/worker/worker-manager.js` +
+ * never the bottleneck for any of these screens; all lagged purely on
+ * RENDER cost (Export Center/DevConsole/Converter/Extractor/Subscription
+ * Center) or, for Analyze, a suspected Promise-settlement gap (see
+ * `core/worker/worker-manager.js` +
  * `core/worker/shared/handler-envelope.js`'s new postMessage guards).
  */
 import { test, expect } from "@playwright/test";
@@ -124,5 +130,69 @@ test.describe("Real-world scale (~3000 nodes) — Export Center, Developer Conso
     // A real result is visible -- Analyze genuinely completed, not just
     // "button re-enabled with no real work done".
     await expect(page.locator('[aria-label="Security Analysis"] dd').first()).not.toHaveText("N/A");
+  });
+
+  test("Converter: Normalized Object table renders in a reasonable time, virtualized (not all 3000 rows mounted)", async ({ page }) => {
+    test.setTimeout(60_000);
+    // Converter IS the import screen, so unlike the other tests here there is
+    // no separate "navigate to the already-parsed screen" step to time in
+    // isolation -- this measures the whole import+parse+render round trip
+    // (matching `xray-array-import.spec.js`'s same-shaped 30s bound for a
+    // comparable ~2000-item import), not render alone.
+    const startedAt = Date.now();
+    await importNodes(page, NODE_COUNT);
+    const normalizedPanel = page.locator('[aria-label="Normalized Object"]');
+    await expect(normalizedPanel.locator("tbody tr").first()).toBeVisible({ timeout: 15_000 });
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(elapsedMs).toBeLessThan(30_000);
+
+    const mountedRows = await normalizedPanel.locator("tbody tr").count();
+    expect(mountedRows).toBeLessThan(NODE_COUNT / 10);
+  });
+
+  test("Extractor: UUID and Domain panels render in a reasonable time, virtualized (not all 3000 rows mounted)", async ({ page }) => {
+    test.setTimeout(60_000);
+    await importNodes(page, NODE_COUNT);
+
+    const startedAt = Date.now();
+    await page.getByRole("button", { name: "Extractor", exact: true }).click();
+    const uuidPanel = page.locator('[aria-label="UUID Extractor"]');
+    await expect(uuidPanel.locator("tbody tr").first()).toBeVisible({ timeout: 15_000 });
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(elapsedMs).toBeLessThan(15_000);
+
+    // Every one of the 3000 test nodes has a UUID (vless) and a domain
+    // address -- both panels have exactly one row per node -- confirm both
+    // are virtualized: far fewer than 3000 <tr>s are actually mounted.
+    const uuidRows = await uuidPanel.locator("tbody tr").count();
+    expect(uuidRows).toBeLessThan(NODE_COUNT / 10);
+
+    const domainPanel = page.locator('[aria-label="Domain Extractor"]');
+    const domainRows = await domainPanel.locator("tbody tr").count();
+    expect(domainRows).toBeLessThan(NODE_COUNT / 10);
+  });
+
+  test("Subscription Center: Security Ranking renders in a reasonable time after Analyze, virtualized (not all 3000 rows mounted)", async ({ page }) => {
+    test.setTimeout(60_000);
+    await importNodes(page, NODE_COUNT);
+    await page.getByRole("button", { name: "Analyzer", exact: true }).click();
+    await page.getByRole("button", { name: "Analyze", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Analyze", exact: true })).toBeVisible({ timeout: 20_000 });
+
+    const startedAt = Date.now();
+    await page.getByRole("button", { name: "Subscription Center", exact: true }).click();
+    const rankingPanel = page.locator('[aria-label="Security Ranking"]');
+    await expect(rankingPanel.locator("tbody tr").first()).toBeVisible({ timeout: 15_000 });
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(elapsedMs).toBeLessThan(15_000);
+
+    // Security Ranking has exactly one row per ANALYZED node (3000) --
+    // confirm it is virtualized, not the O(n^2)-per-row-lookup unbounded
+    // render the systematic audit found.
+    const mountedRows = await rankingPanel.locator("tbody tr").count();
+    expect(mountedRows).toBeLessThan(NODE_COUNT / 10);
   });
 });

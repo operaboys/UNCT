@@ -468,6 +468,40 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
     مسیر را با یک Worker/Response ساختگی که واقعاً پرتاب می‌کند، تأیید می‌کند.
   - هر ۳ مورد با تست‌های حجم بالای ۳۰۰۰-نودی (`tests/e2e/scale-3000-nodes.spec.js`) پوشش داده
     شدند؛ تست‌های e2e موجود Export Center/Developer Console بدون تغییر رفتار Pass ماندند.
+- **پیگیری چک‌پوینت بالا — دو مورد جدید/باقی‌مانده گزارش و بررسی شدند:**
+  - **Converter و Extractor همان مشکل `.map()` بدون محدودیت را داشتند** — چک‌پوینت قبلی فقط
+    Export Center/Developer Console را اصلاح کرد؛ جدول «Normalized Object» در
+    `ui/converter/converter-screen.tsx` و هر ۱۰ پنل `ui/extractor/extractor-screen.tsx` هنوز
+    با `.map()` خام روی کل آرایه‌ی نودها رندر می‌شدند، بدون اسکرول محدود داخلی — با ۳۰۰۰ نود، کل
+    صفحه (نه یک کادر داخلی) اسکرول می‌شد. هر دو با همان `VirtualTable` مشترک اصلاح شدند، بدون
+    تغییر هیچ‌کدام از قابلیت‌های موجود (کپی، دانلود، Badge پروتکل). **بررسی سیستماتیک هر ۸
+    صفحه** (grep روی `.map(` بدون `VirtualTable`/`useVirtualizer` کنارش) یک مورد سومِ
+    ازقلم‌افتاده هم پیدا کرد: جدول Security Ranking در Subscription Center
+    (`ui/subscription/subscription-screen.tsx`) — این جدول دقیقاً ۱:۱ با تعداد نودهای
+    Analyze‌شده Scale می‌کند و علاوه‌بر نبود Virtualization، هر ردیفش یک `nodes.find()` صدا
+    می‌زد (O(n) در هر ردیف روی تا n ردیف = O(n²) کل پنل) — این هم به `VirtualTable` + یک
+    Map با کلید `nodeId` برای Lookup با پیچیدگی O(1) اصلاح شد. سایر موارد بررسی‌شده و
+    بدون‌نیاز‌به‌تغییر تشخیص داده شدند: لیست‌های `<ul>` Warnings (Dashboard)/Recovery Actions
+    (Converter) فقط با تعداد Node واقعاً دارای مشکل Scale می‌کنند نه کل تعداد Node (هم‌راستا با
+    منطق قبلاً مستندشده‌ی Recovery Logs در Developer Console)؛ `NodeTableGrouped` (حالت
+    Group-by-protocol در Subscription Center) از قبل و آگاهانه بدون Virtualization طراحی شده
+    (هر گروه زیرمجموعه‌ی لیست از‌قبل Filter‌شده است)؛ Analyzer's node `<select>` یک Dropdown
+    بومی مرورگر است، نه یک `<table>`/`<ul>` دستی، و مرورگرها هزاران `<option>` را خوب مدیریت
+    می‌کنند. تست‌های حجم بالای جدید در `tests/e2e/scale-3000-nodes.spec.js` هر ۳ مورد اصلاح‌شده
+    (Converter، Extractor، Security Ranking) را با ۳۰۰۰ نود پوشش می‌دهند.
+  - **باگ Analyze دوباره بررسی شد، این‌بار دقیقاً با فرمت واقعی کاربر** — یک آرایه‌ی واقعی
+    v2rayN Xray JSON (۲۰۸۰ تا ۳۰۴۰ سند، شکل دقیق `tests/e2e/xray-array-import.spec.js`) در
+    ۲۶ اجرای واقعی Playwright با سناریوهای مختلف امتحان شد: ۱۲ اجرای مستقل با Reload کامل و
+    تعداد نود متفاوت هر بار، ۱۰ چرخه‌ی پی‌درپی Import→Analyze در یک Session واحد بدون Reload،
+    یک سناریوی دو-کلیک هم‌زمان روی Analyze، یک سناریوی رفتن به صفحه‌ی دیگر و برگشت حین Analyze،
+    و یک سناریوی Deduplicate هم‌زمان با Analyze روی داده‌ی واقعاً دارای تکراری. **هیچ‌کدام از
+    ۲۶ اجرا گیر نکردند** و هیچ Console Error/Page Error‌ای هم ثبت نشد. کد `normalizeManyXray`
+    (`core/parser/xray/normalize.js`) هم به‌طور مستقیم بازبینی شد — فقط رشته/عدد/آرایه‌ی رشته/
+    Object ساده می‌سازد (از `JSON.parse` گرفته‌شده، پس هیچ `Symbol`/`Function`/Reference
+    چرخه‌ای‌ای در مسیر Array وجود ندارد که با مسیرهای Parser دیگر فرق داشته باشد). با صداقت
+    کامل: باگ این‌بار هم بازتولید مستقیم نشد؛ فیکس چک‌پوینت قبلی (محافظت `postMessage` در هر دو
+    جهت) دست‌نخورده و فعال باقی می‌ماند چون همچنان تنها نقطه‌ضعف واقعی و قابل‌اثبات شناخته‌شده در
+    این مسیر است.
 
 ---
 

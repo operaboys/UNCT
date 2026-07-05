@@ -59,9 +59,18 @@
  * has four buttons per row), and `.field` (inline "Label: control"
  * pairs). No logic/state/handlers changed — same selectors, same
  * network-check handlers, same Template/Subscription Builder flow.
+ *
+ * Security Ranking virtualization (2026-07-05, systematic audit follow-up):
+ * this table (one row per ANALYZED node, so it scales 1:1 with node count
+ * exactly like the flat `NodeTable` above) was still rendering with a plain
+ * `.map()` in an unbounded `.table-scroll` — missed when `NodeTable` was
+ * virtualized. Worse, each row did a `nodes.find()` (O(n) each), making the
+ * whole panel O(n^2). Now uses the shared `VirtualTable` plus a `nodeById`
+ * Map for O(1) row lookups.
  */
 import { useMemo, useRef, useState } from "preact/hooks";
 import { useVirtualizer } from "../components/use-virtualizer.js";
+import { VirtualTable } from "../components/virtual-table.js";
 import {
   selectNodesMatchingSearch,
   selectNodesFilteredByProtocol,
@@ -324,6 +333,11 @@ export function SubscriptionScreen() {
     [nodes, analysisByNodeId],
   );
 
+  // O(1) nodeId -> node lookup for Security Ranking's row renderer below —
+  // that list scales 1:1 with analyzed node count, so a `nodes.find()` per
+  // row (O(n) each) would make the whole panel O(n^2) at real-world scale.
+  const nodeById = useMemo(() => new Map(nodes.map((n) => [n.nodeId, n])), [nodes]);
+
   const protocolBars = useMemo(() => buildProtocolBars(summary.protocolDistribution), [summary]);
 
   return (
@@ -386,22 +400,20 @@ export function SubscriptionScreen() {
           {summary.securityRanking.length === 0 ? (
             <p class="hint">{t("subscription.securityRanking.emptyHint")}</p>
           ) : (
-            <div class="table-scroll">
-              <table class="data-table">
-                <thead><tr><th>{t("common.fields.address")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th></tr></thead>
-                <tbody>
-                  {summary.securityRanking.map((entry) => {
-                    const n = nodes.find((candidate) => candidate.nodeId === entry.nodeId);
-                    return (
-                      <tr key={entry.nodeId}>
-                        <td class="mono">{n ? <>{n.address}:<bdi>{n.port}</bdi></> : entry.nodeId}</td>
-                        <td>{formatScore(entry.securityScore)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <VirtualTable
+              items={summary.securityRanking}
+              columnCount={2}
+              header={<tr><th>{t("common.fields.address")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th></tr>}
+              renderRow={(entry) => {
+                const n = nodeById.get(entry.nodeId);
+                return (
+                  <>
+                    <td class="mono">{n ? <>{n.address}:<bdi>{n.port}</bdi></> : entry.nodeId}</td>
+                    <td>{formatScore(entry.securityScore)}</td>
+                  </>
+                );
+              }}
+            />
           )}
         </div>
       </div>

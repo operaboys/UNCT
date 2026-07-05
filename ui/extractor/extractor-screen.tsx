@@ -60,6 +60,13 @@
  * real Extractor count from 6 to 10 (grep-verified against
  * `docs/blueprints/ULTIMATE_BLUEPRINT_INDEX.md` P12-12's addendum), meeting
  * the 8-10 threshold that had kept this item Blocked.
+ *
+ * Virtualization (2026-07-05): at real-world scale (~3000 nodes) every one
+ * of this screen's 10 panels rendered its full array with a plain `.map()`
+ * inside an unbounded `.table-scroll` — the same pattern already fixed in
+ * Developer Console/Export Center, missed here in that pass. All 10 now use
+ * the shared `VirtualTable` (`ui/components/virtual-table.tsx`), giving each
+ * panel its own bounded scroll container instead of growing the whole page.
  */
 import { useMemo } from "preact/hooks";
 import {
@@ -79,6 +86,7 @@ import { useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { formatTriState, formatStringList, dnsRiskTagClass } from "../analyzer/format.js";
 import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
+import { VirtualTable } from "../components/virtual-table.js";
 
 export function ExtractorScreen() {
   const nodes = useParserState();
@@ -119,23 +127,19 @@ export function ExtractorScreen() {
             {uuidNodes.length === 0 ? (
               <p class="hint">{t("extractor.uuid.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.uuid")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {uuidNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td class="mono">{n.uuid}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={uuidNodes}
+                columnCount={4}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.uuid")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td class="mono">{n.uuid}</td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -144,22 +148,18 @@ export function ExtractorScreen() {
             {ipNodes.length === 0 ? (
               <p class="hint">{t("extractor.ip.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {ipNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={ipNodes}
+                columnCount={3}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -168,22 +168,18 @@ export function ExtractorScreen() {
             {domainNodes.length === 0 ? (
               <p class="hint">{t("extractor.domain.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {domainNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={domainNodes}
+                columnCount={3}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -196,52 +192,50 @@ export function ExtractorScreen() {
             ) : workerNodes.length === 0 ? (
               <p class="hint">{t("extractor.worker.noneDetected")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.worker.domain")}</th>
-                      <th>{t("common.worker.pathSegments")}</th><th>{t("common.worker.uuidSegment")}</th><th>{t("common.worker.parameters")}</th><th>{t("common.worker.encodedData")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workerNodes.map((n) => {
-                      const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId)!;
-                      return (
-                        <tr key={n.nodeId}>
-                          <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                          <td class="mono">{n.address}</td>
-                          <td class="mono"><bdi>{n.port}</bdi></td>
-                          <td class="mono">{bundle.worker.workerDomain ?? "—"}</td>
-                          <td>{formatStringList(bundle.worker.pathSegments)}</td>
-                          <td class="mono">{bundle.worker.uuidSegment ?? "—"}</td>
-                          <td>
-                            {Object.keys(bundle.worker.parameters).length === 0
-                              ? "—"
-                              : Object.entries(bundle.worker.parameters)
-                                  .map(([k, v]) => `${k}=${v}`)
-                                  .join(", ")}
-                          </td>
-                          <td>
-                            {bundle.worker.encodedDataFindings.length === 0 ? (
-                              "—"
-                            ) : (
-                              <ul class="plain-list">
-                                {bundle.worker.encodedDataFindings.map((f, i) => (
-                                  <li key={i}>
-                                    <strong>{f.source}</strong>:{" "}
-                                    {f.rawBase64Detected ? `[binary] ${f.raw}` : f.decoded}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={workerNodes}
+                columnCount={8}
+                header={(
+                  <tr>
+                    <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.worker.domain")}</th>
+                    <th>{t("common.worker.pathSegments")}</th><th>{t("common.worker.uuidSegment")}</th><th>{t("common.worker.parameters")}</th><th>{t("common.worker.encodedData")}</th>
+                  </tr>
+                )}
+                renderRow={(n) => {
+                  const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId)!;
+                  return (
+                    <>
+                      <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                      <td class="mono">{n.address}</td>
+                      <td class="mono"><bdi>{n.port}</bdi></td>
+                      <td class="mono">{bundle.worker.workerDomain ?? "—"}</td>
+                      <td>{formatStringList(bundle.worker.pathSegments)}</td>
+                      <td class="mono">{bundle.worker.uuidSegment ?? "—"}</td>
+                      <td>
+                        {Object.keys(bundle.worker.parameters).length === 0
+                          ? "—"
+                          : Object.entries(bundle.worker.parameters)
+                              .map(([k, v]) => `${k}=${v}`)
+                              .join(", ")}
+                      </td>
+                      <td>
+                        {bundle.worker.encodedDataFindings.length === 0 ? (
+                          "—"
+                        ) : (
+                          <ul class="plain-list">
+                            {bundle.worker.encodedDataFindings.map((f, i) => (
+                              <li key={i}>
+                                <strong>{f.source}</strong>:{" "}
+                                {f.rawBase64Detected ? `[binary] ${f.raw}` : f.decoded}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    </>
+                  );
+                }}
+              />
             )}
           </div>
 
@@ -250,63 +244,57 @@ export function ExtractorScreen() {
             {realityNodes.length === 0 ? (
               <p class="hint">{t("extractor.reality.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.reality.pbk")}</th><th>{t("common.reality.sid")}</th>
-                      <th>{t("common.reality.pbkPlausible")}</th><th>{t("common.reality.sidPlausible")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {realityNodes.map((n) => {
-                      const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
-                      return (
-                        <tr key={n.nodeId}>
-                          <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                          <td class="mono">{n.address}</td>
-                          <td class="mono"><bdi>{n.port}</bdi></td>
-                          <td class="mono">{n.pbk ?? ""}</td>
-                          <td class="mono">{n.sid ?? ""}</td>
-                          <td>{bundle ? formatTriState(bundle.reality.pbkPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
-                          <td>{bundle ? formatTriState(bundle.reality.sidPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={realityNodes}
+                columnCount={7}
+                header={(
+                  <tr>
+                    <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.reality.pbk")}</th><th>{t("common.reality.sid")}</th>
+                    <th>{t("common.reality.pbkPlausible")}</th><th>{t("common.reality.sidPlausible")}</th>
+                  </tr>
+                )}
+                renderRow={(n) => {
+                  const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
+                  return (
+                    <>
+                      <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                      <td class="mono">{n.address}</td>
+                      <td class="mono"><bdi>{n.port}</bdi></td>
+                      <td class="mono">{n.pbk ?? ""}</td>
+                      <td class="mono">{n.sid ?? ""}</td>
+                      <td>{bundle ? formatTriState(bundle.reality.pbkPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
+                      <td>{bundle ? formatTriState(bundle.reality.sidPlausible) : t("extractor.reality.clickAnalyzeFirst")}</td>
+                    </>
+                  );
+                }}
+              />
             )}
           </div>
 
           <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.dns.title")}>
             <div class="panel-title">{t("extractor.dns.title")}</div>
-            <div class="table-scroll">
-              <table class="data-table">
-                <thead>
-                  <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.dnsLeakRisk")}</th></tr>
-                </thead>
-                <tbody>
-                  {nodes.map((n) => {
-                    const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
-                    return (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td>
-                          {bundle ? (
-                            <span class={`tag ${dnsRiskTagClass(bundle.dns)}`}>{t(`extractor.dns.risk.${bundle.dns}`)}</span>
-                          ) : (
-                            t("extractor.reality.clickAnalyzeFirst")
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <VirtualTable
+              items={nodes}
+              columnCount={4}
+              header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.dnsLeakRisk")}</th></tr>}
+              renderRow={(n) => {
+                const bundle = selectAnalysisByNodeId({ analysisByNodeId }, n.nodeId);
+                return (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td>
+                      {bundle ? (
+                        <span class={`tag ${dnsRiskTagClass(bundle.dns)}`}>{t(`extractor.dns.risk.${bundle.dns}`)}</span>
+                      ) : (
+                        t("extractor.reality.clickAnalyzeFirst")
+                      )}
+                    </td>
+                  </>
+                );
+              }}
+            />
           </div>
 
           <div class="panel glass-panel" style={{ marginBlockEnd: "20px" }} aria-label={t("extractor.credentials.title")}>
@@ -314,24 +302,20 @@ export function ExtractorScreen() {
             {credentialsNodes.length === 0 ? (
               <p class="hint">{t("extractor.credentials.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.method")}</th><th>{t("common.fields.password")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {credentialsNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td class="mono">{n.method ?? "—"}</td>
-                        <td class="mono">{n.password ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={credentialsNodes}
+                columnCount={5}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.method")}</th><th>{t("common.fields.password")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td class="mono">{n.method ?? "—"}</td>
+                    <td class="mono">{n.password ?? "—"}</td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -340,25 +324,21 @@ export function ExtractorScreen() {
             {transportNodes.length === 0 ? (
               <p class="hint">{t("extractor.transport.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.network")}</th><th>{t("common.fields.host")}</th><th>{t("common.fields.path")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {transportNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td class="mono">{n.network}</td>
-                        <td class="mono">{n.host ?? "—"}</td>
-                        <td class="mono">{n.path ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={transportNodes}
+                columnCount={6}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.network")}</th><th>{t("common.fields.host")}</th><th>{t("common.fields.path")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td class="mono">{n.network}</td>
+                    <td class="mono">{n.host ?? "—"}</td>
+                    <td class="mono">{n.path ?? "—"}</td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -367,24 +347,20 @@ export function ExtractorScreen() {
             {tlsFingerprintNodes.length === 0 ? (
               <p class="hint">{t("extractor.tls.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.alpn")}</th><th>{t("common.fields.fingerprint")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {tlsFingerprintNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td>{n.alpn ? formatStringList(n.alpn) : "—"}</td>
-                        <td class="mono">{n.fingerprint ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={tlsFingerprintNodes}
+                columnCount={5}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.alpn")}</th><th>{t("common.fields.fingerprint")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td>{n.alpn ? formatStringList(n.alpn) : "—"}</td>
+                    <td class="mono">{n.fingerprint ?? "—"}</td>
+                  </>
+                )}
+              />
             )}
           </div>
 
@@ -393,23 +369,19 @@ export function ExtractorScreen() {
             {flowNodes.length === 0 ? (
               <p class="hint">{t("extractor.flow.hint")}</p>
             ) : (
-              <div class="table-scroll">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.flow")}</th></tr>
-                  </thead>
-                  <tbody>
-                    {flowNodes.map((n) => (
-                      <tr key={n.nodeId}>
-                        <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                        <td class="mono">{n.address}</td>
-                        <td class="mono"><bdi>{n.port}</bdi></td>
-                        <td class="mono">{n.flow}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <VirtualTable
+                items={flowNodes}
+                columnCount={4}
+                header={<tr><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.flow")}</th></tr>}
+                renderRow={(n) => (
+                  <>
+                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                    <td class="mono">{n.address}</td>
+                    <td class="mono"><bdi>{n.port}</bdi></td>
+                    <td class="mono">{n.flow}</td>
+                  </>
+                )}
+              />
             )}
           </div>
         </>

@@ -42,6 +42,12 @@
  * and `runParse` below feeds it into the exact same `parseRawConfig` call
  * `handleParse` always used, so all four methods share one processing path
  * (ADR-016).
+ *
+ * Virtualization (2026-07-05): the Normalized Object table rendered its full
+ * node array with a plain `.map()` inside an unbounded `.table-scroll` at
+ * real-world scale (~3000 nodes) — the same pattern already fixed in
+ * Developer Console/Export Center, missed here in that pass. Now uses the
+ * shared `VirtualTable` (`ui/components/virtual-table.tsx`).
  */
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
@@ -58,6 +64,7 @@ import { parseRawConfig, CancelledError } from "../store/parser-worker-client.js
 import { convertBatchInWorker, type ConvertResult, type ExportFormat } from "./converter-worker-client.js";
 import { formatProtocolCounts, formatDiagnosticList, formatSkippedProtocols } from "./format.js";
 import { PROTOCOL_ABBREVIATION } from "../components/protocol-labels.js";
+import { VirtualTable } from "../components/virtual-table.js";
 
 const CLIPBOARD_IMPORT_SUPPORTED =
   typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function";
@@ -279,34 +286,32 @@ export function ConverterScreen() {
         {nodes.length === 0 ? (
           <p class="hint">{t("common.noNodesYetShort")}</p>
         ) : (
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th>
-                  <th>{t("common.fields.network")}</th><th>{t("common.fields.security")}</th><th>{t("common.fields.valid")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nodes.map((n) => (
-                  <tr key={n.nodeId}>
-                    <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
-                    <td class="mono">{n.address}</td>
-                    <td class="mono"><bdi>{n.port}</bdi></td>
-                    <td>{n.network}</td>
-                    <td>{n.security}</td>
-                    <td>
-                      {n.validation.overallValid ? (
-                        <span class="tag tag--valid">{t("common.fields.valid")}</span>
-                      ) : (
-                        <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <VirtualTable
+            items={nodes}
+            columnCount={6}
+            header={(
+              <tr>
+                <th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th>
+                <th>{t("common.fields.network")}</th><th>{t("common.fields.security")}</th><th>{t("common.fields.valid")}</th>
+              </tr>
+            )}
+            renderRow={(n) => (
+              <>
+                <td><span class={`protocol-badge protocol-badge--${n.protocol}`}>{PROTOCOL_ABBREVIATION[n.protocol]}</span></td>
+                <td class="mono">{n.address}</td>
+                <td class="mono"><bdi>{n.port}</bdi></td>
+                <td>{n.network}</td>
+                <td>{n.security}</td>
+                <td>
+                  {n.validation.overallValid ? (
+                    <span class="tag tag--valid">{t("common.fields.valid")}</span>
+                  ) : (
+                    <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
+                  )}
+                </td>
+              </>
+            )}
+          />
         )}
       </div>
 
