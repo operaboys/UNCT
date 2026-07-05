@@ -333,6 +333,12 @@ export const en = {
   "export.qr.hint":
     "One QR code per node — encodes each node's URL form, the same string TXT Export produces. Print this page for a printable sheet.",
   "export.qr.downloadSvg": "Download SVG",
+  "export.qr.pagination.hint":
+    "Only the current page's QR codes are generated — with thousands of nodes, computing every QR code at once is neither fast nor useful (you can't view them all simultaneously anyway).",
+  "export.qr.pagination.prev": "Previous",
+  "export.qr.pagination.next": "Next",
+  "export.qr.pagination.pagePrefix": "Page",
+  "export.qr.pagination.of": "of",
   "export.htmlReport.title": "HTML Report Export",
   "export.htmlReport.hint":
     "Summary, Analysis, Security Report, Compatibility Report, Warnings, and Recommendations per node — sanitized before either preview or download.",

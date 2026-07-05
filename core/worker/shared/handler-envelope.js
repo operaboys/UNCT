@@ -36,7 +36,25 @@ export function createWorkerEntry(processPayload) {
 
   if (typeof self !== "undefined" && typeof self.postMessage === "function") {
     self.onmessage = (evt) => {
-      handleMessage(evt.data).then((response) => self.postMessage(response));
+      handleMessage(evt.data).then((response) => {
+        try {
+          self.postMessage(response);
+        } catch (err) {
+          // The real result could not cross the structured-clone boundary
+          // (e.g. an unexpected non-cloneable value somewhere in it) —
+          // `response` itself is never sent in this branch, so the main
+          // thread's Job would otherwise wait forever for a message that
+          // never arrives (a permanently "busy" pool slot + a Promise that
+          // never settles, doc 10 §6.1: no Job may hang forever). Retry with
+          // a minimal, definitely-cloneable failure envelope instead of
+          // silently dropping the response.
+          self.postMessage({
+            jobId: response.jobId, generationId: response.generationId, track: response.track,
+            ok: false,
+            error: { message: `Worker response could not be sent: ${err instanceof Error ? err.message : String(err)}` },
+          });
+        }
+      });
     };
   }
 

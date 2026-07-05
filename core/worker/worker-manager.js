@@ -208,9 +208,26 @@ export function createWorkerManager(options) {
     idle.busy = true;
     idle.currentJobId = job.jobId;
     job.startedAt = Date.now();
-    idle.worker.postMessage({
-      jobId: job.jobId, generationId: job.generationId, track: job.track, payload: job.payload,
-    });
+    try {
+      idle.worker.postMessage({
+        jobId: job.jobId, generationId: job.generationId, track: job.track, payload: job.payload,
+      });
+    } catch (err) {
+      // The payload itself could not cross the structured-clone boundary
+      // (e.g. a non-cloneable value slipped into it) — postMessage throws
+      // SYNCHRONOUSLY here, before the Worker ever sees this job, so no
+      // message/error event will ever arrive for it. Without this catch the
+      // slot stays marked busy forever (never freed by handleMessage/
+      // handleError, since neither ever fires) and the Job's Promise never
+      // settles — a permanent hang matching doc 10 §6.1's own "no Job may
+      // hang forever" rule being silently violated. Free the slot and
+      // settle the Job as failed immediately instead.
+      idle.busy = false;
+      idle.currentJobId = null;
+      settle(job, "failed", () => job.reject(err instanceof Error ? err : new Error(String(err))));
+      dispatchNext();
+      return;
+    }
   }
 
   /**

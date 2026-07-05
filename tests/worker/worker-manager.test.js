@@ -188,3 +188,66 @@ describe("Main Thread is never synchronously blocked by dispatch", () => {
     expect(order).toEqual(["before-runJob", "after-runJob", "handler-start", "after-resolve"]);
   });
 });
+
+describe("Regression — a Job must never hang forever (doc 10 §6.1), even when postMessage itself throws", () => {
+  // The real-world trigger this closes: `dispatchNext()`'s call to
+  // `idle.worker.postMessage(...)` used to have no guard around it. If a
+  // payload ever failed to cross the structured-clone boundary (e.g. an
+  // unexpected non-cloneable value), postMessage throws SYNCHRONOUSLY on the
+  // main thread, before the Worker ever sees the job — no message/error
+  // event will ever arrive for it. Without a guard, that permanently leaves
+  // the pool slot marked busy (never freed) and the Job's Promise unsettled
+  // forever — a real "Analyze never finishes" class of bug (Developer
+  // Console's Performance Logs would show a permanently `busyCount`d slot).
+  /** @param {(message: unknown) => unknown | Promise<unknown>} handler @param {() => void} onPostMessage */
+  function createThrowingWorkerFactory(handler, onPostMessage) {
+    return () => {
+      /** @type {{ message: Set<(evt: {data?: unknown}) => void>, error: Set<(evt: {message?: string}) => void> }} */
+      const listeners = { message: new Set(), error: new Set() };
+      return {
+        postMessage(/** @type {unknown} */ data) {
+          onPostMessage();
+          throw new Error("DataCloneError: could not be cloned");
+        },
+        addEventListener(/** @type {"message"|"error"} */ type, /** @type {any} */ cb) {
+          listeners[type].add(cb);
+        },
+        removeEventListener() {},
+        terminate() {},
+      };
+    };
+  }
+
+  it("settles the job as a real rejection instead of hanging when postMessage throws synchronously", async () => {
+    let sendAttempts = 0;
+    const manager = createWorkerManager({
+      workerFactory: createThrowingWorkerFactory(delayedEchoHandler, () => { sendAttempts += 1; }),
+      poolSize: 1,
+    });
+
+    const { promise } = manager.runJob({ label: "will-fail-to-send" });
+
+    await expect(promise).rejects.toThrow(/DataCloneError|could not be cloned/);
+    expect(sendAttempts).toBe(1);
+  });
+
+  it("frees the pool slot so the NEXT queued job still dispatches (no permanent slot leak)", async () => {
+    const manager = createWorkerManager({
+      workerFactory: createThrowingWorkerFactory(delayedEchoHandler, () => {}),
+      poolSize: 1,
+    });
+
+    const first = manager.runJob({ label: "first" });
+    const second = manager.runJob({ label: "second" });
+
+    await expect(first.promise).rejects.toThrow();
+    await expect(second.promise).rejects.toThrow();
+    // Both jobs actually settled (neither is stuck pending) and the single
+    // slot never stayed permanently "busy" — getStats() reflects 2 real
+    // failures, not 2 jobs silently vanishing into an unsettled limbo.
+    const stats = manager.getStats();
+    expect(stats.failedCount).toBe(2);
+    expect(stats.busyCount).toBe(0);
+    expect(stats.pendingCount).toBe(0);
+  });
+});

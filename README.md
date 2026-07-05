@@ -157,9 +157,9 @@ P12-12، P12-13).
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** + **Split Subscription** + **Tag Nodes** + **Merge Subscription** (Textarea + «Import & Merge»، همان Pipeline واقعی `parseRawConfig`، با `parserStore.addNode` اضافه می‌کند نه جایگزین) — همگی واقعی، هیچ Placeholder یا Deferred باقی نمانده. **Node List اکنون Virtualized است** (`@tanstack/virtual-core@3.17.3`، ADR-029؛ ۲۰۲۶-۰۷-۰۵ — پس از کرش واقعی تب با وارد‌سازی ۵۰۰۰-۶۰۰۰ نودی، تست شده تا ۵۰۰۰ نود واقعی بدون کرش) |
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
-| 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
+| 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR (اکنون Paginated، ۲۴‌تایی — فقط QR صفحه‌ی فعلی محاسبه می‌شود)، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
-| 8 | **Developer Console** | هر ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021 + «Alternative Candidates» از Detection Logs، ADR-028) — رتبه‌بندی واقعی Parserهای رقیب که به Threshold رسیدند اما انتخاب نشدند، از `metadata.alternativeCandidates` |
+| 8 | **Developer Console** | هر ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021 + «Alternative Candidates» از Detection Logs، ADR-028) — رتبه‌بندی واقعی Parserهای رقیب که به Threshold رسیدند اما انتخاب نشدند، از `metadata.alternativeCandidates`. ۵ جدولی که با تعداد نود Scale می‌کنند اکنون Virtualized‌اند (`ui/components/virtual-table.tsx`) |
 
 ---
 
@@ -433,6 +433,41 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   در ~۵۰ms کامل Parse/Normalize می‌شود؛ یک تست e2e سرتاسر با آرایه‌ی ۱۵۰۰-سندی
   (`tests/e2e/xray-array-import.spec.js`) هم مسیر Worker واقعی هم رندر Virtual List را با هم
   در کمتر از ۴ ثانیه، بدون کرش، تأیید می‌کند.
+- **سه مشکل واقعی کارایی/رفتاری بعد از یک Import ~۳۰۰۰ نودی رفع شدند:**
+  - **(بحرانی) Export Center و Developer Console چند دقیقه لگ داشتند** — دقیقاً همان الگوی
+    `.map()` خام روی کل آرایه که در Subscription Center کرش کامل داد و با Virtual List حل شد،
+    ولی هرگز به این دو صفحه اعمال نشده بود. یک کامپوننت مشترک جدید،
+    `ui/components/virtual-table.tsx` (همان `use-virtualizer.ts` + تکنیک Spacer-Row)، حالا
+    ۵ جدول Developer Console (Parser Logs، Warnings & Errors، Validation Logs، Detection Logs،
+    Alternative Candidates) را Virtualize می‌کند — Performance Logs (همیشه دقیقاً ۳ ردیف) و
+    Recovery Logs (Subset از نودهای واقعاً بازیابی‌شده، ذاتاً کوچک) عمداً دست‌نخورده ماندند، چون
+    هیچ‌کدام واقعاً با تعداد نود Scale نمی‌کنند. برای QR Export، مشکل ریشه‌ای صرفاً رندر نبود —
+    `exportQr(nodes)` برای هر نود یک محاسبه‌ی واقعی Reed-Solomon (`encode()`) هم‌زمان روی کل
+    آرایه اجرا می‌کرد؛ Virtualize‌کردن فقط DOM این را حل نمی‌کرد. راه‌حل انتخاب‌شده Pagination
+    واقعی بود (نه Virtualization) — چون `.qr-grid` یک Grid چندستونی Responsive است (نیاز به
+    2-D Virtualization پیچیده)، و چون QR ذاتاً برای اسکن تکی با موبایل است، نه اسکرول بی‌نهایت؛
+    اکنون فقط QR صفحه‌ی فعلی (۲۴‌تایی) واقعاً محاسبه می‌شود. زمان واقعی اندازه‌گیری‌شده با ۳۰۰۰
+    نود: Export Center ~۸۶۷ms، Developer Console ~۲۵۵۸ms (هر دو قبلاً چند دقیقه).
+  - **(مهم) دکمه‌ی Analyze گاهی در Loading گیر می‌کرد** — بررسی مستقیم `analyzeBatch()` نشان داد
+    محاسبه‌ی ۳۰۰۰ نود واقعی فقط **~۵۷ میلی‌ثانیه** طول می‌کشد؛ پس کندی محاسبه هرگز علت نبود.
+    بازتولید مستقیمِ سناریوی «گیرکردن» با Playwright (کلیک پیاپی، رفتن/برگشت بین صفحات حین
+    Analyze، Deduplicate هم‌زمان) در مقیاس‌های واقع‌گرایانه ممکن نشد؛ اما بازبینی دقیق
+    `core/worker/worker-manager.js` و `core/worker/shared/handler-envelope.js` یک نقطه‌ضعف
+    واقعی و قابل‌اثبات پیدا کرد: نه فراخوانی `idle.worker.postMessage(...)` (سمت Main Thread،
+    ارسال Job به Worker) و نه `self.postMessage(response)` (سمت Worker، ارسال نتیجه به عقب)
+    هیچ‌کدام محافظت نداشتند — اگر Payload یا Result به هر دلیلی (مثلاً یک مقدار غیرقابل‌Clone
+    غیرمنتظره) نتواند از مرز Structured-Clone عبور کند، `postMessage` به‌صورت Synchronous پرتاب
+    می‌کند و هیچ پیام/خطایی هرگز نمی‌رسد — یعنی Slot برای همیشه Busy می‌ماند و Promise آن Job
+    برای همیشه Unsettled — دقیقاً همان «قفل‌شدن دائمی» که سند ۱۰ §۶.۱ صراحتاً منع می‌کند. هر دو
+    نقطه اکنون با try/catch محافظت شده‌اند: سمت Main Thread بلافاصله Job را Failed می‌سازد و
+    Slot را آزاد می‌کند؛ سمت Worker یک Envelope شکست حداقلی (و قطعاً Clone‌پذیر) به‌جای نتیجه‌ی
+    اصلی می‌فرستد. این نقطه‌ضعف با استدلال کامل و صادقانه مستند شد — علت دقیق گزارش کاربر
+    قطعیت صد‌درصد ندارد (چون بازتولید مستقیم ممکن نشد)، ولی این دقیقاً همان کلاس باگ («گاهی،
+    نه همیشه، وابسته به داده») است که با رفع آن، این مسیر Deadlock بسته شد. تست واحد جدید
+    (`tests/worker/worker-manager.test.js`, `tests/worker/handler-envelope.test.js`) هر دو
+    مسیر را با یک Worker/Response ساختگی که واقعاً پرتاب می‌کند، تأیید می‌کند.
+  - هر ۳ مورد با تست‌های حجم بالای ۳۰۰۰-نودی (`tests/e2e/scale-3000-nodes.spec.js`) پوشش داده
+    شدند؛ تست‌های e2e موجود Export Center/Developer Console بدون تغییر رفتار Pass ماندند.
 
 ---
 

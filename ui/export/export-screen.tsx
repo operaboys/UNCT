@@ -26,6 +26,26 @@
  * Pages", "Printable Sheets" is the browser's own print dialog (no new
  * dependency needed for either).
  *
+ * QR Pagination (2026-07-05): a real ~3000-node import made this panel lag
+ * for minutes — `exportQr(nodes)` ran a real Reed-Solomon `encode()` for
+ * EVERY node unconditionally, on every render where `nodes` changed, then
+ * mounted an `<svg>` per node in one unbounded `.qr-grid`. Unlike
+ * Subscription Center's Node List / Developer Console's log tables (a
+ * single-column list, a natural fit for row virtualization), `.qr-grid` is
+ * a responsive multi-column CSS grid (`auto-fill`) — virtualizing a
+ * variable-column-count grid needs either a fixed column count (defeats the
+ * responsive design) or real 2-D virtualization math, meaningfully more
+ * complex than this needs. Real pagination (`QR_PAGE_SIZE` per page) is a
+ * better fit on BOTH axes: (1) it bounds `encode()` itself to only the
+ * current page's nodes — virtualizing the DOM alone would still leave every
+ * node's QR computed eagerly, which was the actual CPU cost, not just the
+ * render cost; (2) doc 08 §6's own "Printable Sheets" concept is already a
+ * page of QR codes to print — pagination is the more natural fit for how a
+ * user actually consumes QR codes (scanned one at a time with a phone
+ * camera) than infinite scroll ever was. The "X skipped" hint below now
+ * reports skips for the CURRENT PAGE only (accurate to what was actually
+ * computed) rather than a global count across the whole node list.
+ *
  * HTML Report Export (doc 08 §8, §11 Security Layer, ADR-018) is now real
  * too: `core/exporter/to-html.js` builds the already-escaped-and-DOMPurify-
  * sanitized document directly from `useAnalyzerState()`'s same bundle the
@@ -84,6 +104,7 @@ import { formatSkipped, type SkippedExportNode } from "./format.js";
 import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
 
 const QR_CELL_SIZE = 4;
+const QR_PAGE_SIZE = 24;
 
 // "sip008Plugin" calls the real Custom Exporter plugin (plugins/sip008-
 // exporter/) through appPluginRegistry.getExporter — never core/exporter/
@@ -121,6 +142,7 @@ export function ExportScreen() {
   const t = createTranslator(settingsStore);
   const [format, setFormat] = useState<Format>("txt");
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [qrPage, setQrPage] = useState(0);
 
   const { content, skipped }: { content: string; skipped: SkippedExportNode[] } = useMemo(() => {
     switch (format) {
@@ -143,8 +165,23 @@ export function ExportScreen() {
   );
   const zipSkippedMessage = formatSkipped(zipSkipped);
 
-  const { qrCodes, skipped: qrSkipped } = useMemo(() => exportQr(nodes), [nodes]);
+  const qrTotalPages = Math.max(1, Math.ceil(nodes.length / QR_PAGE_SIZE));
+  const qrPageIndex = Math.min(qrPage, qrTotalPages - 1);
+  const qrPageNodes = useMemo(
+    () => nodes.slice(qrPageIndex * QR_PAGE_SIZE, (qrPageIndex + 1) * QR_PAGE_SIZE),
+    [nodes, qrPageIndex],
+  );
+  // Only the current page's nodes are ever encoded — see the module header
+  // comment for why this bounds the real CPU cost, not just the DOM cost.
+  const { qrCodes, skipped: qrSkipped } = useMemo(() => exportQr(qrPageNodes), [qrPageNodes]);
   const qrSkippedMessage = formatSkipped(qrSkipped);
+
+  function handleQrPrevPage() {
+    setQrPage((p) => Math.max(0, p - 1));
+  }
+  function handleQrNextPage() {
+    setQrPage((p) => Math.min(qrTotalPages - 1, p + 1));
+  }
 
   const { content: htmlReportContent } = useMemo(
     () => exportHtmlReport(nodes, analysisByNodeId),
@@ -283,6 +320,22 @@ export function ExportScreen() {
             <p class="hint">
               {t("export.qr.hint")}
             </p>
+            {qrTotalPages > 1 && (
+              <p class="hint" style={{ marginBlockStart: "6px" }}>
+                {t("export.qr.pagination.hint")}
+              </p>
+            )}
+            <div class="form-actions" style={{ marginBlockStart: "14px" }}>
+              <button type="button" class="btn btn--ghost btn--sm" onClick={handleQrPrevPage} disabled={qrPageIndex === 0}>
+                {t("export.qr.pagination.prev")}
+              </button>
+              <span class="hint">
+                {t("export.qr.pagination.pagePrefix")} <bdi>{qrPageIndex + 1}</bdi> {t("export.qr.pagination.of")} <bdi>{qrTotalPages}</bdi>
+              </span>
+              <button type="button" class="btn btn--ghost btn--sm" onClick={handleQrNextPage} disabled={qrPageIndex >= qrTotalPages - 1}>
+                {t("export.qr.pagination.next")}
+              </button>
+            </div>
             <div class="qr-grid" style={{ marginBlockStart: "14px" }}>
               {qrCodes.map((qr) => (
                 <figure class="qr-card glass-panel" key={qr.nodeId}>

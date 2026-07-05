@@ -335,6 +335,12 @@ export const fa = {
   "export.qr.hint":
     "یک کد QR برای هر نود — همان رشته‌ای که خروجی TXT تولید می‌کند را در قالب URL هر نود رمزگذاری می‌کند. برای دریافت یک برگه‌ی قابل‌چاپ، این صفحه را چاپ کنید.",
   "export.qr.downloadSvg": "دانلود SVG",
+  "export.qr.pagination.hint":
+    "فقط کدهای QR صفحه‌ی فعلی محاسبه می‌شوند — با هزاران نود، محاسبه‌ی هم‌زمان همه‌ی کدهای QR نه سریع است و نه مفید (به‌هرحال همه را هم‌زمان نمی‌توان دید).",
+  "export.qr.pagination.prev": "قبلی",
+  "export.qr.pagination.next": "بعدی",
+  "export.qr.pagination.pagePrefix": "صفحه",
+  "export.qr.pagination.of": "از",
   "export.htmlReport.title": "خروجی گزارش HTML",
   "export.htmlReport.hint":
     "خلاصه، تحلیل، گزارش امنیتی، گزارش سازگاری، هشدارها و پیشنهادها برای هر نود — پیش از پیش‌نمایش یا دانلود پاکسازی می‌شود.",
