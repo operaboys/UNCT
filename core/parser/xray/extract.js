@@ -56,10 +56,20 @@ export function selectOutbound(config) {
 
 /**
  * All outbounds that carry a proxy node — Multi-Outbound support (04 Stage 04).
+ * Also accepts a root-level Array — some exporters (e.g. v2rayN) write a
+ * JSON array of several COMPLETE Xray config documents (each its own
+ * `{remarks, log, outbounds, ...}` object) rather than one document with a
+ * multi-entry `outbounds` array. This is structurally the same "many
+ * documents, each with the single-document shapes already handled above" —
+ * so each array element is walked with the exact same `toOutbounds` logic,
+ * never a separate/looser rule.
  * @param {any} config
  * @returns {any[]}
  */
 export function collectOutbounds(config) {
+  if (Array.isArray(config)) {
+    return config.flatMap((item) => collectOutbounds(item));
+  }
   return toOutbounds(config).filter(
     (ob) => ob && typeof ob === "object" &&
       PROXY_PROTOCOLS.includes(String(ob.protocol).toLowerCase()),

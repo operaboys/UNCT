@@ -112,6 +112,44 @@ export const MISSPELLED_PROTOCOL = JSON.stringify({
   ],
 });
 
+/**
+ * v2rayN-style export: a root-level Array of COMPLETE Xray config documents
+ * (each with its own `log`/`outbounds`), rather than one document with a
+ * multi-entry `outbounds` array. The 3rd element is deliberately a
+ * freedom-only document (no real proxy outbound) — it must be Skipped, not
+ * fabricated (ANTI_CHAOS Rule 9).
+ */
+export const V2RAYN_ARRAY_EXPORT = JSON.stringify([
+  {
+    log: { loglevel: "warning" },
+    outbounds: [
+      {
+        protocol: "vless",
+        tag: "proxy",
+        settings: {
+          vnext: [{ address: "doc1.example.com", port: 443, users: [{ id: "b831381d-6324-4d53-ad4f-8cda48b30811", encryption: "none" }] }],
+        },
+        streamSettings: { network: "tcp", security: "tls", tlsSettings: { serverName: "doc1.example.com" } },
+      },
+    ],
+  },
+  {
+    log: { loglevel: "warning" },
+    outbounds: [
+      {
+        protocol: "trojan",
+        tag: "proxy2",
+        settings: { servers: [{ address: "doc2.example.com", port: 443, password: "doc2-pass" }] },
+        streamSettings: { network: "tcp" },
+      },
+    ],
+  },
+  {
+    log: { loglevel: "warning" },
+    outbounds: [{ protocol: "freedom", tag: "direct" }],
+  },
+]);
+
 /** Two synonym public keys present — priority chain must pick publicKey. */
 export const REALITY_DOUBLE_PBK = JSON.stringify({
   outbounds: [

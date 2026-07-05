@@ -2,13 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   xrayParser, registerXrayParser, detectXray, parseXray, normalizeManyXray,
   normalizeItem, recoverXray, repairJson, fuzzyKey, levenshtein, resolvePriority,
-  selectOutbound,
+  selectOutbound, collectOutbounds,
 } from "../../core/parser/xray/index.js";
 import { createParserFactory, normalizeAll } from "../../core/parser/factory.js";
 import { applyValidation } from "../../core/validator/apply-validation.js";
 import {
   VLESS_REALITY, VLESS_WS_TLS, TROJAN_TCP, SHADOWSOCKS, WITH_FREEDOM_FIRST,
   BROKEN_TRAILING_COMMA, MISSPELLED_PROTOCOL, REALITY_DOUBLE_PBK,
+  V2RAYN_ARRAY_EXPORT,
 } from "./fixtures.js";
 
 /** parse + expand, taking the first node (the sample fixtures are single-proxy). @param {string} input */
@@ -151,6 +152,36 @@ describe("XrayParser — Multi-Outbound · Multi-User (04 Stage 04, ADR-008)", (
   });
   it("selectOutbound returns null when no proxy outbound exists", () => {
     expect(selectOutbound({ outbounds: [{ protocol: "freedom" }, { protocol: "blackhole" }] })).toBeNull();
+  });
+});
+
+describe("XrayParser — root-level Array (multi-document export, e.g. v2rayN)", () => {
+  it("detects the array shape a notch below the equivalent single-document confidence", () => {
+    // Same structural strength (streamSettings present) as VLESS_REALITY's 95,
+    // but a bare array is a slightly less specific signal than one object
+    // already carrying Xray-only top-level keys — scores 85, not 95.
+    expect(detectXray(V2RAYN_ARRAY_EXPORT)).toBe(85);
+  });
+  it("does not score an unrelated array of plain objects (no false positive)", () => {
+    expect(detectXray(JSON.stringify([{ a: 1 }, { b: 2 }]))).toBe(0);
+  });
+  it("extracts every valid document's outbound and skips the freedom-only document", () => {
+    const nodes = normalizeManyXray(parseXray(V2RAYN_ARRAY_EXPORT));
+    expect(nodes).toHaveLength(2);
+    expect(nodes.map((n) => n.protocol)).toEqual(["vless", "trojan"]);
+    expect(nodes[0].address).toBe("doc1.example.com");
+    expect(nodes[1].address).toBe("doc2.example.com");
+    expect(nodes[1].password).toBe("doc2-pass");
+  });
+  it("collectOutbounds recurses into every array element", () => {
+    expect(collectOutbounds(JSON.parse(V2RAYN_ARRAY_EXPORT))).toHaveLength(2);
+  });
+  it("selectOutbound finds a proxy outbound anywhere in the array", () => {
+    expect(selectOutbound(JSON.parse(V2RAYN_ARRAY_EXPORT))).not.toBeNull();
+  });
+  it("an all-freedom array (no real proxy anywhere) throws, same as the single-document case", () => {
+    const allFreedom = JSON.stringify([{ outbounds: [{ protocol: "freedom" }] }, { outbounds: [{ protocol: "blackhole" }] }]);
+    expect(() => parseXray(allFreedom)).toThrow(/PARSE_MISSING_REQUIRED/);
   });
 });
 

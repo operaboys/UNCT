@@ -32,11 +32,24 @@ export function detectXray(input) {
     return XRAY_TOKENS.test(trimmed) ? 60 : 0;
   }
 
+  // A root-level Array of complete Xray config documents (e.g. v2rayN's
+  // export shape — see extract.js's `collectOutbounds`) is a step removed
+  // from the single-document case: a bare array happening to contain
+  // objects that structurally resemble outbounds is a (slightly) less
+  // specific signal than a single object already carrying Xray-only
+  // top-level keys, so this scores a notch below the equivalent
+  // single-document confidence rather than reusing it outright.
+  const isArrayRoot = Array.isArray(config);
+
   const ob = selectOutbound(config);
   if (ob) {
-    return (ob.streamSettings || ob.settings?.vnext || ob.settings?.servers) ? 95 : 80;
+    const hasStrongShape = Boolean(ob.streamSettings || ob.settings?.vnext || ob.settings?.servers);
+    if (isArrayRoot) return hasStrongShape ? 85 : 70;
+    return hasStrongShape ? 95 : 80;
   }
-  // Parseable JSON carrying Xray-only keys but no usable outbound yet.
-  if (config && (config.outbounds || config.streamSettings)) return 55;
+  // Parseable JSON carrying Xray-only keys but no usable outbound yet
+  // (single-document only — a bare array with no matching outbound in any
+  // element has no equivalent "carries Xray-only keys" signal to fall back on).
+  if (!isArrayRoot && config && (config.outbounds || config.streamSettings)) return 55;
   return 0;
 }
