@@ -7,12 +7,24 @@
  *
  * Deliberately deferred past this pass (each needs genuinely new
  * architecture, decided separately): Tag, Merge Subscription, Split
- * Subscription, Deduplicate Nodes (doc 07 §4.4 / doc 03 §2.1). Rendering is
- * plain Preact `.map()` over the node array — no Virtual List dependency —
- * per the user's confirmed choice to defer that pick until there is real
- * large-scale (10,000+ node) data to measure against (doc 14's "Actively
- * Maintained" requirement could not be cheaply verified for a library
- * picked speculatively now).
+ * Subscription, Deduplicate Nodes (doc 07 §4.4 / doc 03 §2.1) — all four
+ * shipped in later checkpoints.
+ *
+ * Node List virtualization (2026-07-05, doc 14 §1/§2): `NodeTable` used to
+ * render every node via plain Preact `.map()`. A real ~5000-6000-node import
+ * crashed the tab (full renderer OOM/freeze) — `NodeTable` now renders only
+ * the rows inside the scroll viewport (+ overscan buffer) via
+ * `../components/use-virtualizer.ts`, a thin Preact wrapper around
+ * `@tanstack/virtual-core`. It still renders a real `<table>`/`<tr>`/`<td>`
+ * structure (not a `<div>` grid) — only the visible slice of `<tr>`s is
+ * real, bracketed by two spacer `<tr>`s whose single `<td>` carries the
+ * total height of the rows scrolled past above/below, the same
+ * spacer-row technique `@tanstack/virtual-core`'s own "virtualizing a table"
+ * guide documents. This keeps column alignment exactly as the browser's
+ * native table layout already handled it — no CSS Grid rewrite. Every
+ * per-row feature (checkbox selection, Test/Check/Lookup buttons, Save as
+ * Template, Tag add/remove) is untouched; only which `<tr>`s get mounted
+ * changed.
  *
  * Visual design (final visual design phase, Subscription Center step):
  * restyled onto the same Liquid Glass system as Dashboard/Converter/
@@ -29,7 +41,8 @@
  * pairs). No logic/state/handlers changed — same selectors, same
  * network-check handlers, same Template/Subscription Builder flow.
  */
-import { useMemo, useState } from "preact/hooks";
+import { useMemo, useRef, useState } from "preact/hooks";
+import { useVirtualizer } from "../components/use-virtualizer.js";
 import {
   selectNodesMatchingSearch,
   selectNodesFilteredByProtocol,
@@ -638,6 +651,14 @@ export function SubscriptionScreen() {
   );
 }
 
+// A row's real height varies (the Tags cell wraps to multiple lines once a
+// node has several tags) — this is only the initial estimate `Virtualizer`
+// uses before `measureElement`'s ResizeObserver corrects it per row, not a
+// fixed row height assumption.
+const NODE_ROW_ESTIMATE_HEIGHT = 56;
+const NODE_ROW_OVERSCAN = 12;
+const NODE_TABLE_COLUMN_COUNT = 12;
+
 function NodeTable({
   t,
   nodes,
@@ -681,8 +702,20 @@ function NodeTable({
   onAddTag: (nodeId: string) => void;
   onRemoveTag: (nodeId: string, tag: string) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    count: nodes.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => NODE_ROW_ESTIMATE_HEIGHT,
+    overscan: NODE_ROW_OVERSCAN,
+  });
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
+  const paddingBottom = virtualRows.length > 0 ? totalSize - virtualRows[virtualRows.length - 1].end : 0;
+
   return (
-    <div class="table-scroll">
+    <div class="table-scroll table-scroll--virtual" ref={scrollRef}>
       <table class="data-table">
         <thead>
           <tr>
@@ -690,7 +723,11 @@ function NodeTable({
           </tr>
         </thead>
         <tbody>
-          {nodes.map((n) => {
+          {paddingTop > 0 && (
+            <tr aria-hidden="true"><td style={{ height: `${paddingTop}px`, padding: 0, border: "none" }} colSpan={NODE_TABLE_COLUMN_COUNT} /></tr>
+          )}
+          {virtualRows.map((virtualRow) => {
+            const n = nodes[virtualRow.index];
             const latency = latencyByNodeId[n.nodeId];
             const isTesting = testingNodeId === n.nodeId;
             const geoIp = geoIpByNodeId[n.nodeId];
@@ -698,7 +735,7 @@ function NodeTable({
             const portCheck = portCheckByNodeId[n.nodeId];
             const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
             return (
-              <tr key={n.nodeId}>
+              <tr key={n.nodeId} ref={rowVirtualizer.measureElement} data-index={virtualRow.index}>
                 <td>
                   <input
                     type="checkbox"
@@ -789,6 +826,9 @@ function NodeTable({
               </tr>
             );
           })}
+          {paddingBottom > 0 && (
+            <tr aria-hidden="true"><td style={{ height: `${paddingBottom}px`, padding: 0, border: "none" }} colSpan={NODE_TABLE_COLUMN_COUNT} /></tr>
+          )}
         </tbody>
       </table>
     </div>

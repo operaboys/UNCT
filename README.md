@@ -155,7 +155,7 @@ P12-12، P12-13).
 | 1 | **Dashboard** (صفحه‌ی پیش‌فرض) | Quick Stats، Node Summary، Health Overview، Warnings، «Recent Imports»، «Recent Exports» همگی واقعی. «Recent Exports» از `core/store/recent-exports-state.js` (LocalStorage، مستقل از parserStore/analyzerStore) می‌خواند؛ هر ۴ عملیات دانلود در Export Center بعد از موفقیت واقعی یک ورودی به آن اضافه می‌کنند |
 | 2 | **Converter** | Paste Area + File Upload + Drag-Drop Zone + Clipboard Import — هر سه واقعی و کامل (تست Unit + E2E). Parse و Convert هر دو از طریق Worker واقعی انجام می‌شوند (Fallback به Main Thread فقط زیر `file://`، ADR-016) |
 | 3 | **Analyzer** | همه‌ی بخش‌ها واقعی: Node Details، Protocol، Security+TLS، Compatibility/Network، Reality، Cloudflare، Clean IP، Worker، Route Rules |
-| 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** + **Split Subscription** + **Tag Nodes** + **Merge Subscription** (Textarea + «Import & Merge»، همان Pipeline واقعی `parseRawConfig`، با `parserStore.addNode` اضافه می‌کند نه جایگزین) — همگی واقعی، هیچ Placeholder یا Deferred باقی نمانده. بدون Virtual List (عمداً، تا داده‌ی واقعی ۱۰,۰۰۰+ نودی موجود شود) |
+| 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** + **Split Subscription** + **Tag Nodes** + **Merge Subscription** (Textarea + «Import & Merge»، همان Pipeline واقعی `parseRawConfig`، با `parserStore.addNode` اضافه می‌کند نه جایگزین) — همگی واقعی، هیچ Placeholder یا Deferred باقی نمانده. **Node List اکنون Virtualized است** (`@tanstack/virtual-core@3.17.3`، ADR-029؛ ۲۰۲۶-۰۷-۰۵ — پس از کرش واقعی تب با وارد‌سازی ۵۰۰۰-۶۰۰۰ نودی، تست شده تا ۵۰۰۰ نود واقعی بدون کرش) |
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
 | 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
@@ -388,6 +388,21 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   `tests/e2e/subscription-merge.spec.js` — یک سناریو ثابت می‌کند Merge واقعاً «اضافه» می‌کند
   (نه جایگزین)، سناریوی دیگر ثابت می‌کند یک خطای فرمت ناشناخته نه Crash می‌کند و نه چیزی از
   Node List موجود را پاک می‌کند.
+- **کرش بحرانی Subscription Center با ۵۰۰۰+ نود رفع شد (2026-07-05، ADR-029).** یک محرک واقعی،
+  نه یک بهینه‌سازی اختیاری: وارد‌سازی یک فایل واقعی با ~۵۰۰۰-۶۰۰۰ کانفیگ، تب مرورگر را کامل
+  کرش می‌داد (`NodeTable` با Preact `.map()` خام کل آرایه‌ی نودها را رندر می‌کرد). Node List
+  اکنون Virtualized است: `@tanstack/virtual-core@3.17.3` (تنها گزینه‌ی هم‌زمان Actively
+  Maintained و بدون نیاز به `preact/compat` — `virtua` به React وابسته است، `preact-virtual-list`
+  از ۲۰۲۲ آپدیت نشده؛ جزئیات کامل رد رقبا در ADR-029)، مصرف‌شده از طریق یک Hook اختصاصی
+  Preact (`ui/components/use-virtualizer.ts`، بدون کتابخانه‌ی جدید برای خود Hook). فقط ردیف‌های
+  داخل Viewport (+ Buffer) رندر می‌شوند — دو `<tr>` Spacer قبل/بعد ارتفاع ردیف‌های خارج از دید
+  را حفظ می‌کنند، بدون از‌دست‌دادن ساختار واقعی `<table>` (بدون بازنویسی به CSS Grid). تمام
+  قابلیت‌های قبلی (چک‌باکس، Sort/Filter/Group، دکمه‌های per-row) دقیقاً حفظ شدند. تست Playwright
+  واقعی با ۵۰۰۰ نود ساختگی (`tests/e2e/subscription-virtual-list.spec.js`) بدون کرش، در کمتر از
+  ۲۰ ثانیه رندر، و اسکرول واقعی تا محتوای میانی لیست را تأیید می‌کند؛ تست واحد جداگانه برای خود
+  محاسبه‌ی Viewport/Buffer در `tests/ui/components/use-virtualizer.test.js`. حین اندازه‌گیری
+  gzip این مرحله، یک Drift ۳۰۱۱۶ بایتی از Checkpointهای قبلی (بین ADR-018 و این مرحله) کشف و
+  شفاف ثبت شد — جزئیات کامل در `14-DEPENDENCY_POLICY.md` §۲.۱ و ADR-029.
 
 ---
 
@@ -398,7 +413,9 @@ i18n/RTL، Custom Parser/Export API، Extractor Level System، `riskScore` (doc0
 Alternative Candidates (ADR-028)، و در نهایت هر ۴ فیچر Subscription Center که «نیاز به معماری
 واقعاً جدید» داشتند — Deduplicate Nodes، Split Subscription، Tag Nodes، و **Merge Subscription**
 (آخرین مورد) — همگی با پیاده‌سازی واقعی، تست واحد/E2E واقعی، و اسکرین‌شات واقعی Playwright
-تأیید و بسته شدند (فهرست کامل در بند «اصلاحات اخیر» بالاتر).
+تأیید و بسته شدند. پس از آن، یک کرش بحرانی واقعی (Subscription Center با ۵۰۰۰+ نود) با داده‌ی
+واقعی کاربر کشف و همان روز رفع شد — Virtual List (ADR-029؛ فهرست کامل در بند «اصلاحات اخیر»
+بالاتر).
 
 آنچه در «محدودیت‌های شناخته‌شده» بالا باقی مانده (Drag-Drop بدون E2E، حذف کامل گروه
 Visualization، مسیر جدای Export Center) همگی تصمیم‌های Scope مستند و آگاهانه‌اند — نه Blocker،

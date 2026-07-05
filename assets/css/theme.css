@@ -906,6 +906,15 @@ code, kbd, samp, .mono {
   z-index: 1;
   overflow-x: auto;
 }
+/* Node List virtualization (doc 14 §1/§2, 2026-07-05): the scroll container
+   `use-virtualizer.ts` measures/scrolls — needs a bounded height so
+   "off-screen" has a real meaning; a shorter list just ends up shorter than
+   this cap; a 5000+-node list scrolls inside it instead of growing the page
+   to the node count's full height. */
+.table-scroll--virtual {
+  max-height: 640px;
+  overflow-y: auto;
+}
 .data-table {
   width: 100%;
   border-collapse: collapse;
