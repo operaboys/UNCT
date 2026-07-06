@@ -10,7 +10,7 @@
  * built from `createMockWorkerFactory` wired to the real `handleAnalyzerJob`
  * (the same Worker Mock `tests/worker/analyzer-worker.test.js` already uses).
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { analyzeBatch } from "../../../core/analyzer/analyze-node.js";
 import { createWorkerManager, CancelledError } from "../../../core/worker/worker-manager.js";
 import { handleAnalyzerJob } from "../../../core/worker/analyzer.worker.js";
@@ -19,6 +19,8 @@ import { parseUrl, normalizeUrl } from "../../../core/parser/url/index.js";
 import {
   createAnalyzerWorkerManager,
   analyzeNodesWith,
+  AnalyzeTimeoutError,
+  ANALYZE_TIMEOUT_MS,
 } from "../../../ui/store/analyzer-worker-client.js";
 
 const SAMPLE_VLESS_URL =
@@ -99,5 +101,53 @@ describe("analyzeNodesWith — real Worker-routed path (Worker Mock + handleAnal
 
     await expect(b).resolves.toEqual(analyzeBatch([NODE]));
     await expect(a).rejects.toBeInstanceOf(CancelledError);
+  });
+});
+
+describe("analyzeNodesWith — 30s timeout safety-net (doc 10 §6.1, 'no Job may hang forever')", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** A Worker that constructs fine but NEVER calls back -- models a Job that
+   * never settles for any reason (a genuinely stalled Worker thread), the
+   * exact scenario the safety-net exists for regardless of root cause. */
+  function createNeverRespondingWorkerFactory() {
+    return () => ({
+      postMessage() {},
+      addEventListener() {},
+      removeEventListener() {},
+      terminate() {},
+    });
+  }
+
+  it("rejects with AnalyzeTimeoutError and frees the underlying pool slot once the timeout fires", async () => {
+    vi.useFakeTimers();
+    const manager = createWorkerManager({
+      workerFactory: createNeverRespondingWorkerFactory(), poolSize: 1,
+    });
+
+    const resultPromise = analyzeNodesWith(manager, [NODE]);
+    const assertion = expect(resultPromise).rejects.toBeInstanceOf(AnalyzeTimeoutError);
+    // The pool slot is genuinely occupied right up until the timeout fires --
+    // this is the "BUSY=1" state the user's Performance Logs panel showed.
+    expect(manager.getStats().busyCount).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(ANALYZE_TIMEOUT_MS);
+    await assertion;
+
+    // The safety-net's cancel() call frees the slot -- it never stays "busy"
+    // once the timeout has fired, regardless of whether the Worker itself
+    // ever actually responds.
+    expect(manager.getStats().busyCount).toBe(0);
+  });
+
+  it("never fires when the real result arrives well before the timeout", async () => {
+    vi.useFakeTimers();
+    const manager = createWorkerManager({
+      workerFactory: createMockWorkerFactory(handleAnalyzerJob), poolSize: 1,
+    });
+
+    await expect(analyzeNodesWith(manager, [NODE])).resolves.toEqual(analyzeBatch([NODE]));
   });
 });

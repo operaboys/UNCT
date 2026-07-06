@@ -298,6 +298,38 @@ export function createWorkerManager(options) {
     }
   }
 
+  /**
+   * Forcibly reclaims the pool slot a specific Job occupies, for a caller
+   * that has independently decided (e.g. a UI-level timeout safety-net)
+   * that it has waited long enough and needs its capacity back regardless
+   * of whether the Worker ever actually responds. Unlike `cancel()` (whose
+   * in-flight branch only marks the Job stale, trusting the eventual real
+   * message to arrive and free the slot the normal way), this terminates
+   * and replaces that slot's Worker outright — covering the genuinely
+   * stalled-forever case `cancel()` alone cannot recover from — and settles
+   * the Job immediately if it has not already settled.
+   * @param {string} jobId
+   */
+  function forceRelease(jobId) {
+    const job = jobs.get(jobId);
+    const slot = pool.find((s) => s.currentJobId === jobId);
+    if (slot) {
+      if (typeof slot.worker.terminate === "function") slot.worker.terminate();
+      const fresh = workerFactory();
+      fresh.addEventListener("message", (evt) => handleMessage(slot, evt));
+      fresh.addEventListener("error", (evt) => handleError(slot, evt));
+      slot.worker = fresh;
+      slot.busy = false;
+      slot.currentJobId = null;
+    }
+    // Still queued (never dispatched to a slot at all) -- remove it so
+    // `dispatchNext()` never later re-dispatches an already-settled Job.
+    const queueIdx = queue.findIndex((j) => j.jobId === jobId);
+    if (queueIdx !== -1) queue.splice(queueIdx, 1);
+    if (job) settle(job, "cancelled", () => job.reject(new CancelledError()));
+    dispatchNext();
+  }
+
   /** @returns {PoolStats} */
   function getStats() {
     const durations = recentJobDurations.slice();
@@ -321,6 +353,7 @@ export function createWorkerManager(options) {
     runJob,
     terminate,
     getStats,
+    forceRelease,
     get poolSize() { return size; },
     get busyCount() { return pool.filter((s) => s.busy).length; },
     get pendingCount() { return queue.length; },

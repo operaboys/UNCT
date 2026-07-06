@@ -143,6 +143,7 @@ export const en = {
   "analyzer.controls.ariaLabel": "Analyzer Controls",
   "analyzer.actions.analyze": "Analyze",
   "analyzer.actions.analyzing": "Analyzing…",
+  "analyzer.error.timeout": "Analyze took too long and was cancelled — please try again.",
   "analyzer.hint.clickAnalyze": "Click Analyze to see results for this node.",
   "analyzer.fields.issues": "Issues",
   "analyzer.nodeDetails.title": "Node Details",

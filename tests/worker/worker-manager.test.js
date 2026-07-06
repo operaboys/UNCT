@@ -189,6 +189,82 @@ describe("Main Thread is never synchronously blocked by dispatch", () => {
   });
 });
 
+describe("forceRelease — reclaiming a Job's pool slot regardless of Worker state (analyzer timeout safety-net)", () => {
+  it("terminates and replaces the slot's Worker, and settles an in-flight Job that never responds", async () => {
+    let terminateCalls = 0;
+    const manager = createWorkerManager({
+      workerFactory: () => ({
+        postMessage() {}, // never responds
+        addEventListener() {},
+        removeEventListener() {},
+        terminate() { terminateCalls += 1; },
+      }),
+      poolSize: 1,
+    });
+
+    const { jobId, promise } = manager.runJob({ label: "stuck" });
+    expect(manager.getStats().busyCount).toBe(1);
+
+    manager.forceRelease(jobId);
+
+    await expect(promise).rejects.toBeInstanceOf(CancelledError);
+    expect(terminateCalls).toBe(1);
+    const stats = manager.getStats();
+    expect(stats.busyCount).toBe(0);
+    expect(stats.cancelledCount).toBe(1);
+  });
+
+  it("lets the pool dispatch a fresh job to the replaced slot afterward (capacity is really reclaimed, not just marked stale)", async () => {
+    const manager = createWorkerManager({
+      workerFactory: () => ({
+        postMessage() {},
+        addEventListener() {},
+        removeEventListener() {},
+        terminate() {},
+      }),
+      poolSize: 1,
+    });
+    const stuck = manager.runJob({ label: "stuck" });
+    manager.forceRelease(stuck.jobId);
+    await expect(stuck.promise).rejects.toBeInstanceOf(CancelledError);
+
+    // The replaced slot's Worker is the mock's own echo-capable factory from
+    // here on for the next job -- swap in a real responsive mock manager to
+    // prove the pool itself (not just this one Job) recovered its capacity.
+    const responsiveManager = createWorkerManager({
+      workerFactory: createMockWorkerFactory(delayedEchoHandler), poolSize: 1,
+    });
+    const next = responsiveManager.runJob({ label: "next" });
+    await expect(next.promise).resolves.toEqual({ label: "next" });
+  });
+
+  it("removes a still-queued (never dispatched) Job so it is never later re-dispatched", async () => {
+    const manager = createWorkerManager({
+      workerFactory: createMockWorkerFactory(delayedEchoHandler), poolSize: 1,
+    });
+    const busy = manager.runJob({ label: "busy", delay: 30 });
+    const queued = manager.runJob({ label: "queued", delay: 0 });
+    expect(manager.pendingCount).toBe(1);
+
+    manager.forceRelease(queued.jobId);
+    await expect(queued.promise).rejects.toBeInstanceOf(CancelledError);
+    expect(manager.pendingCount).toBe(0);
+
+    await expect(busy.promise).resolves.toEqual({ label: "busy", delay: 30 });
+  });
+
+  it("is a safe no-op for an already-settled or unknown jobId", async () => {
+    const manager = createWorkerManager({
+      workerFactory: createMockWorkerFactory(delayedEchoHandler), poolSize: 1,
+    });
+    const { jobId, promise } = manager.runJob({ label: "done" });
+    await expect(promise).resolves.toEqual({ label: "done" });
+
+    expect(() => manager.forceRelease(jobId)).not.toThrow();
+    expect(() => manager.forceRelease("no-such-job-id")).not.toThrow();
+  });
+});
+
 describe("Regression — a Job must never hang forever (doc 10 §6.1), even when postMessage itself throws", () => {
   // The real-world trigger this closes: `dispatchNext()`'s call to
   // `idle.worker.postMessage(...)` used to have no guard around it. If a

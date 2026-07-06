@@ -145,6 +145,7 @@ export const fa = {
   "analyzer.controls.ariaLabel": "کنترل‌های تحلیل‌گر",
   "analyzer.actions.analyze": "تحلیل",
   "analyzer.actions.analyzing": "در حال تحلیل…",
+  "analyzer.error.timeout": "تحلیل خیلی طول کشید و لغو شد — لطفاً دوباره امتحان کنید.",
   "analyzer.hint.clickAnalyze": "برای مشاهده‌ی نتایج این نود، روی «تحلیل» کلیک کنید.",
   "analyzer.fields.issues": "مشکلات",
   "analyzer.nodeDetails.title": "جزئیات نود",

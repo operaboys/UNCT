@@ -59,7 +59,7 @@ import { createTranslator } from "../../core/i18n/translator.js";
 import { useParserState } from "../store/use-parser-state.js";
 import { analyzerStore, useAnalyzerState } from "../store/use-analyzer-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
-import { analyzeNodes, CancelledError } from "../store/analyzer-worker-client.js";
+import { analyzeNodes, CancelledError, AnalyzeTimeoutError } from "../store/analyzer-worker-client.js";
 import { formatStringList, formatTriState, formatScore, formatBadge } from "./format.js";
 
 export function AnalyzerScreen() {
@@ -91,6 +91,13 @@ export function AnalyzerScreen() {
       // A superseded job resolves itself instead — never surface a stale
       // cancellation as a user error (10-PERFORMANCE_ENGINE §6.1).
       if (err instanceof CancelledError) return;
+      // The 30s Job timeout safety-net (analyzer-worker-client.ts) — a real,
+      // clear message instead of the raw Error, regardless of whatever
+      // caused the Job to never settle.
+      if (err instanceof AnalyzeTimeoutError) {
+        setAnalyzeError(t("analyzer.error.timeout"));
+        return;
+      }
       setAnalyzeError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsAnalyzing(false);

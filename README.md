@@ -549,6 +549,44 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
     Alternative Candidates اعمال شد.
   - تست‌ها: ۳ تست Vitest جدید (`tests/worker/worker-manager.test.js`) + ۲ تست Playwright جدید
     (`tests/e2e/analyze-navigate-reload-race.spec.js`).
+- **گزارش فوری — «Analyze همیشه و کاملاً خراب» (هم موبایل هم دسکتاپ):**
+  - **بازتولید مستقیم دوباره تلاش شد و باز هم رخ نداد.** دقیقاً همان مسیر کاربر با مرورگر واقعی
+    (نه فقط Vitest) امتحان شد: Import همان فایل واقعی Xray آرایه‌ای → Analyzer → Analyze —
+    هم با `npx playwright test` هم با rebuild کامل (`npm run test:e2e`) تا مطمئن شویم آخرین
+    Bundle واقعاً تست می‌شود. **هیچ گیرکردنی رخ نداد، هیچ Console/Page Error‌ای هم ثبت نشد.**
+    یک بررسی مستقیم سطح Node هم روی داده‌ی واقعی (نه Mock) این فایل اجرا شد:
+    `parseAndValidate` + `analyzeBatch` روی ۳۰۰۰ نود واقعی Xray-Array-درآمده، در ~۴۳ms کامل و
+    بدون Exception اجرا شد.
+  - **`git diff` بین آخرین Commit قبل از این چند چک‌پوینت اخیر UI و HEAD** (محدود به
+    `core/analyzer/`, `core/worker/`, `ui/analyzer/`, `ui/store/`) نشان داد: **`core/analyzer/`،
+    `ui/analyzer/`، و `ui/store/` اصلاً تغییری نکرده‌اند** — تنها دو فایل تغییر کرده‌اند
+    (`core/worker/worker-manager.js` و `core/worker/shared/handler-envelope.js`)، و هر دو
+    تغییر فقط افزودن try/catch محافظتی (چک‌پوینت دو مرحله قبل) بودند، بدون هیچ تغییری در
+    مسیر معمول اجرا. توابعی که کاربر مظنون کرده بود
+    (`computeCompatibilityScore`/`computeRiskScore`/`analyzeDnsLeakRisk`) از قبل از همه‌ی این
+    چک‌پوینت‌ها در کد بوده‌اند (Commit `ffb4df7`) و در تست‌های ۳۰۰۰-نودی قبلی هم هزاران بار
+    بدون خطا اجرا شده بودند.
+  - با صداقت کامل: این‌بار هم علت دقیق مشخص نشد و بازتولید ممکن نشد؛ اگر کاربر هنوز آن را
+    می‌بیند، مرورگر/دستگاه دقیق و متن هر خطای Console واقعی، بهترین ورودی بعدی خواهد بود.
+  - **صرف‌نظر از ریشه، Safety-Net واقعی اضافه شد:** `ui/store/analyzer-worker-client.ts` اکنون
+    هر Job Analyze را با یک Timeout ۳۰-ثانیه‌ای Race می‌کند (`withTimeout`). اگر Job در این بازه
+    Settle نشود، یک `AnalyzeTimeoutError` مجزا (نه `CancelledError`) پرتاب می‌شود،
+    `analyzer-screen.tsx` پیام واضح «تحلیل خیلی طول کشید — دوباره امتحان کنید» را نشان می‌دهد،
+    و `isAnalyzing` (به‌خاطر `finally` موجود) همیشه به `false` برمی‌گردد — دکمه هرگز برای همیشه
+    گیر نمی‌ماند. یک نکته‌ی فنی مهم که حین ساخت تست کشف شد: `cancel()`ِ موجود در
+    `worker-manager.js` برای یک Job که از قبل در حال اجراست (نه در صف) فقط آن را Stale علامت
+    می‌زند، ولی Slot را واقعاً آزاد نمی‌کند (به پیام واقعی Worker برای آزادسازی متکی است) — برای
+    یک Worker واقعاً و برای‌همیشه گیرکرده، این کافی نیست. یک متد جدید `forceRelease(jobId)` به
+    `worker-manager.js` اضافه شد: علاوه‌بر Settle کردن Job، Worker همان Slot را واقعاً
+    `terminate()` و با یک نمونه‌ی تازه جایگزین می‌کند — Timeout حالا هم Promise سمت UI را
+    آزاد می‌کند هم واقعاً ظرفیت Pool را پس می‌گیرد، نه فقط علامت‌گذاری.
+  - تست‌ها: ۷ تست Vitest جدید (۴ برای `forceRelease` در `tests/worker/worker-manager.test.js`،
+    ۲ برای مسیر Timeout در `tests/ui/store/analyzer-worker-client.test.js` با Fake Timers) +
+    یک تست Playwright واقعی (`tests/e2e/analyze-timeout-safety-net.spec.js`) که Worker واقعی
+    Analyzer را طوری Override می‌کند که `postMessage`اش هرگز واقعاً اجرا نشود (نه یک Mock ساختگی
+    کامل — ساخت Worker واقعی موفق می‌شود، فقط پیام هرگز نمی‌رسد) و تأیید می‌کند دکمه بعد از ۳۰
+    ثانیه واقعاً آزاد می‌شود، خطای واضح نشان داده می‌شود، و یک Analyze جدید بعد از آن به‌طور
+    عادی و سریع کامل می‌شود.
 
 ---
 
