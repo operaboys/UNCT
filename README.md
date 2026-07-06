@@ -610,6 +610,35 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   تصحیح شد. **صادقانه:** این از این محیط قابل تأیید مستقیم روی دستگاه/مرورگر واقعی کاربر نیست؛
   ولی یک بی‌نظمی معماری واقعی و دقیقاً هم‌شکل با نمونه‌ی قبلاً اثبات‌شده را می‌بندد. کل مجموعه‌ی
   تست e2e (۳۶ تست، شامل تست Timeout جدید) روی نسخه‌ی Bundle‌شده بدون رگرسیون Pass شد.
+- **باگ CSS گسترده در تمام `.data-table` رفع شد — ستون‌ها فشرده و هدرها حرف‌به‌حرف Wrap
+  می‌شدند، در هر دو زبان و هر دو Viewport.** کاربر خودش ریشه را درست تشخیص داده بود:
+  `.data-table` فقط `width: 100%` داشت، بدون `table-layout` یا `min-width` — پس مرورگر با
+  `table-layout: auto` پیش‌فرض، همه‌ی ستون‌ها (مثلاً ۱۲ ستون Node List: Include/Protocol/
+  Address/Port/Valid/Security Score/Latency/Port Check/GeoIP/Imported At/Template/Tags) را
+  به‌زور داخل عرض Container جا می‌کرد، به‌جای این‌که بگذارد `.table-scroll`'s
+  `overflow-x: auto`ی از قبل موجود واقعاً فعال شود؛ ستون‌های باریک (GeoIP، Port Check) تا حد
+  غیرقابل‌خواندن جمع می‌شدند و کلمات کوتاه هدر (فارسی و انگلیسی: «تأخیر»/«Latency»،
+  «بررسی پورت»/«Port Check») عمودی حرف‌به‌حرف می‌شکستند. **رفع:** در `assets/css/theme.css`،
+  `.data-table` حالا `table-layout: fixed` دارد، به‌علاوه یک `min-width` واقعی (نه یک عدد
+  دلخواه) که با `:has(th:nth-child(N))` متناسب با تعداد واقعی ستون‌های هر جدول اعمال می‌شود —
+  عدد پایه از جمع Width واقعی هر ستون در بدترین حالت (Node List ۱۲‌ستونی) به‌دست آمده: Include
+  ۶۰ + Protocol ۱۰۰ + Address ۱۷۰ + Port ۷۰ + Valid ۸۰ + Security Score ۱۲۰ + Latency ۱۰۰ +
+  Port Check ۱۱۰ + GeoIP ۱۵۰ + Imported At ۱۳۰ + Template ۱۱۰ + Tags ۱۶۰ = **۱۳۶۰px**، یعنی
+  میانگین ~۱۱۳px به‌ازای هر ستون — این میانگین سپس متناسب با تعداد ستون هر جدول دیگر (۴ تا ۹
+  ستونی، در Converter/Extractor/Developer Console) دوباره ضرب شده، نه این‌که همان ۱۳۶۰px به
+  هر جدول کوچک تحمیل شود (که Scroll افقی غیرضروری روی جدول‌های ۳-۴ ستونی می‌ساخت).
+  `.data-table th` هم `white-space: nowrap` گرفت (فقط هدر — `td`ی موجود با
+  `overflow-wrap: anywhere`ش برای مقادیر طولانی مثل Base64 دست‌نخورده ماند، چون آن قانون خودش
+  درست بود). با Grep تأیید شد هیچ صفحه‌ای (Subscription Center/Extractor/Converter/
+  DevConsole/Export Center) یک Override اختصاصی روی `.data-table` ندارد که این رفع را خنثی
+  کند — پس تغییر روی یک کلاس مشترک، خودکار روی همه جا اثر گذاشت. رگرسیون روی VirtualTable/
+  Virtual List بررسی و رد شد: `useVirtualizer` ارتفاع ردیف‌ها را از خودِ Container اسکرول
+  اندازه می‌گیرد، نه از عرض جدول — کاملاً مستقل از `table-layout`. تست جدید
+  `tests/e2e/data-table-column-width.spec.js` (۶ تست، Chromium واقعی) تأیید می‌کند در هر دو
+  زبان: هیچ `<th>`ی کلیدی هرگز به ارتفاع دو خط Wrap نمی‌شود و روی موبایل ۳۷۵px، عرض واقعی
+  جدول (`scrollWidth`) از Container بزرگ‌تر است (Scroll افقی واقعی) نه این‌که ستون‌ها فشرده
+  شوند. تأیید بصری با Playwright روی هر ۴ ترکیب (فارسی/انگلیسی × موبایل/دسکتاپ) برای
+  Subscription Center، Extractor، و Developer Console انجام شد.
 
 ---
 
