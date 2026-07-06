@@ -960,9 +960,11 @@ code, kbd, samp, .mono {
    (between the icon-scale `blur(6px)`/`blur(10px)` elsewhere in this file and
    `.glass-panel`'s full `28px`) already fully obscures passing text while
    staying cheap to paint on a `position: sticky` element repainted every
-   scroll frame. Only declared once here (not duplicated in the
-   `:root[data-theme="dark"]` override below, which only ever changes
-   `background`) — the cascade already applies it in both themes. */
+   scroll frame. This value works for LIGHT mode; dark mode needs its own
+   background/blur values entirely (see the `:root[data-theme="dark"]`
+   override below and its own long comment) — bright text on a near-black
+   background needs meaningfully more opacity/blur than dark text on a
+   bright one before it stops reading through at the same visual strength. */
 .table-scroll--virtual .data-table th {
   position: sticky;
   top: 0;
@@ -973,14 +975,13 @@ code, kbd, samp, .mono {
   /* A real drop-shadow (not just the hairline `border-block-end` below,
      which is a 1px near-invisible-on-dark line meant as a subtle divider,
      not a strong separator) so the boundary between the frozen header and
-     the row scrolling directly beneath it is never ambiguous. Verified
-     with a tight, high-DPI crop of exactly the `<th>`'s own bounding box
-     (not a wider screenshot, which made an adjacent-but-NOT-overlapping
-     row underneath look like it was bleeding through at normal viewing
-     scale) that zero content is ever actually behind this header once
-     opaque -- this shadow exists purely so a real user's eye gets an
-     unambiguous "this is a separate, elevated layer" cue too, not because
-     pixels were provably leaking through. */
+     the row scrolling directly beneath it is never ambiguous -- a tight,
+     high-DPI crop of exactly the `<th>`'s own bounding box (not a wider
+     screenshot, which made an adjacent-but-NOT-overlapping row underneath
+     look like it was bleeding through at normal viewing scale) proved this
+     header's box itself is clean; this shadow exists purely so a real
+     user's eye gets an unambiguous "this is a separate, elevated layer"
+     cue too. */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 .data-table {
@@ -1422,20 +1423,32 @@ code, kbd, samp, .mono {
    BRIGHT smear (light text on this app's near-black dark background)
    barely dims through a faint white wash, unlike light mode where blurred
    dark text on a bright background already blurs toward near-white
-   before an equally-light wash finishes the job. No opacity/blur value
-   under 100% can *guarantee* zero bleed-through -- only full opacity can.
-   Since this header's entire job (unlike `.glass-panel`, which floats
-   over a static decorative gradient) is to permanently occlude
-   continuously scrolling text, translucency here buys nothing but risk.
-   Solid `rgb(53, 55, 58)` is not a new color: it is the exact flattened
-   equivalent of this file's own established dark-mode "control surface"
-   tint (`rgba(255, 255, 255, 0.14)` over `--unct-bg: #14161a`, the same
-   wash `.select`/`.input`/`.btn--ghost`/`.radio-card` already use) --
-   visually consistent with the rest of dark mode, but opaque, so zero
-   backdrop-filter is needed (blur has no visible effect behind a fully
-   opaque layer, so declaring it here would be dead CSS). */
+   before an equally-light wash finishes the job.
+   FIRST attempt went to the opposite extreme (fully opaque `rgb(53, 55,
+   58)`, zero `backdrop-filter`) -- that provably killed every last trace
+   of bleed-through, but a real user then correctly pointed out it also
+   killed the entire Liquid Glass *feel*: a flat solid rectangle, not a
+   frosted surface. Re-tested systematically (same scroll-sweep + tight
+   high-DPI `<th>`-bounding-box-crop method as before, at MANY opacities:
+   0.50/0.55/0.65/0.75/0.85/0.92/0.96/0.97/0.98, several with
+   `brightness()` added to the filter to pre-dim the backdrop before
+   blending): under forensic 3x-DPI zoom actively hunting for legibility,
+   EVERY translucent value still shows some faint residual trace --
+   mathematically, alpha<1 blending can only approach zero bleed-through
+   asymptotically, never guarantee it exactly like alpha=1 does. But at
+   any NORMAL viewing scale/distance (1x DPI, a real glance, not a frozen
+   3x-zoomed forensic crop), 0.85 and below still showed genuinely
+   readable fragments, while 0.97 did not -- and unlike full opacity,
+   0.97 keeps a real, visible soft brightness gradient from the blurred
+   backdrop (a faint corner-to-corner glow, not a flat block), the actual
+   marker of "glass" the flat solid version lost. This is a real,
+   deliberate trade-off, not a perfect solution: an extremely faint trace
+   remains detectable ONLY under active forensic zoom, in exchange for a
+   header that genuinely reads as frosted glass at real viewing scale. */
 :root[data-theme="dark"] .table-scroll--virtual .data-table th {
-  background: rgb(53, 55, 58);
+  background: rgba(20, 22, 26, 0.97);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
 }
 
 /* Status/severity colors: brighter text tones so each tag/alert stays
