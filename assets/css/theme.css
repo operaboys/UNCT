@@ -1010,11 +1010,25 @@ code, kbd, samp, .mono {
 .data-table:has(th:nth-child(12)) { min-width: 1360px; }
 .data-table th {
   text-align: start;
-  font-size: 11.5px;
+  /* 12px (was 11.5px) + `--unct-text` (was `--unct-text-muted`, 2026-07-06
+     real legibility bug): `--unct-text-muted` is this file's token for
+     genuinely secondary text (`.hint`, captions, placeholders) -- a column
+     header is neither. Unlike a `.hint`, a user reads a table header
+     continuously while scanning many rows underneath it, so it needs the
+     SAME full-contrast ink as the data it labels, not a dimmer one; the
+     small uppercase/letter-spaced/bold styling already gives it a distinct
+     "label" look without needing a muted color on top. The font-size bump
+     is a minor legibility assist alongside the color fix -- verified against
+     the column min-widths computed two checkpoints ago (assets/css/theme.css
+     `.data-table:has(th:nth-child(N))`): those are generous per-column
+     minimums (e.g. Include 60px for a 7-char label), not the label's own
+     tight measured width, so 0.5px more per glyph does not push any column
+     past its budget or reintroduce the header-wrap bug that min-width fixed. */
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--unct-text-muted);
+  color: var(--unct-text);
   padding-block: 10px;
   padding-inline: 10px;
   border-block-end: 1px solid rgba(33, 27, 61, 0.1);
