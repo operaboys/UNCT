@@ -64,7 +64,7 @@ describe("createAnalyzerWorkerManager — feature detection", () => {
     expect(typeof manager?.runJob).toBe("function");
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
-      expect(call).toEqual({ url: "core/worker/analyzer.worker.js", opts: { type: "module" } });
+      expect(call).toEqual({ url: "assets/js/analyzer-worker.js", opts: { type: "module" } });
     }
   });
 });

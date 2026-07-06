@@ -8,16 +8,21 @@
  * `analyzeBatch` only when constructing a Worker is physically impossible
  * (the `file://` page-origin case ADR-016 benchmarked).
  *
- * Unlike `parser-worker-client.ts`, this Worker is loaded from its raw
- * `core/worker/analyzer.worker.js` source, NOT a `scripts/build.js`-bundled
- * artifact: `core/worker/analyzer.worker.js`'s whole import graph (the six
- * Phase 6 Core analyzers) has zero bare npm specifiers — confirmed by grep
- * before relying on it, and re-confirmed against a real browser (the exact
- * lesson ADR-016 Decision point 6 learned: a static "no bare imports" check
- * alone is not proof a real Worker's module loader can resolve everything,
- * only a real browser load is). There is therefore no `js-yaml`-shaped gap
- * here for `scripts/build.js` to close, so no second bundle target was added
- * for this Worker.
+ * `assets/js/analyzer-worker.js` (ADR-016 Addendum, 2026-07-06 — CORRECTION
+ * of this file's own former claim): this Worker used to load from its raw
+ * `core/worker/analyzer.worker.js` source, on the reasoning that its import
+ * graph (the six Phase 6 Core analyzers, plus the Phase 10 Extended ones)
+ * has zero BARE npm specifiers, so no `js-yaml`-shaped gap existed for
+ * `scripts/build.js` to close. That reasoning was too narrow: a real
+ * "Worker error" was reported and reproduced only intermittently, with a
+ * SINGLE node (ruling out any data/size cause), across an 18-file relative-
+ * import graph a real Worker must fetch and link individually at
+ * construction time — the same `Worker.onerror` failure class ADR-016
+ * already documented and fixed for the parser/converter Workers, just not
+ * triggered by a bare specifier this time. Bundled the same way as those
+ * two (`scripts/build.js`), removing the whole class of per-file
+ * fetch/resolution failure regardless of which exact file or browser quirk
+ * was responsible.
  *
  * Timeout safety-net (2026-07-05, following an unreproduced "Analyze stuck
  * forever" report): `analyzeNodesWith` now races the Job against a 30s
@@ -33,7 +38,7 @@ import type { UNMNode, Protocol, NetworkType, SecurityType, DnsLeakRisk } from "
 
 export { CancelledError };
 
-const ANALYZER_WORKER_URL = "core/worker/analyzer.worker.js";
+const ANALYZER_WORKER_URL = "assets/js/analyzer-worker.js";
 const TRACK = "analyzer-screen-analyze";
 
 // Safety-net (doc 10 §6.1 "no Job may hang forever"): even after the

@@ -265,3 +265,54 @@ Worker or its bundle, reproduced and ruled out, not a real defect.
 as before: `ui/export/export-screen.tsx` still calls `core/exporter/{to-txt,to-yaml,to-json,...}.js`
 → `convertBatch` directly on the main thread. That is a separate, unchanged code path — see the
 correction this Addendum's date also applies to `README.md`'s Known Limitations section.
+
+## Addendum — Analyzer Worker is now bundled too (correcting this ADR's own prior claim)
+
+**Date:** 2026-07-06 | **Decider:** Mehdi
+
+`ui/store/analyzer-worker-client.ts` originally loaded `core/worker/analyzer.worker.js` from its
+raw, unbundled source, on the stated reasoning that its whole import graph has zero BARE npm
+specifiers (unlike the parser/converter Workers' `js-yaml` problem above) — "confirmed by grep...
+and re-confirmed against a real browser." That reasoning, while true, was too narrow: a real
+"Worker error" was reported in production use, reproducible only intermittently and with a
+**single node** (ruling out any data-size or computation cause), after repeated Analyze attempts
+across screen navigations. The raw `core/worker/analyzer.worker.js` entry point actually pulls in
+**18 separate files** by relative import (`core/analyzer/core/*`, `core/analyzer/extended/*`,
+`core/analyzer/risk-score.js`, `core/validator/validators.js`, `core/unm/schema/enums.js`,
+`core/worker/shared/handler-envelope.js`, ...) — confirmed directly via `esbuild`'s `metafile`
+output, not assumed. A real Worker has to fetch and link all 18 individually at construction time;
+this is the exact same `Worker.onerror` failure class this ADR's two Addenda above already
+document and fixed for the parser/converter Workers, just never triggered by a bare specifier
+this time — a flaky/failed fetch or module-link step on any ONE of those 18 files (across a real
+network, a real mobile browser's module-Worker implementation, etc.) would produce precisely this
+symptom: intermittent, data-independent, and (per `core/worker/worker-manager.js`'s own
+`handleError`) surfaced as the literal fallback string `"Worker error"` whenever the real
+`ErrorEvent.message` itself comes back empty — which is exactly the bare, contentless message text
+reported.
+
+Before concluding this was the cause, a thorough alternative investigation was done and ruled
+out: a **2646-combination stress test** (`analyzeBatch` over every Protocol × SecurityType ×
+NetworkType combination, with adversarial values — empty/5000-char/malformed-Base64/injection-
+shaped strings — injected into every optional `UNMNode` field simultaneously) produced zero
+exceptions, and all six Core + all Extended analyzer modules were read end-to-end and confirmed
+defensively written (`typeof`/`Array.isArray` guards, try/catch around `atob`/`JSON.parse`/
+`decodeURIComponent`). This rules out the analyzer *logic* itself as the cause with high
+confidence — the remaining, well-precedented explanation is the unbundled *Worker script loading*
+step, not anything `analyzeBatch` computes.
+
+**Fix:** `core/worker/analyzer.worker.js` is now bundled by `scripts/build.js` the same way as the
+other two Workers, into `assets/js/analyzer-worker.js` (15.2KB minified). `ANALYZER_WORKER_URL` in
+`ui/store/analyzer-worker-client.ts` now points at that bundled artifact instead of the raw source.
+No change to `core/analyzer/`'s own source, `core/worker/worker-manager.js`, or
+`core/worker/analyzer.worker.js` itself — only the packaging/loading path changed, exactly this
+ADR's own established precedent for the parser/converter Workers above.
+
+**Honesty note:** this closes a real, well-precedented architectural inconsistency (the ONE Worker
+still loaded unbundled, on a narrower check than the other two ever required) that matches the
+reported symptom's exact failure class. It could not be verified against the user's own real
+device/browser from this environment — real-browser E2E verification here (Playwright/Chromium,
+the full existing suite plus the dedicated Analyze-timeout test) all pass against the new bundled
+artifact with zero regressions, but that is not proof this was the specific trigger on the
+reporting device. If the "Worker error" recurs after this fix, the next actionable step is the
+exact literal error text plus the reporting browser/OS (module Worker support has historically
+varied most on older/mobile WebKit), not a further guess from this environment alone.

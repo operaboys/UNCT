@@ -35,6 +35,21 @@
  * here instead of a silent hang. Bundled output lives at
  * `assets/js/converter-worker.js`, the same convention as `parser-worker.js`.
  *
+ * `core/worker/analyzer.worker.js` is bundled here too (ADR-016 Addendum,
+ * 2026-07-06): it was originally left unbundled because its whole import
+ * graph has zero BARE npm specifiers, unlike the parser/converter Workers'
+ * `js-yaml` problem. That check was too narrow — the graph is still 18
+ * separate relative-import files (`core/analyzer/**`, `core/validator/
+ * validators.js`, `core/unm/schema/enums.js`, ...) a real Worker must fetch
+ * and link individually at construction time, and a real "Worker error"
+ * report (reproducible only intermittently, on a single node, ruling out any
+ * data/size cause) matched exactly the `Worker.onerror` failure class this
+ * same file already documents for the other two Workers above. Bundling
+ * collapses that 18-file resolution graph into one self-contained artifact,
+ * `assets/js/analyzer-worker.js`, removing the whole class of per-file
+ * fetch/resolution failure regardless of which specific file or browser
+ * quirk was ultimately responsible.
+ *
  * Not a dev-loop step — `npm test`/`npm run typecheck` never invoke this.
  * Run it only when packaging a release.
  *
@@ -101,3 +116,17 @@ await build({
   logLevel: "info",
 });
 console.log(`Built ${path.relative(root, converterWorkerOutfile)}`);
+
+const analyzerWorkerOutfile = path.join(root, "assets/js/analyzer-worker.js");
+await build({
+  entryPoints: [path.join(root, "core/worker/analyzer.worker.js")],
+  outfile: analyzerWorkerOutfile,
+  bundle: true,
+  format: "esm",
+  platform: "browser",
+  target: "es2023",
+  sourcemap: true,
+  minify: true,
+  logLevel: "info",
+});
+console.log(`Built ${path.relative(root, analyzerWorkerOutfile)}`);
