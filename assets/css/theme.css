@@ -970,6 +970,18 @@ code, kbd, samp, .mono {
   background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
+  /* A real drop-shadow (not just the hairline `border-block-end` below,
+     which is a 1px near-invisible-on-dark line meant as a subtle divider,
+     not a strong separator) so the boundary between the frozen header and
+     the row scrolling directly beneath it is never ambiguous. Verified
+     with a tight, high-DPI crop of exactly the `<th>`'s own bounding box
+     (not a wider screenshot, which made an adjacent-but-NOT-overlapping
+     row underneath look like it was bleeding through at normal viewing
+     scale) that zero content is ever actually behind this header once
+     opaque -- this shadow exists purely so a real user's eye gets an
+     unambiguous "this is a separate, elevated layer" cue too, not because
+     pixels were provably leaking through. */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 .data-table {
   width: 100%;
@@ -1398,8 +1410,32 @@ code, kbd, samp, .mono {
 :root[data-theme="dark"] .embed-frame {
   border-color: rgba(255, 255, 255, 0.14);
 }
+/* A real user confirmed by eye that the light-mode fix's own formula
+   (translucent white wash + blur, ported to dark mode as a low-opacity
+   white wash per `.glass-panel`'s own dark-mode convention) still let a
+   scrolled-past row's bright, high-contrast text visibly bleed through --
+   a genuine scroll-position sweep screenshot (not just DevTools computed
+   style) reproduced legible overlapping text at several real scrollTop
+   offsets. Root cause: `backdrop-filter` blurs whatever sits behind the
+   element, but the element's OWN low-opacity background is still
+   composited on top afterward -- at low opacity, a blurred-but-still-
+   BRIGHT smear (light text on this app's near-black dark background)
+   barely dims through a faint white wash, unlike light mode where blurred
+   dark text on a bright background already blurs toward near-white
+   before an equally-light wash finishes the job. No opacity/blur value
+   under 100% can *guarantee* zero bleed-through -- only full opacity can.
+   Since this header's entire job (unlike `.glass-panel`, which floats
+   over a static decorative gradient) is to permanently occlude
+   continuously scrolling text, translucency here buys nothing but risk.
+   Solid `rgb(53, 55, 58)` is not a new color: it is the exact flattened
+   equivalent of this file's own established dark-mode "control surface"
+   tint (`rgba(255, 255, 255, 0.14)` over `--unct-bg: #14161a`, the same
+   wash `.select`/`.input`/`.btn--ghost`/`.radio-card` already use) --
+   visually consistent with the rest of dark mode, but opaque, so zero
+   backdrop-filter is needed (blur has no visible effect behind a fully
+   opaque layer, so declaring it here would be dead CSS). */
 :root[data-theme="dark"] .table-scroll--virtual .data-table th {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(53, 55, 58);
 }
 
 /* Status/severity colors: brighter text tones so each tag/alert stays
