@@ -35,7 +35,7 @@
  * a responsive multi-column CSS grid (`auto-fill`) — virtualizing a
  * variable-column-count grid needs either a fixed column count (defeats the
  * responsive design) or real 2-D virtualization math, meaningfully more
- * complex than this needs. Real pagination (`QR_PAGE_SIZE` per page) is a
+ * complex than this needs. Real pagination (a page size per page) is a
  * better fit on BOTH axes: (1) it bounds `encode()` itself to only the
  * current page's nodes — virtualizing the DOM alone would still leave every
  * node's QR computed eagerly, which was the actual CPU cost, not just the
@@ -45,6 +45,18 @@
  * camera) than infinite scroll ever was. The "X skipped" hint below now
  * reports skips for the CURRENT PAGE only (accurate to what was actually
  * computed) rather than a global count across the whole node list.
+ *
+ * Responsive page size (2026-07-06 mobile bug): the original fixed
+ * `QR_PAGE_SIZE = 24` assumed `.qr-grid`'s multi-column desktop layout —
+ * fine there (24 items over a handful of rows), but the same grid collapses
+ * to 1 real column on a narrow mobile viewport, so those 24 items became 24
+ * stacked rows: a full-length page the user had to scroll through just to
+ * reach "Next", the opposite of what pagination was for. The page size is
+ * now `computeQrPageSize(width)` (`./qr-pagination.js`), driven by
+ * `.qr-grid`'s REAL measured width (`useElementWidth`,
+ * `../components/use-element-width.js`, a `ResizeObserver` on the grid
+ * element) — it mirrors the grid's own CSS column math so the page is
+ * always a small, bounded number of full rows regardless of viewport.
  *
  * HTML Report Export (doc 08 §8, §11 Security Layer, ADR-018) is now real
  * too: `core/exporter/to-html.js` builds the already-escaped-and-DOMPurify-
@@ -102,9 +114,10 @@ import { settingsStore, useSettingsState } from "../store/use-settings-state.js"
 import { recentExportsStore } from "../store/use-recent-exports-state.js";
 import { formatSkipped, type SkippedExportNode } from "./format.js";
 import { matrixToSvgPath, qrToSvgMarkup } from "./qr-render.js";
+import { computeQrPageSize, QR_PAGE_SIZE_FALLBACK } from "./qr-pagination.js";
+import { useElementWidth } from "../components/use-element-width.js";
 
 const QR_CELL_SIZE = 4;
-const QR_PAGE_SIZE = 24;
 
 // "sip008Plugin" calls the real Custom Exporter plugin (plugins/sip008-
 // exporter/) through appPluginRegistry.getExporter — never core/exporter/
@@ -143,6 +156,11 @@ export function ExportScreen() {
   const [format, setFormat] = useState<Format>("txt");
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
   const [qrPage, setQrPage] = useState(0);
+  const [qrGridRef, qrGridWidth] = useElementWidth<HTMLDivElement>();
+  // `QR_PAGE_SIZE_FALLBACK` only until the grid's first ResizeObserver report
+  // arrives -- see qr-pagination.ts for why the page size must track the
+  // container's REAL width instead of one constant for every viewport.
+  const qrPageSize = qrGridWidth == null ? QR_PAGE_SIZE_FALLBACK : computeQrPageSize(qrGridWidth);
 
   const { content, skipped }: { content: string; skipped: SkippedExportNode[] } = useMemo(() => {
     switch (format) {
@@ -165,11 +183,11 @@ export function ExportScreen() {
   );
   const zipSkippedMessage = formatSkipped(zipSkipped);
 
-  const qrTotalPages = Math.max(1, Math.ceil(nodes.length / QR_PAGE_SIZE));
+  const qrTotalPages = Math.max(1, Math.ceil(nodes.length / qrPageSize));
   const qrPageIndex = Math.min(qrPage, qrTotalPages - 1);
   const qrPageNodes = useMemo(
-    () => nodes.slice(qrPageIndex * QR_PAGE_SIZE, (qrPageIndex + 1) * QR_PAGE_SIZE),
-    [nodes, qrPageIndex],
+    () => nodes.slice(qrPageIndex * qrPageSize, (qrPageIndex + 1) * qrPageSize),
+    [nodes, qrPageIndex, qrPageSize],
   );
   // Only the current page's nodes are ever encoded — see the module header
   // comment for why this bounds the real CPU cost, not just the DOM cost.
@@ -336,7 +354,7 @@ export function ExportScreen() {
                 {t("export.qr.pagination.next")}
               </button>
             </div>
-            <div class="qr-grid" style={{ marginBlockStart: "14px" }}>
+            <div class="qr-grid" style={{ marginBlockStart: "14px" }} ref={qrGridRef}>
               {qrCodes.map((qr) => (
                 <figure class="qr-card glass-panel" key={qr.nodeId}>
                   <svg
