@@ -96,7 +96,7 @@ export const en = {
   "dashboard.quickActions.title": "Quick Actions",
   "dashboard.quickActions.importConfig": "Import Config",
   "dashboard.quickActions.exportAll": "Export All",
-  "dashboard.quickActions.runDiagnostics": "Run Diagnostics",
+  "dashboard.quickActions.runDiagnostics": "Diagnostics",
   "dashboard.warnings.title": "Warnings",
 
   // converter-screen.tsx

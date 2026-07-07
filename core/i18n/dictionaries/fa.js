@@ -98,7 +98,7 @@ export const fa = {
   "dashboard.quickActions.title": "اقدامات سریع",
   "dashboard.quickActions.importConfig": "ورود کانفیگ",
   "dashboard.quickActions.exportAll": "خروجی گرفتن از همه",
-  "dashboard.quickActions.runDiagnostics": "اجرای عیب‌یابی",
+  "dashboard.quickActions.runDiagnostics": "عیب‌یابی",
   "dashboard.warnings.title": "هشدارها",
 
   // converter-screen.tsx
