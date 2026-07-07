@@ -131,7 +131,7 @@ export const fa = {
   "converter.normalizedObject.ariaLabel": "آبجکت نرمال‌شده",
   "converter.outputPanel.title": "خروجی",
   "converter.outputPanel.ariaLabel": "پنل خروجی",
-  "converter.outputPanel.previewHint": "این یک پیش‌نمایش سریع است — برای دریافت خروجی کامل، به Export Center مراجعه کنید.",
+  "converter.outputPanel.previewHint": "این یک پیش‌نمایش سریع است — برای دریافت خروجی کامل، به مرکز خروجی مراجعه کنید.",
   "converter.outputPanel.nothingToExport": "هنوز چیزی برای خروجی گرفتن وجود ندارد.",
   "converter.format.url": "لینک‌ها (URL)",
   "converter.format.xrayJson": "Xray JSON",
