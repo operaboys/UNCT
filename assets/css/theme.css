@@ -1570,9 +1570,9 @@ code, kbd, samp, .mono {
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: rgba(255, 255, 255, 0.40);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   color: var(--unct-text);
   box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
   transition: transform 0.15s;
@@ -1581,5 +1581,5 @@ code, kbd, samp, .mono {
   transform: translateY(-2px);
 }
 :root[data-theme="dark"] .scroll-fab {
-  background: rgba(20, 22, 26, 0.40);
+  background: rgba(20, 22, 26, 0.80);
 }
