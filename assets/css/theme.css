@@ -1078,6 +1078,31 @@ code, kbd, samp, .mono {
    `min-width`) sized to fit the full timestamp with room to spare. */
 .data-table th.col-timestamp { width: 210px; }
 .data-table td.col-timestamp { white-space: nowrap; }
+/* Third bug in this same family (2026-07-07, real mobile screenshot):
+   `.col-nodeid`/`.col-timestamp` reserve real width for THEIR OWN columns,
+   but `table-layout: fixed` still divides the table's overall computed
+   width -- if that computed width is capped by an outdated per-table
+   `min-width` tier (the generic `:has(th:nth-child(N))` rules above, which
+   predate these two classes and don't know about them), the OTHER,
+   un-classed columns (e.g. Parser Logs' "Parser"/"Source Type") get
+   whatever is left over, which can be zero or negative on a narrow mobile
+   viewport where the tier's old budget is smaller than what the two
+   explicit-width columns alone already need (Parser Logs: 450px tier vs.
+   300px Node ID + 210px Created At = 510px+padding already over budget) --
+   a column truly given ~0px still renders its text, wrapping every single
+   character onto its own line (the "vertical letter stack" visual bug).
+   Fix: raise the min-width specifically for table shapes that combine a
+   known column count with these known-wide columns, using a MORE specific
+   `:has()` selector (real CSS specificity, not source order) so it wins
+   over the generic same-column-count tier above without touching tables
+   that don't have either special column. Values = the two columns' real
+   border-box width (`.col-nodeid` 320px, `.col-timestamp` 230px) + ~110px
+   per remaining column (the same average the generic tiers already use). */
+.data-table:has(th:nth-child(2)):has(th.col-nodeid) { min-width: 430px; }
+.data-table:has(th:nth-child(3)):has(th.col-nodeid) { min-width: 540px; }
+.data-table:has(th:nth-child(4)):has(th.col-nodeid) { min-width: 650px; }
+.data-table:has(th:nth-child(4)):has(th.col-nodeid):has(th.col-timestamp) { min-width: 770px; }
+.data-table:has(th:nth-child(12)):has(th.col-timestamp) { min-width: 1460px; }
 .data-table th {
   text-align: start;
   /* 12px (was 11.5px) + `--unct-text` (was `--unct-text-muted`, 2026-07-06

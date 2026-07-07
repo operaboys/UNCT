@@ -109,3 +109,40 @@ test("Subscription Center Node List 'Imported At' column stays single-line with 
   });
   expect(lineCount).toBe(1);
 });
+
+/**
+ * Regression test for a THIRD bug in this same family (2026-07-07, real
+ * mobile screenshot): `.col-nodeid`/`.col-timestamp` reserve real width for
+ * their own columns, but the per-table `min-width` tiers that predate those
+ * classes didn't know about them -- on Parser Logs (4 columns), the tier's
+ * old 450px budget was LESS than the 510px+ the two explicit-width columns
+ * alone already need, so the other two un-classed columns ("Parser",
+ * "Source Type") were squeezed to 0px on a real mobile viewport, and their
+ * text wrapped letter-by-letter onto its own line (a "vertical letter
+ * stack" visual bug, not the row-height wrap the tests above cover).
+ */
+test("DevConsole Parser Logs + Detection Logs: no column is squeezed to ~0px on a real mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/index.html");
+  await page.getByRole("button", { name: "Converter", exact: true }).click();
+  await page.locator("textarea").first().fill(buildXrayJsonArray(10));
+  await page.getByRole("button", { name: "Parse", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Parse", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole("button", { name: "Developer Console", exact: true }).click();
+
+  for (const label of ["Parser Logs", "Detection Logs"]) {
+    const table = page.locator(`[aria-label="${label}"] table`).first();
+    await expect(table).toBeVisible();
+    const headers = table.locator("thead th");
+    const count = await headers.count();
+    for (let i = 0; i < count; i++) {
+      const box = await headers.nth(i).boundingBox();
+      if (!box) throw new Error(`${label} header ${i} has no bounding box`);
+      // A real column, however narrow, is never squeezed to nothing --
+      // the table must grow past the container and let horizontal scroll
+      // (already established elsewhere in this file) handle it instead.
+      expect(box.width).toBeGreaterThan(30);
+    }
+  }
+});
