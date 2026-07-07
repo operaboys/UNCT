@@ -28,6 +28,8 @@ export const en = {
   "common.na": "N/A",
   "common.all": "All",
   "common.skippedPrefix": "Skipped: ",
+  "common.scrollToTop": "Scroll to top",
+  "common.scrollToBottom": "Scroll to bottom",
   "common.fields.protocol": "Protocol",
   "common.fields.address": "Address",
   "common.fields.port": "Port",

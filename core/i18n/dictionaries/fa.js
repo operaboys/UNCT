@@ -30,6 +30,8 @@ export const fa = {
   "common.na": "نامشخص",
   "common.all": "همه",
   "common.skippedPrefix": "رد شده: ",
+  "common.scrollToTop": "رفتن به بالا",
+  "common.scrollToBottom": "رفتن به پایین",
   "common.fields.protocol": "پروتکل",
   "common.fields.address": "آدرس",
   "common.fields.port": "پورت",

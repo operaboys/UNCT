@@ -17,6 +17,7 @@ import { ExportScreen } from "./export/export-screen.js";
 import { SettingsScreen } from "./settings/settings-screen.js";
 import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
 import { AppNav } from "./components/nav.js";
+import { ScrollFab } from "./components/scroll-fab.js";
 import { useSettingsState } from "./store/use-settings-state.js";
 import { parserStore } from "./store/use-parser-state.js";
 import { templateLibraryStore } from "./store/use-template-state.js";
@@ -79,6 +80,7 @@ function App() {
       ) : (
         <DevConsoleScreen />
       )}
+      <ScrollFab />
     </div>
   );
 }
