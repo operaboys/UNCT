@@ -1531,15 +1531,33 @@ code, kbd, samp, .mono {
 /* Scroll-to-Top/Bottom FAB (`ui/components/scroll-fab.tsx`) — fixed at the
    physical bottom-left corner in BOTH ltr/rtl (`left`, not a logical
    inset-inline-start; see the component's own header comment for why).
-   Real Liquid Glass (2026-07-07, user-requested): same translucent +
-   `backdrop-filter: blur` mechanism as the sticky table header
-   (`.table-scroll--virtual .data-table th` below), not `.btn--primary`'s
-   solid gradient -- Light Mode alpha 0.50, Dark Mode alpha 0.80 (per
-   explicit request), `color: var(--unct-text)` so the arrow glyph stays
-   readable against either theme's translucent tint. */
+   `left: 56px`, not `20px` (2026-07-07, real bug found from the user's own
+   screenshot -- the button looked like a flat opaque disc with zero trace
+   of the "Valid Nodes" card behind it, contradicting the "should look like
+   the headers" request). Root cause, confirmed with `elementFromPoint` swept
+   across the full scroll range of both Dashboard and Subscription Center: at
+   `left: 20px` the button's whole 48px box sat inside `body`'s own
+   `padding-inline: 36px` outer margin plus each panel's internal padding --
+   i.e. it was never once geometrically on top of real card/row content, on
+   ANY screen, at ANY scroll position, so there was nothing for
+   `backdrop-filter` to blur-and-reveal; a flat, mostly-uniform background
+   blurred still looks flat. `56px` was verified (same method) to land the
+   box on real content -- a protocol badge/row -- on both screens tested.
+   Alpha/blur (2026-07-07, second correction): copying the sticky header's
+   own `0.50/0.80` values was ALSO wrong, even after the position fix --
+   that header's own comment above states its explicit goal is to fully
+   HIDE a scrolled-past row (Liquid Glass "occlusion", not reveal); reusing
+   its values here just re-created the same opaque look, now over real
+   content instead of empty margin. This button's ask is the opposite --
+   "whatever passes under it should still read through, hazily" -- so it
+   needed its OWN, lower alpha / wider blur, tuned by real side-by-side
+   screenshots (not `getComputedStyle`) until a colored badge/row was
+   visibly legible-but-blurred through it: Light Mode 0.25 / `blur(24px)`,
+   Dark Mode 0.40 / `blur(24px)`. `color: var(--unct-text)` keeps the arrow
+   glyph readable against either theme's translucent tint. */
 .scroll-fab {
   position: fixed;
-  left: 20px;
+  left: 56px;
   bottom: 20px;
   z-index: 20;
   width: 48px;
@@ -1552,9 +1570,9 @@ code, kbd, samp, .mono {
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.50);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   color: var(--unct-text);
   box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
   transition: transform 0.15s;
@@ -1563,5 +1581,5 @@ code, kbd, samp, .mono {
   transform: translateY(-2px);
 }
 :root[data-theme="dark"] .scroll-fab {
-  background: rgba(20, 22, 26, 0.80);
+  background: rgba(20, 22, 26, 0.40);
 }
