@@ -85,7 +85,7 @@ test.describe("Dark Mode — sticky table header stays real translucent glass, n
     // Above Light Mode's own 0.42 (a deliberate user-requested bump,
     // 0.55 then 0.65 then 0.75) -- still real translucent glass, not a
     // solid block.
-    expect(alpha).toBeCloseTo(0.75, 1);
+    expect(alpha).toBeCloseTo(0.80, 1);
     // A real dark tint (not attempt-1's white wash on a dark background).
     const numbers = backgroundColor.match(/\d+/g);
     if (!numbers) throw new Error(`Unexpected backgroundColor format: ${backgroundColor}`);
