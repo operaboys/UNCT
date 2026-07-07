@@ -716,7 +716,7 @@ type NodeTableProps = {
 function NodeTableHeaderRow({ t }: { t: (key: string) => string }) {
   return (
     <tr>
-      <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th>{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th><th>{t("subscription.nodeList.tagsColumn")}</th>
+      <th>{t("subscription.nodeList.includeColumn")}</th><th>{t("common.fields.protocol")}</th><th>{t("common.fields.address")}</th><th>{t("common.fields.port")}</th><th>{t("common.fields.valid")}</th><th>{t("subscription.securityRanking.scoreColumn")}</th><th>{t("subscription.nodeList.latencyColumn")}</th><th>{t("subscription.nodeList.portCheckColumn")}</th><th>{t("subscription.nodeList.geoIpColumn")}</th><th class="col-timestamp">{t("common.fields.importedAt")}</th><th>{t("subscription.nodeList.templateColumn")}</th><th>{t("subscription.nodeList.tagsColumn")}</th>
     </tr>
   );
 }
@@ -817,7 +817,7 @@ function NodeTableRow({
           <span class="hint">{" "}{formatGeoIp(geoIp)}</span>
         )}
       </td>
-      <td class="mono"><bdi>{n.createdAt}</bdi></td>
+      <td class="mono col-timestamp"><bdi>{n.createdAt}</bdi></td>
       <td>
         <button type="button" class="btn btn--ghost btn--sm" onClick={() => onSaveAsTemplate(n)}>{t("subscription.nodeList.saveAsTemplate")}</button>
       </td>

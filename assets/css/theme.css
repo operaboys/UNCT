@@ -1021,6 +1021,63 @@ code, kbd, samp, .mono {
 .data-table:has(th:nth-child(8)) { min-width: 910px; }
 .data-table:has(th:nth-child(9)) { min-width: 1020px; }
 .data-table:has(th:nth-child(12)) { min-width: 1360px; }
+/* Root cause of a bug that survived several backdrop-filter/opacity
+   iterations on the sticky header below (2026-07-06, real user report with
+   a real screenshot): the ~113px/column average above was calibrated
+   against Subscription Center's Node List, which never shows a raw UUID --
+   but Developer Console's Parser Logs/Diagnostics/Validation Logs/
+   Detection Logs tables DO show a raw 36-character Node ID as their first
+   column, and `table-layout: fixed` divides a table's min-width EVENLY
+   across columns with no per-column hint. On a 4-column table
+   (450px / 4 = 112.5px), that Node ID column was starved to under half of
+   what a 36-char UUID needs at this app's 13px monospace font, so it
+   wrapped onto 2 lines -- and a 2-line row breaks the sticky header's
+   whole occlusion premise: the header only ever covers ONE line's height,
+   so a wrapped row's second line was never actually BEHIND the header at
+   all -- it sat genuinely next to it, in its own space, fully legible
+   regardless of ANY `backdrop-filter`/opacity value (this is why every
+   value tried on `.table-scroll--virtual .data-table th` below still
+   showed real, readable text -- none of them could fix a bug that was
+   never about translucency in the first place). First attempted fix used
+   `min-width` on the `<th>` -- verified WRONG in a real browser: under
+   `table-layout: fixed`, Chromium's column-width algorithm only consults
+   the first row's `width` (not `min-width`) to size columns, so that
+   `min-width` was silently ignored for sizing purposes, the column stayed
+   at its even 1/4 share, and the now-`nowrap` UUID text overflowed its
+   cell horizontally, VISUALLY OVERLAPPING the Parser column instead of
+   wrapping -- a different, equally-real bug, caught by re-running the same
+   real-browser screenshot check rather than trusting the CSS in isolation.
+   Real fix: an explicit `width` (which `table-layout: fixed` DOES honor
+   for first-row column sizing) sized to fit a full UUID, so the column
+   never needs to wrap OR overflow -- forcing `.table-scroll`'s existing
+   horizontal scroll if the container is too narrow for it plus the other
+   columns, the exact same mechanism as the per-table min-width above, just
+   applied per-column here. */
+.data-table th.col-nodeid { width: 300px; }
+.data-table td.col-nodeid { white-space: nowrap; }
+/* Second half of the same bug, found only after re-checking with a real
+   Xray import at a real narrower viewport (1000px) instead of trusting the
+   `.col-nodeid` fix alone: DevConsole's Parser Logs "Created At" column and
+   Subscription Center's Node List "Imported At" column both print the raw
+   ISO 8601 `createdAt` timestamp (e.g. "2026-07-06T17:34:16.036Z", 24
+   chars) with NO explicit width, so `table-layout: fixed` gave it the same
+   even, un-reserved share as every plain text column (~168px content box at
+   1000px viewport) -- but a 24-char string at this app's 13px monospace
+   font measures ~187px, so it silently wrapped via the pre-existing
+   `overflow-wrap: anywhere` on `.data-table td` (needed elsewhere for
+   Base64/long values), taking the WHOLE ROW to 2 lines even though the
+   Node ID cell itself was, by then, already correctly single-line. This is
+   why checking `scrollWidth > clientWidth` on individual cells during the
+   first diagnosis pass was a dead end: a `<td>` has no fixed height, so it
+   always grows to fit its own content -- `scrollHeight === clientHeight`
+   for EVERY cell in a row regardless of which one actually wrapped, since
+   they all inherit the row's final (tallest-cell) height. Measuring the
+   text's actual rendered width directly (not comparing scroll/client
+   metrics) is what exposed it. Same fix pattern as `.col-nodeid`: an
+   explicit `width` (`table-layout: fixed` honors first-row `width`, not
+   `min-width`) sized to fit the full timestamp with room to spare. */
+.data-table th.col-timestamp { width: 210px; }
+.data-table td.col-timestamp { white-space: nowrap; }
 .data-table th {
   text-align: start;
   /* 12px (was 11.5px) + `--unct-text` (was `--unct-text-muted`, 2026-07-06

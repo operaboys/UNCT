@@ -140,13 +140,13 @@ export function DevConsoleScreen() {
             <VirtualTable
               items={parserLog}
               columnCount={4}
-              header={<tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.sourceType")}</th><th>{t("common.fields.createdAt")}</th></tr>}
+              header={<tr><th class="col-nodeid">{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.sourceType")}</th><th class="col-timestamp">{t("common.fields.createdAt")}</th></tr>}
               renderRow={(entry) => (
                 <>
-                  <td class="mono">{entry.nodeId}</td>
+                  <td class="mono col-nodeid">{entry.nodeId}</td>
                   <td>{entry.parser}</td>
                   <td>{entry.sourceType}</td>
-                  <td class="mono"><bdi>{entry.createdAt}</bdi></td>
+                  <td class="mono col-timestamp"><bdi>{entry.createdAt}</bdi></td>
                 </>
               )}
             />
@@ -160,11 +160,11 @@ export function DevConsoleScreen() {
               <VirtualTable
                 items={diagnostics}
                 columnCount={4}
-                header={<tr><th>{t("devconsole.diagnostics.severityColumn")}</th><th>{t("common.fields.nodeId")}</th><th>{t("devconsole.diagnostics.codeColumn")}</th><th>{t("devconsole.diagnostics.messageColumn")}</th></tr>}
+                header={<tr><th>{t("devconsole.diagnostics.severityColumn")}</th><th class="col-nodeid">{t("common.fields.nodeId")}</th><th>{t("devconsole.diagnostics.codeColumn")}</th><th>{t("devconsole.diagnostics.messageColumn")}</th></tr>}
                 renderRow={(d) => (
                   <>
                     <td><span class={`tag ${SEVERITY_TAG_CLASS[d.severity] ?? "tag--info"}`}>{d.severity}</span></td>
-                    <td class="mono">{d.nodeId}</td>
+                    <td class="mono col-nodeid">{d.nodeId}</td>
                     <td class="mono">{d.code}</td>
                     <td>{d.message}</td>
                   </>
@@ -190,10 +190,10 @@ export function DevConsoleScreen() {
               <VirtualTable
                 items={validationFailures}
                 columnCount={2}
-                header={<tr><th>{t("common.fields.nodeId")}</th><th>{t("devconsole.validationLogs.fieldColumn")}</th></tr>}
+                header={<tr><th class="col-nodeid">{t("common.fields.nodeId")}</th><th>{t("devconsole.validationLogs.fieldColumn")}</th></tr>}
                 renderRow={(entry) => (
                   <>
-                    <td class="mono">{entry.nodeId}</td>
+                    <td class="mono col-nodeid">{entry.nodeId}</td>
                     <td>{entry.field}</td>
                   </>
                 )}
@@ -244,10 +244,10 @@ export function DevConsoleScreen() {
             <VirtualTable
               items={detectionLog}
               columnCount={3}
-              header={<tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>}
+              header={<tr><th class="col-nodeid">{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>}
               renderRow={(entry) => (
                 <>
-                  <td class="mono">{entry.nodeId}</td>
+                  <td class="mono col-nodeid">{entry.nodeId}</td>
                   <td>{entry.parser}</td>
                   <td>{formatScore(entry.confidence)}</td>
                 </>
@@ -258,15 +258,15 @@ export function DevConsoleScreen() {
               <VirtualTable
                 items={alternativeCandidateRows}
                 columnCount={3}
-                header={<tr><th>{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>}
+                header={<tr><th class="col-nodeid">{t("common.fields.nodeId")}</th><th>{t("common.fields.parser")}</th><th>{t("common.fields.confidenceScore")}</th></tr>}
                 renderRow={(row) => row.onlyEligible ? (
                   <>
-                    <td class="mono">{row.nodeId}</td>
+                    <td class="mono col-nodeid">{row.nodeId}</td>
                     <td colSpan={2} class="hint">{t("devconsole.detectionLogs.alternativeCandidates.onlyEligible")}</td>
                   </>
                 ) : (
                   <>
-                    <td class="mono">{row.nodeId}</td>
+                    <td class="mono col-nodeid">{row.nodeId}</td>
                     <td>{row.name}</td>
                     <td>{formatScore(row.confidence)}</td>
                   </>
