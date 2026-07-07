@@ -19,10 +19,11 @@
  * sorts/displays/aggregates values Core already computed, it never scores
  * or validates anything itself.
  *
- * Deliberately deferred past this first pass (doc 07 §4.2 lists it, it
- * doesn't block the Parser -> Validation -> Converter chain this screen
- * exists to prove): QR output (no QR library has been reviewed under
- * 14-DEPENDENCY_POLICY yet).
+ * This screen's Output Panel is a quick, stage-by-stage PREVIEW of the
+ * current in-memory result, not a full export tool — it never had QR and
+ * never will, by design, not because of any unreviewed dependency. Full,
+ * paginated QR output (`uqr`, ADR-017-EXPORT-DEPENDENCIES) is Export
+ * Center's exclusive responsibility.
  *
  * Visual design (final visual design phase, Converter step): restyled onto
  * the Liquid Glass system (07-UI_UX_SYSTEM §2) using the same reusable
@@ -328,7 +329,7 @@ export function ConverterScreen() {
             ))}
           </select>
         </div>
-        <p class="hint">{t("converter.outputPanel.qrDeferredHint")}</p>
+        <p class="hint">{t("converter.outputPanel.previewHint")}</p>
         {nodes.length === 0 ? (
           <p class="hint">{t("converter.outputPanel.nothingToExport")}</p>
         ) : (

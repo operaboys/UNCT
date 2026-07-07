@@ -129,7 +129,7 @@ export const en = {
   "converter.normalizedObject.ariaLabel": "Normalized Object",
   "converter.outputPanel.title": "Output",
   "converter.outputPanel.ariaLabel": "Output Panel",
-  "converter.outputPanel.qrDeferredHint": "QR output isn't available in this list yet — download QR codes from the Export Center screen instead.",
+  "converter.outputPanel.previewHint": "This is a quick preview — for the full export, use the Export Center.",
   "converter.outputPanel.nothingToExport": "Nothing to export yet.",
   "converter.format.url": "Links (URL)",
   "converter.format.xrayJson": "Xray JSON",
