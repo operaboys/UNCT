@@ -1,29 +1,33 @@
 /**
  * Regression test for the dark-mode sticky-header overlap bug
  * (`assets/css/theme.css`'s `.table-scroll--virtual .data-table th`,
- * 2026-07-06) and its two follow-up corrections:
+ * 2026-07-06/07) and its follow-up corrections:
  *
- * 1. First attempt: translucent white wash (matching `.glass-panel`'s own
- *    dark-mode convention) + `backdrop-filter: blur`. A real user confirmed
- *    by eye that scrolled-past row text still bled through legibly.
- * 2. Second attempt: went to the opposite extreme -- fully OPAQUE
- *    `rgb(53, 55, 58)`, zero `backdrop-filter` (dead at alpha=1). This
- *    provably killed all bleed-through, but the same user then correctly
- *    pointed out it also killed the Liquid Glass *feel* entirely -- a flat
- *    solid rectangle instead of frosted glass.
- * 3. THIS fix: a deliberate, tested balance -- `rgba(20, 22, 26, 0.97)` +
- *    real `backdrop-filter: blur(20px)`. A systematic scroll-sweep +
- *    forensic high-DPI crop test (documented in the CSS comment itself)
- *    showed NO translucent value fully eliminates bleed-through under
- *    active forensic zoom -- only alpha=1 can guarantee that -- but at any
- *    normal viewing scale, 0.97 reads as genuinely illegible AND keeps a
- *    real, visible soft blur gradient (unlike the flat solid version).
+ * 1. First attempt: translucent white wash + `blur`. Still bled through.
+ * 2. Second attempt: fully OPAQUE, zero blur. Killed bleed-through but also
+ *    killed the Liquid Glass *feel* -- a flat solid rectangle.
+ * 3. Third attempt: `rgba(20, 22, 26, 0.97)` + `blur(20px)`, tuned by
+ *    judging legibility on Developer Console data that (unknown at the
+ *    time) was ALSO wrapping onto 2 lines from an unrelated `.data-table`
+ *    column-width bug -- so a wrapped row's second line sat entirely
+ *    outside the header's coverage, fully legible regardless of this
+ *    rule's opacity, which made every opacity below 0.97 look like it was
+ *    failing when the real defect was the wrap, not the blur.
+ * 4. THIS fix (once the real row-wrap bug was found and fixed elsewhere):
+ *    re-tested on genuinely single-line rows, at real 1x viewing scale.
+ *    Light Mode's own shipping formula (`rgba(255,255,255,0.42)` +
+ *    `blur(16px)`, unchanged) shows the same soft, blurred, partially-
+ *    legible-if-you-focus ghosting at a mid-scroll position -- and a real
+ *    user confirmed that IS what "blur" should look like: partial
+ *    obscuring via real blur, not full opaque coverage. Dark Mode now
+ *    mirrors Light Mode's own alpha/blur instead of a separately-tuned,
+ *    much heavier one.
  *
- * These tests guard the two failure directions at once: dark mode must
- * stay meaningfully translucent (not regress back to the flat solid
- * rgb(53, 55, 58) from attempt 2) AND stay highly opaque (not regress back
- * to the too-transparent attempt-1 formula) -- both regressions are real,
- * already-shipped-and-reverted states in this exact file's history.
+ * These tests guard both failure directions: dark mode must stay
+ * meaningfully translucent (not regress to the flat solid rgb(53,55,58)
+ * from attempt 2) AND must not regress back to the much heavier 0.97+
+ * opacity from attempt 3, which no longer matches Light Mode's own
+ * character.
  */
 import { test, expect } from "@playwright/test";
 
@@ -62,7 +66,7 @@ async function openDetectionLogsScrollContainer(page) {
 }
 
 test.describe("Dark Mode — sticky table header stays real translucent glass, not flat solid", () => {
-  test("background-color alpha is high (>= 0.9) but genuinely translucent (< 1), with a real blur", async ({ page }) => {
+  test("background-color mirrors Light Mode's own alpha/blur -- a real dark tint, genuinely translucent, not the old near-opaque 0.97", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("unct:theme", JSON.stringify("dark")));
     const scrollContainer = await openDetectionLogsScrollContainer(page);
     // 20px -- deliberately NOT a multiple of the ~38px row height, the exact
@@ -72,12 +76,18 @@ test.describe("Dark Mode — sticky table header stays real translucent glass, n
     const th = scrollContainer.locator("thead th").first();
     await expect(th).toBeVisible();
     const alpha = await readAlpha(th);
+    const backgroundColor = await th.evaluate((el) => getComputedStyle(el).backgroundColor);
     const backdropFilter = await th.evaluate((el) => getComputedStyle(el).backdropFilter);
 
     // Not attempt-2's flat solid regression (alpha === 1)...
     expect(alpha).toBeLessThan(1);
-    // ...and not attempt-1's too-transparent regression either (legible bleed).
-    expect(alpha).toBeGreaterThanOrEqual(0.9);
+    // ...and not attempt-3's much heavier near-opaque regression (0.97) --
+    // this now mirrors Light Mode's own 0.42, not a separately-tuned value.
+    expect(alpha).toBeCloseTo(0.42, 1);
+    // A real dark tint (not attempt-1's white wash on a dark background).
+    const numbers = backgroundColor.match(/\d+/g);
+    if (!numbers) throw new Error(`Unexpected backgroundColor format: ${backgroundColor}`);
+    expect(Number(numbers[0])).toBeLessThan(50);
     // A real, non-dead blur -- proof this is still genuinely "glass".
     expect(backdropFilter).toContain("blur");
   });
