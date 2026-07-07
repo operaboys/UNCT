@@ -81,9 +81,10 @@ test.describe("Dark Mode — sticky table header stays real translucent glass, n
 
     // Not attempt-2's flat solid regression (alpha === 1)...
     expect(alpha).toBeLessThan(1);
-    // ...and not attempt-3's much heavier near-opaque regression (0.97) --
-    // this now mirrors Light Mode's own 0.42, not a separately-tuned value.
-    expect(alpha).toBeCloseTo(0.42, 1);
+    // ...and not attempt-3's much heavier near-opaque regression (0.97).
+    // Slightly above Light Mode's own 0.42 (a deliberate user-requested
+    // bump to 0.55) -- still real translucent glass, not a solid block.
+    expect(alpha).toBeCloseTo(0.55, 1);
     // A real dark tint (not attempt-1's white wash on a dark background).
     const numbers = backgroundColor.match(/\d+/g);
     if (!numbers) throw new Error(`Unexpected backgroundColor format: ${backgroundColor}`);
