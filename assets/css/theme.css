@@ -1531,9 +1531,12 @@ code, kbd, samp, .mono {
 /* Scroll-to-Top/Bottom FAB (`ui/components/scroll-fab.tsx`) — fixed at the
    physical bottom-left corner in BOTH ltr/rtl (`left`, not a logical
    inset-inline-start; see the component's own header comment for why).
-   Reuses `.btn--primary`'s exact gradient/shadow so it needs no separate
-   dark-mode override -- that gradient already has enough contrast against
-   both the light and dark page backgrounds. */
+   Real Liquid Glass (2026-07-07, user-requested): same translucent +
+   `backdrop-filter: blur` mechanism as the sticky table header
+   (`.table-scroll--virtual .data-table th` below), not `.btn--primary`'s
+   solid gradient -- Light Mode alpha 0.50, Dark Mode alpha 0.80 (per
+   explicit request), `color: var(--unct-text)` so the arrow glyph stays
+   readable against either theme's translucent tint. */
 .scroll-fab {
   position: fixed;
   left: 20px;
@@ -1549,11 +1552,16 @@ code, kbd, samp, .mono {
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  color: var(--unct-text);
   box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
   transition: transform 0.15s;
 }
 .scroll-fab:hover {
   transform: translateY(-2px);
+}
+:root[data-theme="dark"] .scroll-fab {
+  background: rgba(20, 22, 26, 0.80);
 }

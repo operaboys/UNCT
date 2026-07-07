@@ -926,6 +926,15 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   در صفحه‌ی کوتاه (Settings) دکمه اصلاً در DOM نیست. تست رگرسیون در
   `tests/e2e/scroll-fab.spec.js`.
 
+- **تنظیم بصری بعدی (درخواست مستقیم کاربر): همان مکانیزم Blur شیشه‌ای هدر Sticky روی
+  خودِ دکمه.** پس‌زمینه‌ی گرادیانِ توپُر قبلی با همان فرمول `.table-scroll--virtual
+  .data-table th` جایگزین شد — `background` نیمه‌شفاف + `backdrop-filter:
+  blur(16px) saturate(160%)`، با `color: var(--unct-text)` تا فلش در هر دو Theme
+  خوانا بماند. مقدار Opacity دقیقاً طبق درخواست: **۰.۵۰ در Light Mode**، **۰.۸۰ در
+  Dark Mode** (`:root[data-theme="dark"] .scroll-fab`). تأیید شد با
+  `getComputedStyle` واقعی: `rgba(255, 255, 255, 0.5)` در روشن، `rgba(20, 22, 26,
+  0.8)` در تاریک، هر دو با `backdrop-filter: blur(16px) saturate(1.6)` واقعی.
+
 ---
 
 ## گام بعدی واقعی
