@@ -368,7 +368,14 @@ export interface SubscriptionSummary {
   protocolDistribution: Record<string, number>;
   /** Identity-key collision groups (each length >= 2). */
   duplicateGroups: DuplicateGroup[];
-  /** Total nodes appearing across `duplicateGroups` (sum of group sizes) — the headline "Duplicate Nodes" count. */
+  /**
+   * The headline "Duplicate Nodes" count — how many nodes running the real
+   * Deduplicate action (`core/store/selectors.js#selectDeduplicatedNodes`)
+   * would actually REMOVE, i.e. `sum(group.nodeIds.length - 1)` across
+   * `duplicateGroups`, NOT the full group sizes. One node per group (the
+   * earliest by `createdAt`) always survives, so this is always strictly
+   * less than the total nodes appearing in `duplicateGroups`.
+   */
   duplicateNodeCount: number;
   /** nodeIds where `validation.overallValid === false` — read from the Validation Engine's own existing verdict, never re-judged here. */
   invalidNodeIds: string[];

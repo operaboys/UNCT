@@ -52,7 +52,12 @@ test.describe("Subscription Center — Summary Panel (Phase 10, §2.5)", () => {
 
     const dd = overview.locator("dl dd");
     await expect(dd.nth(0)).toHaveText("4"); // Total Nodes
-    await expect(dd.nth(1)).toHaveText("2"); // Duplicate Nodes (node-A + node-B)
+    // Duplicate Nodes = how many Deduplicate would actually REMOVE, not the
+    // full group size: node-A + node-B form one group of 2, and Deduplicate
+    // keeps exactly one survivor (the earliest by createdAt) per group, so
+    // only 1 is actually removed here (fixed 2026-07-07 -- this used to
+    // read "2", the full group size, which misread as "both get removed").
+    await expect(dd.nth(1)).toHaveText("1");
     await expect(dd.nth(2)).toHaveText("1"); // Invalid Nodes (node-D)
     // No real liveness signal exists anywhere — must read "N/A", never a guessed count (Rule 9).
     await expect(dd.nth(3)).toHaveText("N/A"); // Dead Nodes Candidate

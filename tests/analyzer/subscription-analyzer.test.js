@@ -46,7 +46,11 @@ describe("analyzeSubscription — Duplicate Nodes", () => {
     const summary = analyzeSubscription([a, b]);
     expect(summary.duplicateGroups).toHaveLength(1);
     expect(summary.duplicateGroups[0].nodeIds.sort()).toEqual([a.nodeId, b.nodeId].sort());
-    expect(summary.duplicateNodeCount).toBe(2);
+    // 1, not 2: one of the two survives Deduplicate (the earliest by
+    // createdAt, per selectDeduplicatedNodes), so only 1 is actually
+    // removed -- the real, fixed 2026-07-07 bug reported the full group
+    // size (2) here, which read as "both nodes will be removed".
+    expect(summary.duplicateNodeCount).toBe(1);
   });
 
   it("does NOT flag same address+port with a different credential as duplicate", () => {
@@ -55,6 +59,31 @@ describe("analyzeSubscription — Duplicate Nodes", () => {
     const summary = analyzeSubscription([a, b]);
     expect(summary.duplicateGroups).toHaveLength(0);
     expect(summary.duplicateNodeCount).toBe(0);
+  });
+
+  it("sums (group size - 1) across MULTIPLE groups of different sizes -- never the full group size", () => {
+    const uuidA = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    const uuidB = "11111111-2222-3333-4444-555555555555";
+    // Group A: 2 copies of the same node (protocol+address+port+uuid) -- 1 removed.
+    const a1 = node({ uuid: uuidA, remark: "a-copy-1" });
+    const a2 = node({ uuid: uuidA, remark: "a-copy-2" });
+    // Group B: 3 copies of a DIFFERENT node -- 2 removed.
+    const b1 = node({ uuid: uuidB, address: "b.example.com", remark: "b-copy-1" });
+    const b2 = node({ uuid: uuidB, address: "b.example.com", remark: "b-copy-2" });
+    const b3 = node({ uuid: uuidB, address: "b.example.com", remark: "b-copy-3" });
+    // A lone, non-duplicated node -- contributes nothing either way.
+    const c = node({ address: "c.example.com" });
+
+    const summary = analyzeSubscription([a1, a2, b1, b2, b3, c]);
+    expect(summary.totalNodes).toBe(6);
+    expect(summary.duplicateGroups).toHaveLength(2);
+    // OLD (buggy) formula would have summed full group sizes: 2 + 3 = 5,
+    // equal to (or even exceeding) totalNodes minus the one non-duplicate
+    // node -- misleadingly close to "everything gets removed". The
+    // correct formula sums (size - 1) per group: (2-1) + (3-1) = 3, the
+    // real number of nodes Deduplicate would remove (leaving 6 - 3 = 3:
+    // one survivor from each group, plus the lone node c).
+    expect(summary.duplicateNodeCount).toBe(3);
   });
 });
 

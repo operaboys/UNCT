@@ -110,7 +110,22 @@ export function analyzeSubscription(nodes, analysisByNodeId = {}) {
   for (const [key, nodeIds] of groupsByKey) {
     if (nodeIds.length > 1) {
       duplicateGroups.push({ key, nodeIds });
-      duplicateNodeCount += nodeIds.length;
+      // -1, not the full group size: `duplicateNodeCount` is the "Duplicate
+      // Nodes" headline metric, and Subscription Center's real Deduplicate
+      // action (`core/store/selectors.js#selectDeduplicatedNodes`) keeps
+      // exactly ONE node per group (the earliest by `createdAt`) and
+      // removes the rest -- so a group of N nodes contributes N-1 REMOVED
+      // nodes, not N. Reporting the full N (a real bug, fixed 2026-07-07)
+      // made this number equal `totalNodes` whenever every node was
+      // duplicated, misreading as "all nodes will be removed" when in
+      // reality one survivor per group always remains. This -1 must stay
+      // in lockstep with whatever "which one survives" rule
+      // `selectDeduplicatedNodes` uses -- if that rule ever changes from
+      // "keep earliest `createdAt`" to something else, the COUNT here
+      // (how many are removed) is unaffected only as long as it still
+      // keeps exactly one survivor per group; if a future change ever
+      // keeps more or fewer than one, update this arithmetic too.
+      duplicateNodeCount += nodeIds.length - 1;
     }
   }
 
