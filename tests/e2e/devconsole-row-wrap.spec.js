@@ -25,6 +25,7 @@
  * tests (`data-table-column-width.spec.js`, headers only) did not cover.
  */
 import { test, expect } from "@playwright/test";
+import { gotoScreen } from "./helpers/nav.js";
 
 /** @param {number} count */
 function buildXrayJsonArray(count) {
@@ -129,7 +130,7 @@ test("DevConsole Parser Logs + Detection Logs: no column is squeezed to ~0px on 
   await page.getByRole("button", { name: "Parse", exact: true }).click();
   await expect(page.getByRole("button", { name: "Parse", exact: true })).toBeVisible({ timeout: 15_000 });
 
-  await page.getByRole("button", { name: "Developer Console", exact: true }).click();
+  await gotoScreen(page, "Developer Console");
 
   for (const label of ["Parser Logs", "Detection Logs"]) {
     const table = page.locator(`[aria-label="${label}"] table`).first();

@@ -23,8 +23,15 @@ export const fa = {
   "nav.export": "مرکز خروجی",
   "nav.settings": "تنظیمات",
   "nav.devconsole": "کنسول توسعه‌دهنده",
+  "nav.more": "بیشتر",
+  "nav.subscriptionShort": "اشتراک‌ها",
+  "nav.exportShort": "خروجی",
+  "nav.allSections": "همه بخش‌ها",
+  "nav.toggleLanguage": "تغییر زبان",
+  "nav.toggleTheme": "تغییر تم",
 
   // common
+  "common.offlineBadge": "آفلاین · همه‌چیز روی دستگاه شما می‌ماند",
   "common.noNodesYet": "هنوز نودی وجود ندارد — ابتدا چیزی را در صفحه‌ی مبدل تجزیه کنید.",
   "common.noNodesYetShort": "هنوز نودی وجود ندارد.",
   "common.na": "نامشخص",

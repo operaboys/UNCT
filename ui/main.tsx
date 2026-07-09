@@ -18,7 +18,8 @@ import { SettingsScreen } from "./settings/settings-screen.js";
 import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
 import { AppNav } from "./components/nav.js";
 import { ScrollFab } from "./components/scroll-fab.js";
-import { useSettingsState } from "./store/use-settings-state.js";
+import { createTranslator } from "../core/i18n/translator.js";
+import { settingsStore, useSettingsState } from "./store/use-settings-state.js";
 import { parserStore } from "./store/use-parser-state.js";
 import { templateLibraryStore } from "./store/use-template-state.js";
 
@@ -26,8 +27,33 @@ type Screen =
   | "dashboard" | "converter" | "analyzer" | "subscription" | "extractor"
   | "export" | "settings" | "devconsole";
 
+/**
+ * Splash screen (handoff README §Chrome): a fixed brand overlay with the
+ * lockup + animated loading bar, fading out via CSS keyframes and
+ * unmounting at 1.6s. Runs once per page load (this component mounts once
+ * at app start); in-app navigation never re-triggers it.
+ */
+function Splash() {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setDone(true), 1600);
+    return () => clearTimeout(timer);
+  }, []);
+  if (done) return null;
+  return (
+    <div class="splash">
+      <img src="assets/icons/unct-lockup.png" alt="UNCT" />
+      <div class="splash__bar">
+        <div class="splash__bar-fill" />
+      </div>
+      <div class="splash__label">LOADING…</div>
+    </div>
+  );
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
+  const t = createTranslator(settingsStore);
 
   // Theme Engine (07-UI_UX_SYSTEM §2): applied app-wide here, not inside
   // SettingsScreen itself, so it stays in effect (and live-syncs with the OS
@@ -80,7 +106,12 @@ function App() {
       ) : (
         <DevConsoleScreen />
       )}
+      <div class="offline-badge">
+        <img src="assets/icons/ic-lock.png" alt="" />
+        <span>{t("common.offlineBadge")}</span>
+      </div>
       <ScrollFab />
+      <Splash />
     </div>
   );
 }

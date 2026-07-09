@@ -1,73 +1,108 @@
 /**
- * Liquid Glass — the approved final Visual Identity (07-UI_UX_SYSTEM §2,
- * replacing the old "Cyber Professional / dark" description). This is the
- * foundation layer only: Design Tokens, the layered background, the two
- * reusable utility classes every future screen redesign builds on
- * (`.glass-panel`, `.signal-ring`), font-faces, and protocol badges.
- * No ui/*.tsx screen is redesigned in this pass — that is the next
- * Checkpoint, once this foundation is approved.
+ * Liquid Glass v2 — the Claude-Design handoff redesign
+ * (docs/design/design_handoff_unct_liquid_glass/README.md). Glassmorphism
+ * panels (backdrop blur + saturation) floating over ambient radial glows
+ * on a deep navy canvas, dark theme default, Vazirmatn UI type.
+ *
+ * Token-name contract: the handoff uses short names (`--bg`, `--txt`,
+ * `--acc1`, …); this project keeps its existing `--unct-*` names and only
+ * updates the VALUES to the handoff's token tables (design tokens that had
+ * no `--unct-*` equivalent yet were added under the same prefix). No
+ * project-wide variable rename happened, per the handoff task's explicit
+ * key rule.
  *
  * Font self-hosting note (ADR-014/doc 01 Offline-First — no Google Fonts
- * CDN at runtime): the six woff2 files in ../fonts/ were fetched once
- * during development (a build-time asset acquisition, exactly like an npm
- * install, not a runtime network call the app makes) — fetched PER WEIGHT
- * individually (fonts.googleapis.com serves a distinct static instance per
- * weight when queried one at a time; querying multiple weights in a single
- * request was tried first and silently returned the SAME weight-400 file
- * for every requested weight — a real gotcha, not a shortcut). Real
- * measured sizes (Latin subset only, since technical data and UI labels
- * here are always ASCII; Persian content uses the separate Vazirmatn font
- * from 07-UI_UX_SYSTEM §9, not these two):
- *   plus-jakarta-sans-400.woff2  11,816 B
- *   plus-jakarta-sans-500.woff2  12,312 B
- *   plus-jakarta-sans-600.woff2  12,188 B
- *   plus-jakarta-sans-700.woff2  12,244 B
- *   plus-jakarta-sans-800.woff2  11,896 B
- *   jetbrains-mono-400.woff2     21,168 B
- *   TOTAL                        81,624 B (~80 KB) for all six files
- * woff2 already applies its own Brotli-based compression internally, so a
- * further gzip pass over these files was measured and found to add ~0.2%
- * (compression already spent) — reported honestly rather than a misleading
- * "gzip size" claim that implies further savings actually exist.
+ * CDN at runtime): all woff2 files in ../fonts/ were fetched once during
+ * development, per weight and per subset. The handoff's UI font is
+ * Vazirmatn (Persian+Latin, one font for both languages — replacing the
+ * old Plus Jakarta Sans Latin-only face), code/numbers stay JetBrains
+ * Mono, now in the 400/500/600/700 weights the design actually uses.
+ * Vazirmatn ships as two subsets per weight (arabic + latin) with
+ * `unicode-range` so the browser only decodes what the page really shows.
  */
 
 /* ---------------------------------------------------------------------
- * Font faces — self-hosted, Latin subset, exactly the weights used.
+ * Font faces — self-hosted, exactly the weights/subsets used.
  * ------------------------------------------------------------------- */
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Vazirmatn";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-400.woff2") format("woff2");
+  src: url("../fonts/vazirmatn-400-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-500.woff2") format("woff2");
+  src: url("../fonts/vazirmatn-500-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-600.woff2") format("woff2");
+  src: url("../fonts/vazirmatn-600-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-700.woff2") format("woff2");
+  src: url("../fonts/vazirmatn-700-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-800.woff2") format("woff2");
+  src: url("../fonts/vazirmatn-800-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-800-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "JetBrains Mono";
@@ -76,86 +111,171 @@
   font-display: swap;
   src: url("../fonts/jetbrains-mono-400.woff2") format("woff2");
 }
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-700.woff2") format("woff2");
+}
 
 /* ---------------------------------------------------------------------
- * Design Tokens (07-UI_UX_SYSTEM §2) — the Liquid Glass palette. These
- * replace the old Electric-Blue/Purple/Green/Amber/Red/Slate table
- * entirely, not alongside it.
+ * Design Tokens — the Liquid Glass v2 palette, values from the handoff's
+ * "Design Tokens" tables (dark default + light), names kept `--unct-*`.
  * ------------------------------------------------------------------- */
 :root {
-  --unct-purple: #7c5cfc;
-  --unct-pink: #ff6b9d;
-  --unct-mint: #1fd1a6;
-  --unct-amber: #ffb648;
-  /* Not part of the 07-UI_UX_SYSTEM §2 locked palette table (which has no
-     error/danger role) — added because form validation errors need a
-     distinct color; kept as muted/soft as the rest of the palette rather
-     than a jarring pure red. #e5484d == rgb(229, 72, 77), referenced below
-     as literal rgba() since CSS has no color-mix() fallback story yet. */
-  --unct-danger: #e5484d;
+  /* Brand accents — theme-independent (same in both handoff tables). */
+  --unct-acc1: #8B5CF6;
+  --unct-acc2: #0EA5E9;
+  /* The brand gradient + primary-button shadow, verbatim from the handoff
+     ("Brand accent" section) — referenced by every gradient button, icon
+     tile, arrow, toggle-on state, and the splash loading bar. */
+  --unct-grad: linear-gradient(135deg, #8B5CF6, #0EA5E9);
+  --unct-grad-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 20px rgba(14, 165, 233, 0.45);
 
-  --unct-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Legacy brand names (pre-handoff palette), re-pointed to the new
+     accents so the many existing `linear-gradient(var(--unct-purple),
+     var(--unct-pink))` component rules resolve to the handoff's own
+     brand gradient without a project-wide rename. */
+  --unct-purple: #8B5CF6;
+  --unct-pink: #0EA5E9;
+  --unct-mint: var(--unct-ok);
+  --unct-amber: var(--unct-warn);
+  --unct-danger: var(--unct-err);
+
+  --unct-font-sans: "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-
-  /* --unct-text/--unct-text-muted moved out of this shared block and into
-     the two theme-scoped blocks below (unified Dark Mode Checkpoint) —
-     unlike the five brand colors above, ink/muted-ink are surface-
-     dependent (dark ink reads fine on the light base, not on the dark
-     one), so every one of the ~20 component rules that already reference
-     `var(--unct-text)`/`var(--unct-text-muted)` needs a real per-theme
-     value, the same way `--unct-bg`/`--unct-fg` already had one. */
 }
 
 /* Scoped to exactly the two states Settings' Theme Engine resolves to
-   (`resolvedTheme`, applied as `<html data-theme>` by ui/main.tsx). */
-:root[data-theme="light"] {
-  --unct-bg: #ffffff;
-  --unct-text: #211b3d;
-  --unct-text-muted: #6b6584;
+   (`resolvedTheme`, applied as `<html data-theme>` by ui/main.tsx).
+   DARK is the design's default theme. */
+:root[data-theme="dark"] {
+  --unct-bg: #0A0D1C;
+  --unct-text: #F2F3F8;
+  --unct-text-muted: #A5AAC4;
+  --unct-text-faint: #8B90AC;
   --unct-fg: var(--unct-text);
-  /* The approved Liquid Glass background: three large, soft radial color
-     pools (purple top-left, pink top-right, mint bottom-center) over a
-     light base gradient (faint purple -> cream -> faint mint). */
+  /* Ambient glows (handoff --glow1/2/3): three fixed radial pools over the
+     deep navy canvas — cyan top/inline-end, light-blue bottom/inline-start,
+     soft purple center. Implemented as body background layers (fixed
+     attachment) instead of extra DOM. */
   --unct-bg-image:
-    radial-gradient(ellipse 60% 50% at 12% 8%, rgba(124, 92, 252, 0.30), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(255, 107, 157, 0.28), transparent 60%),
-    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(31, 209, 166, 0.24), transparent 65%),
-    linear-gradient(135deg, #f4f1ff 0%, #fdf9f0 50%, #eafcf7 100%);
+    radial-gradient(circle 340px at 80% -60px, rgba(14, 165, 233, 0.4), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.25), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.2), transparent 62%);
+
+  --unct-glass: rgba(255, 255, 255, 0.06);
+  --unct-glass-bd: rgba(255, 255, 255, 0.13);
+  --unct-glass-hi: rgba(255, 255, 255, 0.2);
+  --unct-glass2: rgba(255, 255, 255, 0.05);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.09);
+  --unct-pill-active: rgba(255, 255, 255, 0.14);
+  --unct-pill-hi: rgba(255, 255, 255, 0.25);
+  --unct-divider: rgba(255, 255, 255, 0.12);
+
+  --unct-ok: #5FE3AC;   --unct-ok-bg: rgba(95, 227, 172, 0.09);   --unct-ok-bd: rgba(95, 227, 172, 0.25);
+  --unct-warn: #F0C670; --unct-warn-bg: rgba(232, 180, 74, 0.09); --unct-warn-bd: rgba(232, 180, 74, 0.22);
+  --unct-err: #F58C8C;  --unct-err-bg: rgba(239, 106, 106, 0.09); --unct-err-bd: rgba(239, 106, 106, 0.22);
+  --unct-info: #8CD9F2; --unct-info-bg: rgba(94, 201, 238, 0.09); --unct-info-bd: rgba(94, 201, 238, 0.25);
+  --unct-purp: #E7BCF5; --unct-purp-bg: rgba(216, 148, 240, 0.15); --unct-purp-bd: rgba(216, 148, 240, 0.3);
+
+  --unct-acc-soft: rgba(14, 165, 233, 0.18);
+  --unct-acc-bd: rgba(139, 92, 246, 0.3);
+  --unct-acc-txt: #7DD3FC;
+
+  --unct-ring-track: rgba(255, 255, 255, 0.09);
+  --unct-ring-hole: rgba(10, 13, 28, 0.85);
+  --unct-code: #9DA3BE;
+  --unct-track: rgba(255, 255, 255, 0.08);
+  --unct-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
-/* Dark Mode (unified end-of-phase Checkpoint) — a real Liquid Glass
-   design pass, not the flat placeholder colors this block held before.
-   Text/background tokens live here; every `.glass-panel`/component
-   surface, highlight, hairline border, and status color that needs a
-   different value on a dark backdrop is overridden in the dedicated
-   "Dark Mode" section near the end of this file (kept as one block for
-   readability, rather than scattered per-rule edits to the light-mode
-   CSS above, which stays provably untouched). */
-:root[data-theme="dark"] {
-  --unct-bg: #14161a;
-  --unct-text: #f1eef6;
-  --unct-text-muted: #a39dc0;
+:root[data-theme="light"] {
+  /* The handoff's light --bg is itself a gradient; the flat fallback color
+     here is its first stop, the real gradient rides in --unct-bg-image's
+     last (bottom) layer, under the three glows. */
+  --unct-bg: #E9EBFA;
+  --unct-text: #1A1D30;
+  --unct-text-muted: #565C74;
+  --unct-text-faint: #7A80A0;
   --unct-fg: var(--unct-text);
-  /* Same three-radial-glow structure as the light gradient above, re-tuned
-     to dim/desaturated glows over a near-black base instead of a bright
-     cream one — still a layered Liquid Glass backdrop, not a flat color. */
   --unct-bg-image:
-    radial-gradient(ellipse 60% 50% at 12% 8%, rgba(124, 92, 252, 0.18), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(255, 107, 157, 0.14), transparent 60%),
-    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(31, 209, 166, 0.12), transparent 65%),
-    linear-gradient(135deg, #18151f 0%, #121316 50%, #101a1a 100%);
+    radial-gradient(circle 340px at 80% -60px, rgba(139, 92, 246, 0.38), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.3), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.26), transparent 62%),
+    linear-gradient(160deg, #E9EBFA, #F3EEFA 55%, #EAF2F7);
+
+  --unct-glass: rgba(255, 255, 255, 0.55);
+  --unct-glass-bd: rgba(255, 255, 255, 0.8);
+  --unct-glass-hi: rgba(255, 255, 255, 0.92);
+  --unct-glass2: rgba(255, 255, 255, 0.62);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.88);
+  --unct-pill-active: rgba(255, 255, 255, 0.9);
+  --unct-pill-hi: rgba(255, 255, 255, 1);
+  --unct-divider: rgba(26, 29, 48, 0.12);
+
+  --unct-ok: #17966A;   --unct-ok-bg: rgba(23, 150, 106, 0.1);   --unct-ok-bd: rgba(23, 150, 106, 0.3);
+  --unct-warn: #B07D0E; --unct-warn-bg: rgba(188, 132, 18, 0.1); --unct-warn-bd: rgba(188, 132, 18, 0.3);
+  --unct-err: #C74747;  --unct-err-bg: rgba(199, 71, 71, 0.09);  --unct-err-bd: rgba(199, 71, 71, 0.28);
+  --unct-info: #1F7FAE; --unct-info-bg: rgba(31, 127, 174, 0.09); --unct-info-bd: rgba(31, 127, 174, 0.28);
+  --unct-purp: #A44FC4; --unct-purp-bg: rgba(164, 79, 196, 0.1); --unct-purp-bd: rgba(164, 79, 196, 0.3);
+
+  --unct-acc-soft: rgba(14, 165, 233, 0.12);
+  --unct-acc-bd: rgba(14, 165, 233, 0.32);
+  --unct-acc-txt: #0369A1;
+
+  --unct-ring-track: rgba(26, 29, 48, 0.1);
+  --unct-ring-hole: rgba(255, 255, 255, 0.82);
+  --unct-code: #4A5064;
+  --unct-track: rgba(26, 29, 48, 0.09);
+  --unct-shadow: 0 16px 48px rgba(80, 80, 140, 0.16);
 }
 
 body {
   margin: 0;
-  padding-block: 28px;
-  padding-inline: 36px;
+  /* Handoff page container: max-width 1280 centered, 22/26/40 padding
+     desktop, 16/14/110 mobile (110px bottom clears the floating dock). */
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-block: 22px 40px;
+  padding-inline: 26px;
   font-family: var(--unct-font-sans);
-  background-color: var(--unct-bg, #ffffff);
+  background-color: var(--unct-bg, #0A0D1C);
   background-image: var(--unct-bg-image, none);
   background-attachment: fixed;
   background-size: cover;
   color: var(--unct-fg, var(--unct-text));
+}
+/* The centered 1280px body still needs the canvas behind it painted:
+   propagate the background to the root so the margins outside body's box
+   aren't white. html carries the same background; body's own paints over
+   it seamlessly (same tokens). */
+html {
+  background-color: var(--unct-bg, #0A0D1C);
+  background-image: var(--unct-bg-image, none);
+  background-attachment: fixed;
+  background-size: cover;
+}
+@media (max-width: 760px) {
+  body {
+    padding-block: 16px 110px;
+    padding-inline: 14px;
+  }
 }
 
 code, kbd, samp, .mono {
@@ -166,39 +286,27 @@ code, kbd, samp, .mono {
  * .glass-panel — the reusable Liquid Glass surface (07-UI_UX_SYSTEM §2).
  * Apply to top-level panels/cards, not every small inline element.
  * ------------------------------------------------------------------- */
+/* The handoff's signature glass recipe, verbatim: token background +
+   blur(30px) saturate(180%) + 1px token border + inset top highlight in
+   the box-shadow (which REPLACES the old ::before sheen / ::after glint
+   overlays — the new look is a flat frosted pane, not a glossy one). */
 .glass-panel {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow:
-    0 1px 1px rgba(33, 27, 61, 0.04),
-    0 8px 24px rgba(33, 27, 61, 0.10),
-    0 24px 48px rgba(33, 27, 61, 0.08);
+  border-radius: 24px;
+  background: var(--unct-glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--unct-glass-bd);
+  box-shadow: inset 0 1px 0 var(--unct-glass-hi), var(--unct-shadow);
 }
 
-/* Highlight: a soft light sheen from the top of the panel. */
-.glass-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
-  pointer-events: none;
-}
-
-/* Reflective glint: a soft diagonal light patch in the top-left corner. */
+/* The old sheen/glint pseudo-element overlays are gone in the new design;
+   `content: none` keeps every existing `position: relative; z-index: 1`
+   lift on panel children harmless rather than requiring their removal. */
+.glass-panel::before,
 .glass-panel::after {
-  content: "";
-  position: absolute;
-  top: -25%;
-  left: -20%;
-  width: 65%;
-  height: 65%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
-  transform: rotate(-18deg);
-  pointer-events: none;
+  content: none;
 }
 
 /* ---------------------------------------------------------------------
@@ -223,11 +331,11 @@ code, kbd, samp, .mono {
   width: var(--signal-size);
   height: var(--signal-size);
   border-radius: 50%;
+  /* Handoff health-ring recipe: solid ok-colored arc over the token ring
+     track (not the old purple→mint sweep). */
   background: conic-gradient(
-    from -90deg,
-    var(--unct-purple) 0%,
-    var(--unct-mint) calc(var(--signal-value) * 1%),
-    rgba(33, 27, 61, 0.08) calc(var(--signal-value) * 1%)
+    var(--unct-ok) 0 calc(var(--signal-value) * 1%),
+    var(--unct-ring-track) calc(var(--signal-value) * 1%) 100%
   );
 }
 
@@ -236,16 +344,17 @@ code, kbd, samp, .mono {
   position: absolute;
   inset: 14%;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(6px);
+  background: var(--unct-ring-hole);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--unct-glass-bd);
 }
 
 .signal-ring span {
   position: relative;
   z-index: 1;
   font-family: var(--unct-font-mono);
-  font-weight: 600;
-  color: var(--unct-text);
+  font-weight: 800;
+  color: var(--unct-ok);
 }
 
 /* ---------------------------------------------------------------------
@@ -259,51 +368,46 @@ code, kbd, samp, .mono {
  *   <span class="protocol-badge protocol-badge--vless">VL</span>
  *   <span class="protocol-badge protocol-badge--lg protocol-badge--vless">VL</span>
  * ------------------------------------------------------------------- */
+/* Handoff icon-tile look: a tinted, bordered rounded square with a mono
+   abbreviation in the tint's own text color (`iconStyle(bg, bd, color)` in
+   the design source) — replacing the old white-on-gradient badge. Each
+   protocol maps to one of the handoff's tint triads. The `--unct-badge-
+   gradient` custom property is still SET by the per-protocol variants
+   because `.dist-fill` (Protocol Distribution bars on Dashboard/
+   Subscription Center) composes with these same classes for its bar fill. */
 .protocol-badge {
   display: inline-flex;
   position: relative;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
   font-family: var(--unct-font-mono);
-  font-weight: 700;
-  font-size: 0.65rem;
+  font-weight: 600;
+  font-size: 10px;
   letter-spacing: 0.02em;
-  color: #ffffff;
-  background: var(--unct-badge-gradient, linear-gradient(135deg, var(--unct-purple), var(--unct-pink)));
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  color: var(--unct-badge-txt, var(--unct-acc-txt));
+  background: var(--unct-badge-bg, var(--unct-acc-soft));
+  border: 1px solid var(--unct-badge-bd, var(--unct-acc-bd));
   flex-shrink: 0;
 }
 
-/* Larger context (Dashboard's Recent Imports list) — a small decorative
-   "signal bar" underline reinforces the network/connection theme. */
+/* Larger context (Dashboard's Recent Imports list). */
 .protocol-badge--lg {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-}
-.protocol-badge--lg::after {
-  content: "";
-  position: absolute;
-  inset-block-end: 5px;
-  inset-inline: 0;
-  margin-inline: auto;
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.55);
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 11px;
 }
 
-.protocol-badge--vless { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-pink)); }
-.protocol-badge--vmess { --unct-badge-gradient: linear-gradient(135deg, var(--unct-pink), var(--unct-amber)); }
-.protocol-badge--trojan { --unct-badge-gradient: linear-gradient(135deg, var(--unct-mint), var(--unct-purple)); }
-.protocol-badge--shadowsocks { --unct-badge-gradient: linear-gradient(135deg, var(--unct-amber), var(--unct-mint)); }
-.protocol-badge--hysteria2 { --unct-badge-gradient: linear-gradient(135deg, var(--unct-purple), var(--unct-mint)); }
-.protocol-badge--tuic { --unct-badge-gradient: linear-gradient(135deg, var(--unct-pink), var(--unct-purple)); }
-.protocol-badge--wireguard { --unct-badge-gradient: linear-gradient(135deg, var(--unct-mint), var(--unct-pink)); }
+.protocol-badge--vless { --unct-badge-bg: var(--unct-acc-soft); --unct-badge-bd: var(--unct-acc-bd); --unct-badge-txt: var(--unct-acc-txt); --unct-badge-gradient: var(--unct-grad); }
+.protocol-badge--vmess { --unct-badge-bg: var(--unct-info-bg); --unct-badge-bd: var(--unct-info-bd); --unct-badge-txt: var(--unct-info); --unct-badge-gradient: linear-gradient(135deg, var(--unct-acc2), var(--unct-info)); }
+.protocol-badge--trojan { --unct-badge-bg: var(--unct-purp-bg); --unct-badge-bd: var(--unct-purp-bd); --unct-badge-txt: var(--unct-purp); --unct-badge-gradient: linear-gradient(135deg, var(--unct-acc1), var(--unct-purp)); }
+.protocol-badge--shadowsocks { --unct-badge-bg: var(--unct-warn-bg); --unct-badge-bd: var(--unct-warn-bd); --unct-badge-txt: var(--unct-warn); --unct-badge-gradient: linear-gradient(135deg, #E8B44A, #F0C670); }
+.protocol-badge--hysteria2 { --unct-badge-bg: var(--unct-ok-bg); --unct-badge-bd: var(--unct-ok-bd); --unct-badge-txt: var(--unct-ok); --unct-badge-gradient: linear-gradient(135deg, #3ECF8E, #5FE3AC); }
+.protocol-badge--tuic { --unct-badge-bg: var(--unct-err-bg); --unct-badge-bd: var(--unct-err-bd); --unct-badge-txt: var(--unct-err); --unct-badge-gradient: linear-gradient(135deg, var(--unct-err), var(--unct-purp)); }
+.protocol-badge--wireguard { --unct-badge-bg: var(--unct-info-bg); --unct-badge-bd: var(--unct-info-bd); --unct-badge-txt: var(--unct-info); --unct-badge-gradient: linear-gradient(135deg, var(--unct-info), var(--unct-ok)); }
 
 /* ---------------------------------------------------------------------
  * Dashboard reusable classes (07-UI_UX_SYSTEM §4.1, approved reference
@@ -355,8 +459,8 @@ code, kbd, samp, .mono {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--unct-mint);
-  box-shadow: 0 0 0 4px rgba(31, 209, 166, 0.25);
+  background: var(--unct-ok);
+  box-shadow: 0 0 0 4px var(--unct-ok-bg);
   flex-shrink: 0;
 }
 
@@ -367,7 +471,7 @@ code, kbd, samp, .mono {
    `background` wins the cascade at equal specificity. */
 .hero-band {
   position: relative;
-  background: linear-gradient(120deg, rgba(124, 92, 252, 0.88) 0%, rgba(155, 123, 255, 0.85) 50%, rgba(255, 107, 157, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(14, 165, 233, 0.88) 100%);
   padding-block: 30px;
   padding-inline: 34px;
   margin-block-end: 22px;
@@ -418,7 +522,7 @@ code, kbd, samp, .mono {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  color: var(--unct-purple);
+  color: var(--unct-acc1);
   padding-block: 13px;
   padding-inline: 24px;
   border-radius: 16px;
@@ -442,7 +546,7 @@ code, kbd, samp, .mono {
    collapse: these are short, number-heavy cards (not tall panels), so a
    2x2 grid keeps related stats visually paired instead of stretching
    into a long single-column list. */
-@media (max-width: 660px) {
+@media (max-width: 760px) {
   .stat-row {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -461,9 +565,9 @@ code, kbd, samp, .mono {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
-.stat-icon--nodes { background: rgba(124, 92, 252, 0.16); }
-.stat-icon--valid { background: rgba(255, 107, 157, 0.16); }
-.stat-icon--protocols { background: rgba(255, 182, 72, 0.2); }
+.stat-icon--nodes { background: var(--unct-acc-soft); border: 1px solid var(--unct-acc-bd); }
+.stat-icon--valid { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); }
+.stat-icon--protocols { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); }
 
 .stat-label {
   font-size: 12px;
@@ -475,8 +579,9 @@ code, kbd, samp, .mono {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  font-family: var(--unct-font-mono);
 }
-.stat-value--mint { color: #12a483; }
+.stat-value--mint { color: var(--unct-ok); }
 .stat-value small {
   font-size: 13px;
   color: var(--unct-text-muted);
@@ -494,7 +599,7 @@ code, kbd, samp, .mono {
    it can't use `auto-fit`/`minmax` without losing that 1.6:1 weighting, so
    a breakpoint collapses it to a single stacked column instead, matching
    `.panel-grid`'s own collapse point (2 × its 320px minmax + 20px gap). */
-@media (max-width: 660px) {
+@media (max-width: 760px) {
   .content-grid {
     grid-template-columns: 1fr;
   }
@@ -515,12 +620,15 @@ code, kbd, samp, .mono {
 .panel-title .see-all {
   font: inherit;
   font-size: 12px;
-  color: var(--unct-purple);
+  color: var(--unct-acc-txt);
   font-weight: 600;
   cursor: pointer;
   background: none;
   border: none;
   padding: 0;
+}
+.panel-title .see-all:hover {
+  color: var(--unct-text);
 }
 
 /* A titled sub-section nested inside a bigger `.glass-panel` (e.g. Developer
@@ -534,10 +642,10 @@ code, kbd, samp, .mono {
 .panel-subsection {
   margin-block-start: 20px;
   padding-block-start: 16px;
-  border-block-start: 1px solid rgba(33, 27, 61, 0.1);
+  border-block-start: 1px solid var(--unct-divider);
 }
 .panel-subsection .panel-title {
-  background: rgba(124, 92, 255, 0.06);
+  background: var(--unct-glass2);
   border-radius: 10px;
   padding: 8px 12px;
   margin-block-end: 12px;
@@ -569,8 +677,13 @@ code, kbd, samp, .mono {
   border-radius: 14px;
   transition: background 0.15s;
 }
+.node-item {
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass2-bd);
+  border-radius: 16px;
+}
 .node-item:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--unct-pill-active);
 }
 .node-info {
   position: relative;
@@ -598,8 +711,11 @@ code, kbd, samp, .mono {
   border-radius: 100px;
   flex-shrink: 0;
 }
-.node-score.high { background: rgba(31, 209, 166, 0.2); color: #0d8a6e; }
-.node-score.mid { background: rgba(255, 182, 72, 0.25); color: #a8690f; }
+.node-score {
+  font-family: var(--unct-font-mono);
+}
+.node-score.high { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); color: var(--unct-ok); }
+.node-score.mid { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); color: var(--unct-warn); }
 
 .dist-item {
   position: relative;
@@ -615,15 +731,15 @@ code, kbd, samp, .mono {
 }
 .dist-head .n { color: var(--unct-text-muted); }
 .dist-track {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 100px;
+  height: 6px;
+  background: var(--unct-track);
+  border-radius: 99px;
   overflow: hidden;
 }
 .dist-fill {
   height: 100%;
-  border-radius: 100px;
-  background: var(--unct-badge-gradient, linear-gradient(90deg, var(--unct-purple), var(--unct-pink)));
+  border-radius: 99px;
+  background: var(--unct-badge-gradient, var(--unct-grad));
 }
 
 .action-btn {
@@ -644,13 +760,13 @@ code, kbd, samp, .mono {
   cursor: pointer;
 }
 .action-btn.primary {
-  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
+  background: var(--unct-grad);
   color: #ffffff;
-  box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
+  box-shadow: var(--unct-grad-shadow);
 }
 .action-btn.secondary {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(124, 92, 252, 0.35);
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass-bd);
   color: var(--unct-text);
 }
 
@@ -659,9 +775,59 @@ code, kbd, samp, .mono {
  * Screens (ui/components/nav.tsx). See that file's header comment for the
  * mobile horizontal-scroll decision and the edge-fade's RTL reasoning.
  * ------------------------------------------------------------------- */
+/* Handoff top chrome: a floating, self-centered pill (radius 99px, glass,
+   8px/10px padding) holding the brand lockup, nav pills, and the language/
+   theme toggles, instead of the old full-width bar. */
 .app-nav {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   margin-block-end: 20px;
-  padding: 6px;
+  border-radius: 99px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-nav__brand {
+  display: flex;
+  align-items: center;
+  padding-block: 4px;
+  padding-inline: 16px 12px;
+  flex-shrink: 0;
+}
+.app-nav__brand img {
+  height: 58px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.app-nav__divider {
+  width: 1px;
+  height: 22px;
+  background: var(--unct-divider);
+  flex-shrink: 0;
+}
+.app-nav__toggle {
+  border: none;
+  background: transparent;
+  padding-block: 8px;
+  padding-inline: 12px;
+  border-radius: 99px;
+  color: var(--unct-text-muted);
+  font-family: var(--unct-font-mono);
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.app-nav__toggle:hover {
+  color: var(--unct-text);
+}
+.app-nav__toggle--theme {
+  color: #E8C56A;
+  font-size: 14px;
+  font-family: var(--unct-font-sans);
 }
 .app-nav__scroll {
   position: relative;
@@ -681,27 +847,29 @@ code, kbd, samp, .mono {
   flex-shrink: 0;
   white-space: nowrap;
   border: none;
-  border-radius: 100px;
-  padding-block: 10px;
-  padding-inline: 18px;
+  border-radius: 99px;
+  padding-block: 8px;
+  padding-inline: 16px;
   font: inherit;
-  font-weight: 600;
-  font-size: 13.5px;
+  font-weight: 400;
+  font-size: 12.5px;
   color: var(--unct-text-muted);
   background: transparent;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 .nav-tab:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.5);
   color: var(--unct-text);
 }
+/* Active pill (the `disabled` current tab): handoff --pill-active surface
+   with the inset top highlight, not the old brand-gradient fill. */
 .nav-tab:disabled {
-  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
-  color: #ffffff;
+  background: var(--unct-pill-active);
+  box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  color: var(--unct-text);
+  font-weight: 600;
   opacity: 1;
   cursor: default;
-  box-shadow: 0 6px 14px -6px rgba(124, 92, 252, 0.5);
 }
 
 /* ---------------------------------------------------------------------
@@ -748,7 +916,7 @@ code, kbd, samp, .mono {
 .hint {
   position: relative;
   z-index: 1;
-  color: var(--unct-text-muted);
+  color: var(--unct-text-faint);
   font-size: 13px;
   font-weight: 500;
 }
@@ -775,30 +943,33 @@ code, kbd, samp, .mono {
   cursor: default;
 }
 .btn--primary {
-  background: linear-gradient(135deg, var(--unct-purple), var(--unct-pink));
+  background: var(--unct-grad);
   color: #ffffff;
-  box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
+  box-shadow: var(--unct-grad-shadow);
+  border-radius: 10px;
 }
 .btn--ghost {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(124, 92, 252, 0.35);
-  color: var(--unct-text);
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass-bd);
+  color: var(--unct-text-muted);
+  border-radius: 10px;
 }
 .btn--ghost:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.88);
+  color: var(--unct-text);
 }
 
 .dropzone {
   position: relative;
   z-index: 1;
-  border: 2px dashed rgba(124, 92, 252, 0.25);
+  border: 1.5px dashed var(--unct-acc-bd);
   border-radius: 16px;
+  background: var(--unct-acc-soft);
   padding: 4px;
   transition: border-color 0.15s, background 0.15s;
 }
 .dropzone--active {
-  border-color: var(--unct-purple);
-  background: rgba(124, 92, 252, 0.08);
+  border-color: var(--unct-acc1);
+  background: var(--unct-acc-soft);
 }
 
 .code-textarea {
@@ -807,18 +978,23 @@ code, kbd, samp, .mono {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(124, 92, 252, 0.35);
+  /* Handoff localization rule: code/log/URL content is ALWAYS LTR,
+     regardless of UI language — node URIs and YAML/JSON previews must not
+     inherit the RTL page direction. */
+  direction: ltr;
+  text-align: left;
+  border: 1px solid var(--unct-glass2-bd);
   border-radius: 13px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--unct-glass2);
   font-family: var(--unct-font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 11.5px;
+  line-height: 1.9;
   color: var(--unct-text);
   resize: vertical;
 }
 .code-textarea:focus {
-  outline: 2px solid var(--unct-purple);
+  outline: 2px solid var(--unct-acc1);
   outline-offset: -2px;
 }
 .code-textarea::placeholder {
@@ -845,8 +1021,9 @@ code, kbd, samp, .mono {
   font-weight: 600;
 }
 .alert--error {
-  background: rgba(229, 72, 77, 0.12);
-  color: #b3211f;
+  background: var(--unct-err-bg);
+  border: 1px solid var(--unct-err-bd);
+  color: var(--unct-err);
 }
 
 .kv-list {
@@ -863,7 +1040,7 @@ code, kbd, samp, .mono {
   gap: 12px;
   font-size: 13px;
   padding-block-end: 10px;
-  border-block-end: 1px solid rgba(33, 27, 61, 0.08);
+  border-block-end: 1px solid var(--unct-glass2-bd);
 }
 .kv-row:last-child {
   border-block-end: none;
@@ -917,14 +1094,21 @@ code, kbd, samp, .mono {
   white-space: nowrap;
   padding-block: 9px;
   padding-inline: 14px;
-  border: 1px solid rgba(124, 92, 252, 0.35);
+  border: 1px solid var(--unct-glass-bd);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--unct-glass2);
   font: inherit;
   font-weight: 600;
   font-size: 13px;
   color: var(--unct-text);
   cursor: pointer;
+}
+/* Native dropdown popups paint on the OS' own surface, not the glass —
+   without an explicit dark option color they'd be white-on-white in the
+   dark theme. */
+.select option {
+  background-color: var(--unct-bg);
+  color: var(--unct-text);
 }
 
 .table-scroll {
@@ -1126,7 +1310,7 @@ code, kbd, samp, .mono {
   color: var(--unct-text);
   padding-block: 10px;
   padding-inline: 10px;
-  border-block-end: 1px solid rgba(33, 27, 61, 0.1);
+  border-block-end: 1px solid var(--unct-divider);
   /* Headers are short labels (e.g. "Port Check"/"بررسی پورت", "Latency"/
      "تأخیر") that must stay on one line -- wrapping mid-word is the exact
      visual bug reported. Data cells keep wrapping normally (long values
@@ -1138,7 +1322,7 @@ code, kbd, samp, .mono {
 .data-table td {
   padding-block: 10px;
   padding-inline: 10px;
-  border-block-end: 1px solid rgba(33, 27, 61, 0.06);
+  border-block-end: 1px solid var(--unct-glass2-bd);
   font-weight: 500;
   /* Long unbroken values (e.g. Extractor's Worker Encoded Data, Base64
      strings with no natural break point) otherwise force the whole table
@@ -1150,7 +1334,7 @@ code, kbd, samp, .mono {
   border-block-end: none;
 }
 .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--unct-glass2);
 }
 
 .tag {
@@ -1162,15 +1346,15 @@ code, kbd, samp, .mono {
   font-size: 11.5px;
   font-weight: 700;
 }
-.tag--valid { background: rgba(31, 209, 166, 0.18); color: #0d8a6e; }
-.tag--invalid { background: rgba(229, 72, 77, 0.14); color: #b3211f; }
+.tag--valid { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); color: var(--unct-ok); }
+.tag--invalid { background: var(--unct-err-bg); border: 1px solid var(--unct-err-bd); color: var(--unct-err); }
 /* The four `ErrorSeverity` levels (Developer Console's Warnings & Errors):
    "error" reuses `.tag--invalid` above (same color, same meaning) rather
-   than a redundant duplicate rule; "critical" is a darker/bolder variant
-   of the same red for the one level above plain "error". */
-.tag--info { background: rgba(107, 101, 132, 0.14); color: var(--unct-text-muted); }
-.tag--warning { background: rgba(255, 182, 72, 0.24); color: #92600a; }
-.tag--critical { background: rgba(229, 72, 77, 0.32); color: #7a0f0f; font-weight: 800; }
+   than a redundant duplicate rule; "critical" is a bolder variant of the
+   same red for the one level above plain "error". */
+.tag--info { background: var(--unct-info-bg); border: 1px solid var(--unct-info-bd); color: var(--unct-info); }
+.tag--warning { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); color: var(--unct-warn); }
+.tag--critical { background: var(--unct-err-bg); border: 1px solid var(--unct-err); color: var(--unct-err); font-weight: 800; }
 
 /* Subscription Center "Tag Nodes" (doc 03 §2.2) — the small "×" remove
    button inside a `.tag--info` chip. Inherits the chip's own text color
@@ -1226,15 +1410,15 @@ code, kbd, samp, .mono {
 .input {
   padding-block: 9px;
   padding-inline: 14px;
-  border: 1px solid rgba(124, 92, 252, 0.35);
+  border: 1px solid var(--unct-glass-bd);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--unct-glass2);
   font: inherit;
   font-size: 13px;
   color: var(--unct-text);
 }
 .input:focus {
-  outline: 2px solid var(--unct-purple);
+  outline: 2px solid var(--unct-acc1);
   outline-offset: -2px;
 }
 .input::placeholder {
@@ -1339,8 +1523,9 @@ code, kbd, samp, .mono {
   display: block;
   width: 100%;
   height: 400px;
-  border: 1px solid rgba(33, 27, 61, 0.12);
+  border: 1px solid var(--unct-glass-bd);
   border-radius: 16px;
+  background: #ffffff;
 }
 
 /* ---------------------------------------------------------------------
@@ -1364,197 +1549,50 @@ code, kbd, samp, .mono {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding-block: 10px;
+  padding-block: 6px;
   padding-inline: 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(124, 92, 252, 0.35);
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
+  border-radius: 99px;
+  border: 1px solid var(--unct-glass2-bd);
+  background: var(--unct-glass2);
+  font-size: 12px;
   font-weight: 600;
+  color: var(--unct-text-muted);
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
 }
+/* Active segment: handoff segmented-control style — pill-active surface +
+   inset top highlight, not a brand-colored ring. */
 .radio-card:has(input:checked) {
-  border-color: transparent;
-  background: rgba(124, 92, 252, 0.14);
-  box-shadow: 0 0 0 1.5px var(--unct-purple) inset;
+  background: var(--unct-pill-active);
+  box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  color: var(--unct-text);
 }
 
 /* =======================================================================
- * Dark Mode — a real Liquid Glass design pass (unified end-of-phase
- * Checkpoint), covering all 8 redesigned screens at once. Everything
- * below is scoped under `:root[data-theme="dark"] <selector>`, which has
- * higher specificity than the bare `.classname` rules above regardless of
- * source order — this section is purely ADDITIVE, not one existing
- * light-mode rule above was edited to build it, so light mode is
- * provably byte-for-byte unchanged. `--unct-text`/`--unct-text-muted`
- * were already redefined for dark mode up in the `:root[data-theme="dark"]`
- * token block near the top of this file — since ~20 component rules
- * already read those two variables (not hardcoded literals), that single
- * redefinition alone fixes most of this screen's text contrast; only
- * hardcoded-literal backgrounds/borders/status-colors need the explicit
- * overrides below.
- *
- * Same technique as light mode, re-tuned for a dark backdrop: light mode
- * washes a panel with white at ~0.4-0.55 opacity over a bright base; here
- * every surface instead gets a much LOWER-opacity white wash (a standard
- * "frosted dark glass" technique — a whisper of light lifting the panel
- * off the near-black background, not a color invert), and every status/
- * severity color that relied on a DARK, saturated text tone for contrast
- * on a light tint (e.g. `.tag--valid`'s `#0d8a6e` dark green) gets a
- * brighter equivalent, since a dark-ink color on a barely-tinted dark
- * surface would otherwise be nearly invisible.
+ * Dark Mode residue — with the handoff's per-theme token tables now living
+ * in the `:root[data-theme=…]` blocks at the top of this file, every
+ * component rule above is theme-aware through the tokens it references,
+ * and the old wall of literal-color dark overrides is gone. Only the two
+ * rules whose values genuinely cannot be expressed through the shared
+ * tokens remain below (the sticky table header's occlusion background and
+ * the scroll FAB's, both of which need a near-opaque theme-base tint, not
+ * a glass token).
  * ===================================================================== */
 
-:root[data-theme="dark"] .glass-panel {
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.45),
-    0 24px 48px rgba(0, 0, 0, 0.4);
-}
-:root[data-theme="dark"] .glass-panel::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 42%);
-}
-:root[data-theme="dark"] .glass-panel::after {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
-}
-
-:root[data-theme="dark"] .signal-ring {
-  background: conic-gradient(
-    from -90deg,
-    var(--unct-purple) 0%,
-    var(--unct-mint) calc(var(--signal-value) * 1%),
-    rgba(255, 255, 255, 0.12) calc(var(--signal-value) * 1%)
-  );
-}
-:root[data-theme="dark"] .signal-ring::before {
-  background: rgba(20, 22, 26, 0.9);
-}
-
-:root[data-theme="dark"] .stat-value--mint,
-:root[data-theme="dark"] .node-score.high {
-  color: #4ee8c3;
-}
-:root[data-theme="dark"] .node-score.high {
-  background: rgba(31, 209, 166, 0.16);
-}
-:root[data-theme="dark"] .node-score.mid {
-  background: rgba(255, 182, 72, 0.18);
-  color: #ffcf85;
-}
-
-:root[data-theme="dark"] .node-item:hover,
-:root[data-theme="dark"] .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-:root[data-theme="dark"] .dist-track {
-  background: rgba(255, 255, 255, 0.10);
-}
-
-/* nav-tab hover is a transient highlight on an already-legible text pill,
-   not a persistent bordered "surface" — stays the plain low-opacity wash. */
-:root[data-theme="dark"] .nav-tab:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-/* Every persistent "neutral glass surface" control — the secondary
-   Quick-Action button, ghost buttons, selects, text inputs, the code
-   textarea, radio cards — used to share that same 0.08 wash with no
-   border, which was indistinguishable from the dark .glass-panel they
-   sit on (systemic sweep of the same fix already applied individually to
-   .action-btn.secondary: background bump + a visible --unct-purple
-   border). */
-:root[data-theme="dark"] .action-btn.secondary,
-:root[data-theme="dark"] .btn--ghost,
-:root[data-theme="dark"] .select,
-:root[data-theme="dark"] .input,
-:root[data-theme="dark"] .code-textarea,
-:root[data-theme="dark"] .radio-card {
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(124, 92, 252, 0.45);
-}
-:root[data-theme="dark"] .btn--ghost:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.24);
-}
-:root[data-theme="dark"] .radio-card:has(input:checked) {
-  border-color: transparent;
-  background: rgba(124, 92, 252, 0.24);
-}
-
-/* Hairline dividers: the light-mode `rgba(33, 27, 61, X)` (dark ink) borders
-   would be invisible on a dark background — swapped for a light-based
-   hairline instead. */
-:root[data-theme="dark"] .kv-row,
-:root[data-theme="dark"] .data-table th,
-:root[data-theme="dark"] .data-table td {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-:root[data-theme="dark"] .embed-frame {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-/* Corrected a second time (2026-07-07), after the real row-wrap bug above
-   was found and fixed: every earlier round on this rule (translucent wash
-   -> flat 100% opaque -> "balanced" 0.97) was tuned by judging legibility
-   on Developer Console data that, until the row-wrap fix, was ALSO
-   wrapping onto 2 lines -- so a wrapped row's second line sat entirely
-   OUTSIDE the header's single-line coverage, fully legible regardless of
-   this rule's opacity, and every prior round mistook that for "even 0.85
-   still bleeds through." Re-tested from scratch on the now-fixed
-   (genuinely single-line) rows, at real 1x viewing scale (not a forensic
-   3x-zoom crop): Light Mode's own shipping formula (`rgba(255,255,255,
-   0.42)` + `blur(16px)`, unchanged, above) shows the EXACT same kind of
-   soft, blurred, partially-legible-if-you-focus ghosting at a mid-scroll
-   position -- and that is the look a real user pointed to as the correct
-   definition of "blur": partial obscuring via a real blur, not full
-   opaque coverage. Chasing near-zero legibility (this rule's previous
-   0.97) was solving a bar Light Mode itself never had to meet, and reads
-   as a near-solid block up close -- not glass. Dark Mode now mirrors
-   Light Mode's own formula (same alpha, same blur radius) instead of a
-   separately-tuned, much-heavier one -- the two themes should feel like
-   the same material, not two different materials with the same name. */
+/* Sticky virtual-table header (see the long light-mode comment above):
+   dark occlusion background re-based on the handoff's new #0A0D1C canvas. */
 :root[data-theme="dark"] .table-scroll--virtual .data-table th {
-  background: rgba(20, 22, 26, 0.80);
+  background: rgba(10, 13, 28, 0.80);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 
-/* Status/severity colors: brighter text tones so each tag/alert stays
-   readable against its own low-opacity tinted background in the dark. */
-:root[data-theme="dark"] .tag--valid { background: rgba(31, 209, 166, 0.18); color: #4ee8c3; }
-:root[data-theme="dark"] .tag--invalid { background: rgba(229, 72, 77, 0.22); color: #ff9494; }
-:root[data-theme="dark"] .tag--info { background: rgba(168, 162, 192, 0.18); color: #c7c2dd; }
-:root[data-theme="dark"] .tag--warning { background: rgba(255, 182, 72, 0.24); color: #ffcf85; }
-:root[data-theme="dark"] .tag--critical { background: rgba(229, 72, 77, 0.38); color: #ffb3b3; }
-:root[data-theme="dark"] .alert--error { background: rgba(229, 72, 77, 0.18); color: #ff9494; }
-
 /* Scroll-to-Top/Bottom FAB (`ui/components/scroll-fab.tsx`) — fixed at the
    physical bottom-left corner in BOTH ltr/rtl (`left`, not a logical
    inset-inline-start; see the component's own header comment for why).
-   `left: 56px`, not `20px` (2026-07-07, real bug found from the user's own
-   screenshot -- the button looked like a flat opaque disc with zero trace
-   of the "Valid Nodes" card behind it, contradicting the "should look like
-   the headers" request). Root cause, confirmed with `elementFromPoint` swept
-   across the full scroll range of both Dashboard and Subscription Center: at
-   `left: 20px` the button's whole 48px box sat inside `body`'s own
-   `padding-inline: 36px` outer margin plus each panel's internal padding --
-   i.e. it was never once geometrically on top of real card/row content, on
-   ANY screen, at ANY scroll position, so there was nothing for
-   `backdrop-filter` to blur-and-reveal; a flat, mostly-uniform background
-   blurred still looks flat. `56px` was verified (same method) to land the
-   box on real content -- a protocol badge/row -- on both screens tested.
-   Alpha/blur (2026-07-07, second correction): copying the sticky header's
-   own `0.50/0.80` values was ALSO wrong, even after the position fix --
-   that header's own comment above states its explicit goal is to fully
-   HIDE a scrolled-past row (Liquid Glass "occlusion", not reveal); reusing
-   its values here just re-created the same opaque look, now over real
-   content instead of empty margin. This button's ask is the opposite --
-   "whatever passes under it should still read through, hazily" -- so it
-   needed its OWN, lower alpha / wider blur, tuned by real side-by-side
-   screenshots (not `getComputedStyle`) until a colored badge/row was
-   visibly legible-but-blurred through it: Light Mode 0.25 / `blur(24px)`,
-   Dark Mode 0.40 / `blur(24px)`. `color: var(--unct-text)` keeps the arrow
-   glyph readable against either theme's translucent tint. */
+   Translucent + blur so passing content reads through hazily; the exact
+   opacity pair (Light 0.40 / Dark 0.80 at blur(16px)) was set by explicit
+   user direction after several tuning rounds — do not retune casually. */
 .scroll-fab {
   position: fixed;
   left: 20px;
@@ -1581,5 +1619,215 @@ code, kbd, samp, .mono {
   transform: translateY(-2px);
 }
 :root[data-theme="dark"] .scroll-fab {
-  background: rgba(20, 22, 26, 0.80);
+  background: rgba(10, 13, 28, 0.80);
+}
+/* Below the handoff's 760px breakpoint a fixed glass dock occupies the
+   bottom 14–80px band — lift the FAB above it. */
+@media (max-width: 760px) {
+  .scroll-fab {
+    bottom: 96px;
+  }
+}
+
+/* =======================================================================
+ * Handoff chrome — splash screen, mobile glass dock, "More" bottom sheet,
+ * and the offline footer badge (README §Chrome). Rendered by ui/main.tsx
+ * and ui/components/nav.tsx; pure presentation, no screen logic.
+ * ===================================================================== */
+
+@keyframes unctLoad {
+  0% { width: 8%; }
+  60% { width: 74%; }
+  100% { width: 96%; }
+}
+@keyframes unctFadeOut {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: var(--unct-bg);
+  background-image: var(--unct-bg-image);
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  animation: unctFadeOut 1.6s ease forwards;
+}
+.splash img {
+  width: 230px;
+  object-fit: contain;
+}
+.splash__bar {
+  width: 210px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--unct-track);
+  overflow: hidden;
+}
+.splash__bar-fill {
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #8B5CF6, #0EA5E9);
+  animation: unctLoad 1.4s ease-out forwards;
+}
+.splash__label {
+  color: var(--unct-text-faint);
+  font-size: 10px;
+  letter-spacing: 3px;
+  font-family: var(--unct-font-mono);
+  direction: ltr;
+}
+
+/* Centered footer status pill: "Offline · everything stays on your
+   device" (README §Chrome, footer badge). */
+.offline-badge {
+  width: fit-content;
+  margin-inline: auto;
+  margin-block-start: 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 99px;
+  background: var(--unct-ok-bg);
+  border: 1px solid var(--unct-ok-bd);
+  padding: 7px 16px;
+}
+.offline-badge img {
+  width: 13px;
+  height: 17px;
+  object-fit: contain;
+}
+.offline-badge span {
+  color: var(--unct-text-muted);
+  font-size: 11.5px;
+}
+
+/* Mobile floating glass dock (<760px): fixed 14px from edges/bottom,
+   5-col grid (4 main sections + More). Hidden on desktop; the top pill
+   nav's tab strip is hidden on mobile in exchange (see .app-nav rules). */
+.mobile-dock {
+  display: none;
+}
+.more-sheet-backdrop,
+.more-sheet {
+  display: none;
+}
+@media (max-width: 760px) {
+  .app-nav__scroll,
+  .app-nav__divider {
+    display: none;
+  }
+  .app-nav {
+    gap: 0;
+  }
+  .mobile-dock {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    z-index: 60;
+    border-radius: 24px;
+    background: var(--unct-glass);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-glass-hi), 0 14px 36px rgba(0, 0, 0, 0.4);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 13px 8px;
+    align-items: center;
+  }
+  .mobile-dock__item {
+    border: none;
+    background: transparent;
+    text-align: center;
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 0;
+    cursor: pointer;
+    color: var(--unct-text-faint);
+  }
+  .mobile-dock__item--active {
+    color: var(--unct-text);
+    font-weight: 700;
+  }
+  .more-sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 18, 0.45);
+    z-index: 40;
+    border: none;
+    padding: 0;
+  }
+  .more-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    border-radius: 30px 30px 0 0;
+    background: var(--unct-glass);
+    backdrop-filter: blur(36px) saturate(180%);
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    border-top: 1px solid var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-glass-hi), 0 -20px 60px rgba(0, 0, 0, 0.5);
+    padding: 14px 20px 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .more-sheet__handle {
+    width: 44px;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--unct-divider);
+    align-self: center;
+  }
+  .more-sheet__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .more-sheet__header img {
+    width: 26px;
+    height: 28px;
+    object-fit: contain;
+  }
+  .more-sheet__header span {
+    color: var(--unct-text);
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .more-sheet__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .more-sheet__item {
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    cursor: pointer;
+    background: var(--unct-glass2);
+    border: 1px solid var(--unct-glass2-bd);
+    font: inherit;
+    color: var(--unct-text);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: start;
+  }
+  .more-sheet__item--active {
+    background: var(--unct-pill-active);
+    border-color: var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  }
 }

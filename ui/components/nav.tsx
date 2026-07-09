@@ -1,45 +1,47 @@
 /**
- * App Navigation (07-UI_UX_SYSTEM §2, Liquid Glass; final visual design
- * phase, step 3) — the shared tab bar across all eight Main Screens,
- * extracted out of `main.tsx` into its own component (same reasoning as
- * `ui/components/logo.tsx`: one shared piece of chrome belongs in one
- * place, not duplicated per screen).
+ * App Navigation — Liquid Glass v2 handoff chrome
+ * (docs/design/design_handoff_unct_liquid_glass/README.md §Chrome):
+ * a floating, self-centered glass pill holding the brand lockup, the 8
+ * screen pills, and the language/theme quick toggles; below the 760px
+ * breakpoint the pill strip hides and a fixed bottom glass dock (4 main
+ * sections + "More") takes over, with "More" opening a glass bottom
+ * sheet listing all 8 sections in a 2-column grid.
  *
- * Mobile decision (documented, not just implemented — the task explicitly
- * asked for a justified choice): eight tabs, some labeled "Subscription
- * Center"/"Developer Console"/"Export Center", cannot all fit on a narrow
- * viewport. Two options were weighed:
- *   1. Icon-only compact mode below a breakpoint — rejected. It would need
- *      eight new, well-designed glyphs distinguishing genuinely similar
- *      concepts (Extractor vs. Export Center vs. Developer Console); a real
- *      visual-design task on its own, with real risk of ambiguity once the
- *      text label is gone.
- *   2. Horizontal scroll with a soft edge fade — chosen. Zero new assets,
- *      every label stays fully legible, and it is an already-familiar
- *      pattern (iOS tab bars, browser tab strips) nobody has to learn.
- * The edge fade (`.app-nav__scroll`'s `mask-image`) is a static CSS mask,
- * not scroll-position-aware — deliberately simple for this pass; making it
- * hide itself once there is nothing left to scroll toward is a reasonable
- * follow-up, not a blocker here. `linear-gradient(to right, ...)` is a
- * physical direction keyword, which RTL-GUIDELINES.md §4 would normally
- * flag, but this specific gradient is direction-symmetric (fades equally at
- * both ends) — the visual result is identical whichever way the bar reads,
- * so no logical-property equivalent is needed here (§4's own table does not
- * cover gradient directions in the first place).
+ * The dock/sheet/dock-visibility split is pure CSS (`@media (max-width:
+ * 760px)` in theme.css) — both structures are always rendered and the
+ * breakpoint decides which is visible, so no resize listener is needed.
+ * `moreOpen` is purely-presentational local state (like the design
+ * prototype's own), not app state.
  *
- * Active-tab styling is driven entirely by the pre-existing `disabled` prop
- * (`.nav-tab:disabled` in theme.css) — this redesign only changes the CSS,
- * not the click/keyboard-focus semantics `main.tsx` already had.
+ * The language/theme toggles write through the SAME settingsStore actions
+ * Settings Screen already uses (`setLanguageChoice`/`setThemeChoice`) —
+ * no new logic, just a second entry point to existing behavior, exactly
+ * what the handoff's top-nav specifies.
  *
- * Labels resolve through `t()` (`createTranslator`/`settingsStore`, the same
- * pattern every one of the 8 screens already uses) — left hardcoded English
- * during the initial i18n content pass since real Persian content didn't
- * exist yet at that point, but that's no longer true now that a real
- * Language switcher exists in Settings: a user switching languages must not
- * see the nav bar stay English while every screen's own content switches.
+ * Active-tab styling is driven entirely by the pre-existing `disabled`
+ * prop (`.nav-tab:disabled` in theme.css) — click/keyboard-focus
+ * semantics are unchanged from the previous nav.
  */
+import { useEffect, useState } from "preact/hooks";
 import { createTranslator } from "../../core/i18n/translator.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
+
+/** Matches the handoff's 760px breakpoint. The dock/sheet are conditionally
+    RENDERED (not just CSS-hidden) so the desktop DOM carries exactly one
+    button per screen name — several e2e tests (and screen readers) address
+    nav buttons by accessible name and would otherwise hit duplicates. */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+}
 
 export interface NavItem {
   key: string;
@@ -57,25 +59,112 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { key: "devconsole", labelKey: "nav.devconsole" },
 ];
 
+/** The 4 sections pinned to the mobile dock (handoff §Chrome, dock).
+    Subscription Center / Export Center use shorter dock labels so the
+    5-column grid's 11px labels stay single-line on narrow phones. */
+const DOCK_ITEMS = [
+  { key: "dashboard", labelKey: "nav.dashboard" },
+  { key: "converter", labelKey: "nav.converter" },
+  { key: "subscription", labelKey: "nav.subscriptionShort" },
+  { key: "export", labelKey: "nav.exportShort" },
+] as const;
+
 export function AppNav({ current, onNavigate }: { current: string; onNavigate: (key: string) => void }) {
-  useSettingsState();
+  const { resolvedTheme, resolvedLanguage } = useSettingsState();
   const t = createTranslator(settingsStore);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  function go(key: string) {
+    setMoreOpen(false);
+    onNavigate(key);
+  }
 
   return (
-    <nav class="app-nav glass-panel" aria-label={t("nav.screenSwitcher")}>
-      <div class="app-nav__scroll">
-        {NAV_ITEMS.map((item) => (
+    <>
+      <nav class="app-nav glass-panel" aria-label={t("nav.screenSwitcher")}>
+        <div class="app-nav__brand">
+          <img src="assets/icons/unct-lockup.png" alt="UNCT — Universal Network Config Toolkit" />
+        </div>
+        <div class="app-nav__divider" />
+        <div class="app-nav__scroll">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              class="nav-tab"
+              disabled={current === item.key}
+              onClick={() => onNavigate(item.key)}
+            >
+              {t(item.labelKey)}
+            </button>
+          ))}
+        </div>
+        <div class="app-nav__divider" />
+        <button
+          type="button"
+          class="app-nav__toggle"
+          aria-label={t("nav.toggleLanguage")}
+          onClick={() => settingsStore.setLanguageChoice(resolvedLanguage === "fa" ? "en" : "fa")}
+        >
+          {resolvedLanguage === "fa" ? "EN" : "فا"}
+        </button>
+        <button
+          type="button"
+          class="app-nav__toggle app-nav__toggle--theme"
+          aria-label={t("nav.toggleTheme")}
+          onClick={() => settingsStore.setThemeChoice(resolvedTheme === "dark" ? "light" : "dark")}
+        >
+          {resolvedTheme === "dark" ? "☾" : "☀"}
+        </button>
+      </nav>
+
+      {isMobile && moreOpen ? (
+        <>
+          <button type="button" class="more-sheet-backdrop" aria-label={t("nav.allSections")} onClick={() => setMoreOpen(false)} />
+          <div class="more-sheet">
+            <div class="more-sheet__handle" />
+            <div class="more-sheet__header">
+              <img src="assets/icons/unct-icon.png" alt="" />
+              <span>{t("nav.allSections")}</span>
+            </div>
+            <div class="more-sheet__grid">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  class={`more-sheet__item${current === item.key ? " more-sheet__item--active" : ""}`}
+                  onClick={() => go(item.key)}
+                >
+                  {t(item.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {isMobile ? (
+      <div class="mobile-dock">
+        {DOCK_ITEMS.map((item) => (
           <button
             key={item.key}
             type="button"
-            class="nav-tab"
-            disabled={current === item.key}
-            onClick={() => onNavigate(item.key)}
+            class={`mobile-dock__item${current === item.key && !moreOpen ? " mobile-dock__item--active" : ""}`}
+            onClick={() => go(item.key)}
           >
             {t(item.labelKey)}
           </button>
         ))}
+        <button
+          type="button"
+          class={`mobile-dock__item${moreOpen ? " mobile-dock__item--active" : ""}`}
+          onClick={() => setMoreOpen(!moreOpen)}
+        >
+          {t("nav.more")}
+        </button>
       </div>
-    </nav>
+      ) : null}
+    </>
   );
 }

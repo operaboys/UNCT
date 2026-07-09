@@ -14,6 +14,7 @@
  * already covers the pure formula).
  */
 import { test, expect } from "@playwright/test";
+import { gotoScreen } from "./helpers/nav.js";
 
 const UUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const NODE_COUNT = 60;
@@ -35,7 +36,7 @@ async function importNodesAndOpenExport(page) {
   await page.locator("textarea").first().fill(buildNodeList(NODE_COUNT));
   await page.getByRole("button", { name: "Parse", exact: true }).click();
   await expect(page.getByRole("button", { name: "Parse", exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Export Center", exact: true }).click();
+  await gotoScreen(page, "Export Center");
   const qrPanel = page.locator('[aria-label="QR Export"]');
   await expect(qrPanel.locator(".qr-card")).not.toHaveCount(0);
   return qrPanel;

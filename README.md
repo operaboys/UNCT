@@ -940,6 +940,37 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   Opacity ۰.۸۰**، هر دو با `backdrop-filter: blur(16px) saturate(160%)` — یعنی دقیقاً
   همان فرمول هدر Sticky (`.table-scroll--virtual .data-table th`).
 
+- **بازطراحی کامل «Liquid Glass v2» از روی Handoff طراحی Claude Design (۲۰۲۶-۰۷-۰۹).**
+  مرجع: `docs/design/design_handoff_unct_liquid_glass/README.md` (+ دو HTML پروتوتایپ مرجع).
+  فقط لایه‌ی بصری — هیچ Selector/Store/منطق صفحه‌ای تغییر نکرد. اجزای اصلی:
+  - **توکن‌ها:** جدول کامل توکن‌های تم تاریک (پیش‌فرض) و روشن به
+    `assets/css/theme.css` منتقل شد، طبق قانون کلیدی Handoff **بدون تغییر نام متغیرهای
+    `--unct-*` موجود** — فقط مقدارها به مقادیر طراحی به‌روزرسانی شد و توکن‌های جدید هم با
+    همان پیشوند اضافه شدند (`--unct-glass*`، `--unct-ok/warn/err/info/purp` با سه‌گانه‌ی
+    `-bg/-bd`، `--unct-acc1/2/soft/bd/txt`، `--unct-pill-*`، `--unct-ring-*`،
+    `--unct-track/code/divider/shadow/grad`). نام‌های قدیمی برند (`--unct-purple/pink/...`)
+    به شتاب‌رنگ‌های جدید Re-point شدند تا همه‌ی گرادیان‌های موجود خودبه‌خود گرادیان برند
+    `#8B5CF6→#0EA5E9` شوند.
+  - **فونت‌ها (آفلاین-اول):** Vazirmatn (وزن‌های ۴۰۰–۸۰۰، دو Subset عربی+لاتین با
+    `unicode-range`) و JetBrains Mono (۴۰۰–۷۰۰) به‌صورت Self-hosted در `assets/fonts/`؛
+    فایل‌های Plus Jakarta Sans قبلی حذف شدند. هیچ فراخوان CDN در Runtime وجود ندارد.
+  - **کروم برنامه:** ناوبری بالایی به Pill شناور مرکزی با لوگوی Lockup + ۸ Pill + دکمه‌های
+    فوری زبان/تم (همان اکشن‌های `settingsStore`ی صفحه‌ی تنظیمات)؛ Splash Screen برند با
+    Loading Bar انیمیت‌شده (۱.۶ ثانیه، فقط بار اول لود)؛ Badge «آفلاین» پایین همه‌ی صفحات؛
+    Recipe شیشه‌ی امضای طراحی (`blur(30px) saturate(180%)` + Highlight داخلی) روی
+    `.glass-panel` و مشتقاتش.
+  - **ریسپانسیو ۷۶۰px:** زیر Breakpoint، نوار Pillها مخفی و **Dock شیشه‌ای شناور** پایین
+    صفحه (۴ بخش اصلی + «بیشتر») جایگزین می‌شود؛ «بیشتر» یک **Bottom Sheet شیشه‌ای** با هر
+    ۸ بخش در Grid دو ستونه باز می‌کند (رندر شرطی با `matchMedia`، نه فقط CSS، تا نام‌های
+    دکمه‌ها در درخت دسترسی Desktop تکراری نشوند — سه تست e2e موبایل هم به Helper جدید
+    `tests/e2e/helpers/nav.js` مهاجرت کردند که مسیر واقعی کاربر موبایل را می‌رود).
+  - **قانون LTR کد:** طبق Handoff، محتوای کد/URI/لاگ همیشه `direction: ltr` است حتی در
+    UI فارسی (`.code-textarea` اصلاح شد).
+  - **تأیید بصری واقعی:** ماتریس کامل ۸ صفحه × ۲ تم × ۲ زبان × ۲ فرم‌فکتور (۶۴ اسکرین‌شات
+    Playwright از build واقعی، سوئیچ تم/زبان از خود Toggleهای جدید ناوبری) گرفته و با
+    پروتوتایپ مرجع مقایسه شد؛ به‌علاوه اسکرین‌شات جدای Sheet «بیشتر» موبایل. `typecheck`،
+    ۱۲۵۳ تست واحد، `build` و هر ۵۴ تست e2e سبز.
+
 ---
 
 ## گام بعدی واقعی

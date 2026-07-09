@@ -21,8 +21,15 @@ export const en = {
   "nav.export": "Export Center",
   "nav.settings": "Settings",
   "nav.devconsole": "Developer Console",
+  "nav.more": "More",
+  "nav.subscriptionShort": "Subscriptions",
+  "nav.exportShort": "Export",
+  "nav.allSections": "All sections",
+  "nav.toggleLanguage": "Switch language",
+  "nav.toggleTheme": "Switch theme",
 
   // common — strings repeated verbatim across multiple screens
+  "common.offlineBadge": "Offline · everything stays on your device",
   "common.noNodesYet": "No nodes yet — parse something on the Converter Screen first.",
   "common.noNodesYetShort": "No nodes yet.",
   "common.na": "N/A",

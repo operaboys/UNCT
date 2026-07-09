@@ -21,6 +21,7 @@
  *     the exact "must scroll, not squish" acceptance criterion.
  */
 import { test, expect } from "@playwright/test";
+import { gotoScreen } from "./helpers/nav.js";
 
 const UUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 
@@ -90,7 +91,7 @@ for (const lang of /** @type {const} */ (["en", "fa"])) {
       await page.getByRole("button", { name: PARSE_LABEL[lang], exact: true }).click();
       await expect(page.getByRole("button", { name: PARSE_LABEL[lang], exact: true })).toBeVisible({ timeout: 15_000 });
 
-      await page.getByRole("button", { name: NAV_LABEL[lang], exact: true }).click();
+      await gotoScreen(page, NAV_LABEL[lang]);
       const scrollContainer = page.locator(".table-scroll").filter({ has: page.locator("table.data-table") }).first();
       await expect(scrollContainer).toBeVisible();
 
