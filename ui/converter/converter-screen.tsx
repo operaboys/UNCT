@@ -56,8 +56,10 @@ import {
   selectAggregatedWarnings,
   selectAggregatedErrors,
   selectAggregatedRecoveryActions,
+  selectDeduplicatedNodes,
 } from "../../core/store/selectors.js";
 import { createTranslator } from "../../core/i18n/translator.js";
+import { deriveNodeStatus } from "../../core/validator/derive-status.js";
 import { readFileAsText, extractTextFromDropEvent } from "../../core/importer/index.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
@@ -86,7 +88,7 @@ interface LastParse {
 
 export function ConverterScreen() {
   const nodes = useParserState();
-  useSettingsState();
+  const { strictValidation, autoRepair, dedupeOnImport } = useSettingsState();
   const t = createTranslator(settingsStore);
   const [raw, setRaw] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
@@ -125,7 +127,10 @@ export function ConverterScreen() {
     setIsParsing(true);
     try {
       const result = await parseRawConfig(text);
-      parserStore.setNodes(result.nodes);
+      const nodesToStore = dedupeOnImport
+        ? selectDeduplicatedNodes({ nodes: result.nodes })
+        : result.nodes;
+      parserStore.setNodes(nodesToStore);
       setLastParse({ parserName: result.parserName, recovered: result.recovered });
       setParseError(null);
     } catch (err) {
@@ -304,11 +309,14 @@ export function ConverterScreen() {
                 <td>{n.network}</td>
                 <td>{n.security}</td>
                 <td>
-                  {n.validation.overallValid ? (
-                    <span class="tag tag--valid">{t("common.fields.valid")}</span>
-                  ) : (
-                    <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
-                  )}
+                  {(() => {
+                    const status = deriveNodeStatus(n, { strictValidation, autoRepair });
+                    return (
+                      <span class={`tag tag--${status === "warning" ? "warning" : status === "valid" ? "valid" : "invalid"}`}>
+                        {t(`common.fields.${status}`)}
+                      </span>
+                    );
+                  })()}
                 </td>
               </>
             )}

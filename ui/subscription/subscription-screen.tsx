@@ -81,6 +81,7 @@ import {
   selectDeduplicatedNodes,
 } from "../../core/store/selectors.js";
 import { createTranslator } from "../../core/i18n/translator.js";
+import { deriveNodeStatus } from "../../core/validator/derive-status.js";
 import { PROTOCOLS } from "../../core/unm/schema/enums.js";
 import { parserStore, useParserState } from "../store/use-parser-state.js";
 import { useAnalyzerState } from "../store/use-analyzer-state.js";
@@ -141,7 +142,7 @@ type AnalysisByNodeId = ReturnType<typeof useAnalyzerState>;
 export function SubscriptionScreen() {
   const nodes = useParserState();
   const analysisByNodeId = useAnalyzerState();
-  useSettingsState();
+  const { strictValidation, autoRepair } = useSettingsState();
   const t = createTranslator(settingsStore);
   const [search, setSearch] = useState("");
   const [protocolFilter, setProtocolFilter] = useState<ProtocolFilter>("all");
@@ -537,12 +538,12 @@ export function SubscriptionScreen() {
               <div style={{ fontWeight: 700, fontSize: "13px", marginBlockEnd: "8px" }}>
                 {protocol} (<bdi>{groupNodes.length}</bdi>)
               </div>
-              <NodeTableGrouped t={t} nodes={groupNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
+              <NodeTableGrouped t={t} nodes={groupNodes} strictValidation={strictValidation} autoRepair={autoRepair} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
             </div>
           ))
         ) : (
           <div style={{ marginBlockStart: "14px" }}>
-            <NodeTable t={t} nodes={visibleNodes} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
+            <NodeTable t={t} nodes={visibleNodes} strictValidation={strictValidation} autoRepair={autoRepair} analysisByNodeId={analysisByNodeId} latencyByNodeId={latencyByNodeId} testingNodeId={testingNodeId} onTestLatency={handleTestLatency} geoIpByNodeId={geoIpByNodeId} geoIpLoadingNodeId={geoIpLoadingNodeId} onGeoIpLookup={handleGeoIpLookup} portCheckByNodeId={portCheckByNodeId} portCheckLoadingNodeId={portCheckLoadingNodeId} onPortCheck={handlePortCheck} selectedNodeIds={selectedNodeIds} onToggleSelected={toggleNodeSelected} onSaveAsTemplate={handleSaveAsTemplate} tagsByNodeId={tagsByNodeId} newTagByNodeId={newTagByNodeId} onTagInputChange={handleTagInputChange} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} />
           </div>
         )}
       </div>
@@ -693,6 +694,8 @@ const NODE_TABLE_COLUMN_COUNT = 12;
 type NodeTableProps = {
   t: (key: string) => string;
   nodes: ReturnType<typeof useParserState>;
+  strictValidation: boolean;
+  autoRepair: boolean;
   analysisByNodeId: AnalysisByNodeId;
   latencyByNodeId: Record<string, LatencyResult>;
   testingNodeId: string | null;
@@ -729,6 +732,8 @@ function NodeTableRow({
   rowRef,
   dataIndex,
   t,
+  strictValidation,
+  autoRepair,
   analysisByNodeId,
   latencyByNodeId,
   testingNodeId,
@@ -758,6 +763,7 @@ function NodeTableRow({
   const isLookingUp = geoIpLoadingNodeId === n.nodeId;
   const portCheck = portCheckByNodeId[n.nodeId];
   const isCheckingPort = portCheckLoadingNodeId === n.nodeId;
+  const status = deriveNodeStatus(n, { strictValidation, autoRepair });
   return (
     <tr ref={rowRef} data-index={dataIndex}>
       <td>
@@ -771,11 +777,9 @@ function NodeTableRow({
       <td class="mono">{n.address}</td>
       <td class="mono"><bdi>{n.port}</bdi></td>
       <td>
-        {n.validation.overallValid ? (
-          <span class="tag tag--valid">{t("common.fields.valid")}</span>
-        ) : (
-          <span class="tag tag--invalid">{t("common.fields.invalid")}</span>
-        )}
+        <span class={`tag tag--${status === "warning" ? "warning" : status === "valid" ? "valid" : "invalid"}`}>
+          {t(`common.fields.${status}`)}
+        </span>
       </td>
       <td>{formatNodeSecurityScore(analysisByNodeId, n.nodeId)}</td>
       <td>

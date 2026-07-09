@@ -4,6 +4,12 @@
  * shell). Covers exactly the behaviors the task demanded real visual proof
  * for: hidden on a short page, visible with the correct arrow direction on
  * a genuinely long one, and that clicking actually scrolls.
+ *
+ * "Short page" reference screen changed from Settings to Analyzer
+ * (2026-07-09, ADR-030): Settings gained three toggle rows + a Data row and
+ * is now taller than the viewport on its own, so it stopped being a valid
+ * "no scroll" example — Analyzer's pre-Analyze empty state is still exactly
+ * one viewport tall.
  */
 import { test, expect } from "@playwright/test";
 
@@ -20,10 +26,10 @@ function buildNodeList(count) {
 }
 
 test.describe("Scroll-to-Top/Bottom FAB", () => {
-  test("hidden on a short page (Settings), visible with correct arrow direction on a long one (Subscription Center)", async ({ page }) => {
+  test("hidden on a short page (Analyzer), visible with correct arrow direction on a long one (Subscription Center)", async ({ page }) => {
     await page.goto("/index.html");
 
-    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "Analyzer", exact: true }).click();
     await expect(page.locator(".scroll-fab")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Converter", exact: true }).click();

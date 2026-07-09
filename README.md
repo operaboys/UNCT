@@ -158,7 +158,7 @@ P12-12، P12-13).
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** + **Split Subscription** + **Tag Nodes** + **Merge Subscription** (Textarea + «Import & Merge»، همان Pipeline واقعی `parseRawConfig`، با `parserStore.addNode` اضافه می‌کند نه جایگزین) — همگی واقعی، هیچ Placeholder یا Deferred باقی نمانده. **Node List اکنون Virtualized است** (`@tanstack/virtual-core@3.17.3`، ADR-029؛ ۲۰۲۶-۰۷-۰۵ — پس از کرش واقعی تب با وارد‌سازی ۵۰۰۰-۶۰۰۰ نودی، تست شده تا ۵۰۰۰ نود واقعی بدون کرش) |
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR (اکنون Paginated، ۲۴‌تایی — فقط QR صفحه‌ی فعلی محاسبه می‌شود)، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
-| 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`) |
+| 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`). **+ سه توگل رفتاری ADR-030**: Strict Validation (پیش‌فرض خاموش — نودهای Warning را Rejected برچسب می‌زند، بدون حذف)، Auto-repair (پیش‌فرض روشن)، Deduplicate on import (پیش‌فرض روشن — تنها تغییر پیش‌فرض مصوب) — هر سه یک لایه‌ی Derived Status خالص (`core/validator/derive-status.js`) هستند، بدون منطق جدید در Parser/Validation Engine. **+ ردیف Data** با دکمه‌ی «Wipe all data» (تأیید دومرحله‌ای، `core/storage/wipe.js`، پاک‌سازی کامل IndexedDB+LocalStorage و Reload). ردیف Telemetry به‌صورت آگاهانه از طراحی حذف شد (تصمیم Owner) |
 | 8 | **Developer Console** | هر ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021 + «Alternative Candidates» از Detection Logs، ADR-028) — رتبه‌بندی واقعی Parserهای رقیب که به Threshold رسیدند اما انتخاب نشدند، از `metadata.alternativeCandidates`. ۵ جدولی که با تعداد نود Scale می‌کنند اکنون Virtualized‌اند (`ui/components/virtual-table.tsx`) |
 
 ---
@@ -970,6 +970,39 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
     Playwright از build واقعی، سوئیچ تم/زبان از خود Toggleهای جدید ناوبری) گرفته و با
     پروتوتایپ مرجع مقایسه شد؛ به‌علاوه اسکرین‌شات جدای Sheet «بیشتر» موبایل. `typecheck`،
     ۱۲۵۳ تست واحد، `build` و هر ۵۴ تست e2e سبز.
+
+- **Settings — سه توگل رفتاری (ADR-030، ۲۰۲۶-۰۷-۰۹).** تصمیم‌های Owner در
+  `docs/adr/ADR-030-SETTINGS-BEHAVIORAL-TOGGLES.md` (Full ADR) ثبت و پیاده شدند:
+  - **Strict Validation** (پیش‌فرض خاموش): نودهایی که برچسب Warning اعتبارسنجی می‌گیرند
+    وقتی توگل روشن است `Rejected` نشان داده می‌شوند، ولی هیچ‌وقت از مجموعه حذف نمی‌شوند
+    (برگشت‌پذیر، بدون Re-parse). «نداشتن TLS» به‌تنهایی هرگز Warning نیست — فقط
+    ناسازگاری واقعی (مثل `security=tls` بدون SNI) هست.
+  - **Auto-repair** (پیش‌فرض روشن = رفتار فعلی): وقتی خاموش است، نودی که از مسیر
+    `recover()` عبور کرده به‌جای `Valid`، `Warning` نشان داده می‌شود — هیچ منطق
+    Recovery واقعی تغییر نمی‌کند، فقط برچسب نمایشی.
+  - **Deduplicate on import** (پیش‌فرض روشن — تنها تغییر پیش‌فرض مصوب): Parse در Converter
+    Screen حالا به‌صورت پیش‌فرض نودهای یکسان را با همان منطق دکمه‌ی دستی Deduplicate ادغام
+    می‌کند؛ Merge جدای Subscription Center عمداً خارج از این Scope ماند (تصمیم مستقل
+    قبلی خودش).
+  - هر سه توگل یک لایه‌ی خالص و برگشت‌پذیر (`core/validator/derive-status.js#deriveNodeStatus`)
+    روی داده‌ای هستند که Validation Engine/Recovery Strategy از قبل محاسبه کرده‌اند — صفر
+    منطق جدید در Parser/Validator، صفر ریسک از‌دست‌رفتن داده.
+  - **ردیف Telemetry از طراحی حذف شد** (تصمیم Owner) — پیام حریم خصوصی همان Badge
+    «آفلاین» پایین صفحه است.
+  - **Wipe Data**: دکمه‌ی قرمز با تأیید دومرحله‌ای (`confirm()` بومی، بدون Dependency
+    جدید) که `core/storage/wipe.js#wipeAllAppData()` را صدا می‌زند — هر دو دیتابیس
+    IndexedDB (`unct-storage`, `unct-templates`) و کل LocalStorage با پیشوند `unct:` را
+    پاک و صفحه را Reload می‌کند.
+  - UI طبق پروتوتایپ Handoff: سه ردیف توگل با آیکون (`ic-shield`/`ic-speed`/`ic-network`)
+    + ردیف Data، با `.settings-row`/`.toggle-switch` جدید در `theme.css`.
+  - **تست**: ۲۰ تست واحد جدید (`derive-status.test.js` ۱۳تا + `wipe.test.js` ۳تا + ۹تای
+    اصلاح‌شده در `settings-state.test.js`) + ۴ تست e2e واقعی
+    (`settings-behavioral-toggles.spec.js`) که هر توگل و Wipe Data را از مسیر واقعی
+    کاربر امتحان می‌کنند. دو تست e2e قدیمی (`scroll-fab.spec.js`،
+    `subscription-summary.spec.js`) به رفتار جدید مستند به‌روزرسانی شدند — یکی چون
+    Settings دیگر صفحه‌ی کوتاه نیست (۴ ردیف جدید اضافه شد)، دیگری چون فیکسچرش عمداً
+    به Dedup-on-import خاموش نیاز داشت. `typecheck`، ۱۲۷۷ تست واحد، `build` و هر ۵۸
+    تست e2e سبز.
 
 ---
 

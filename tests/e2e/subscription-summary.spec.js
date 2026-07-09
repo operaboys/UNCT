@@ -35,6 +35,15 @@ const NODE_D =
 
 test.describe("Subscription Center — Summary Panel (Phase 10, §2.5)", () => {
   test("renders real Total/Protocol/Duplicate/Invalid/Dead/Security stats", async ({ page }) => {
+    // This fixture deliberately imports a raw duplicate pair (node-A/node-B)
+    // so the Summary Panel's OWN "Duplicate Nodes" count has something real
+    // to count -- Deduplicate on import (ADR-030, default: on) would merge
+    // that pair away before it ever reached the node list, so it's turned
+    // off here to preserve the test's original intent (proving the Summary
+    // Panel's duplicate-detection, not Converter's import-time dedup).
+    await page.addInitScript(() => {
+      localStorage.setItem("unct:dedupeOnImport", JSON.stringify(false));
+    });
     await page.goto("/index.html");
     await page.getByRole("button", { name: "Converter", exact: true }).click();
     await page.locator("textarea").first().fill(`${NODE_A}\n${NODE_B}\n${NODE_C}\n${NODE_D}`);

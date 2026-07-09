@@ -6,11 +6,12 @@
  * app (tests build their own, independent instances instead — see
  * tests/store/settings-state.test.js).
  *
- * `useSettingsState()` reads the whole (two-field) `SettingsState` via a
- * stable identity selector — `core/store/selectors.js` is reserved for
- * `ParserState`/`AnalyzerState`; Settings' own domain is too small to need a
- * separate selectors module. Writes go through `settingsStore.setThemeChoice`
- * directly, called from the Settings Screen's event handlers.
+ * `useSettingsState()` reads the whole `SettingsState` (Theme, Language, and
+ * the ADR-030 behavioral toggles) via a stable identity selector —
+ * `core/store/selectors.js` is reserved for `ParserState`/`AnalyzerState`;
+ * Settings' own domain is too small to need a separate selectors module.
+ * Writes go through `settingsStore.setThemeChoice`/etc. directly, called
+ * from the Settings Screen's event handlers.
  */
 import { createSettingsStore } from "../../core/store/settings-state.js";
 import { useStoreSelector } from "./use-store-selector.js";

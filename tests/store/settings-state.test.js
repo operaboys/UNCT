@@ -75,6 +75,7 @@ describe("createSettingsStore — defaults", () => {
     expect(store.getState()).toEqual({
       themeChoice: "auto", resolvedTheme: "dark",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -87,6 +88,7 @@ describe("createSettingsStore — defaults", () => {
     expect(store.getState()).toEqual({
       themeChoice: "auto", resolvedTheme: "light",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -118,6 +120,7 @@ describe("createSettingsStore — persistence (real localStorage round-trip)", (
     expect(after.getState()).toEqual({
       themeChoice: "light", resolvedTheme: "light",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     after.close();
   });
@@ -146,6 +149,7 @@ describe("createSettingsStore — setThemeChoice", () => {
     expect(store.getState()).toEqual({
       themeChoice: "dark", resolvedTheme: "dark",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     expect(adapter.get("theme")).toBe("dark");
     store.close();
@@ -175,6 +179,7 @@ describe("createSettingsStore — setThemeChoice", () => {
     expect(listener).toHaveBeenCalledWith({
       themeChoice: "dark", resolvedTheme: "dark",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -192,6 +197,7 @@ describe("createSettingsStore — \"Auto Mode\"/\"System Sync\" live tracking", 
     expect(store.getState()).toEqual({
       themeChoice: "auto", resolvedTheme: "dark",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -208,6 +214,7 @@ describe("createSettingsStore — \"Auto Mode\"/\"System Sync\" live tracking", 
     expect(store.getState()).toEqual({
       themeChoice: "dark", resolvedTheme: "dark",
       languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -294,6 +301,7 @@ describe("createSettingsStore — setLanguageChoice", () => {
     expect(store.getState()).toEqual({
       themeChoice: "auto", resolvedTheme: "dark",
       languageChoice: "fa", resolvedLanguage: "fa",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     expect(adapter.get("language")).toBe("fa");
     store.close();
@@ -323,6 +331,7 @@ describe("createSettingsStore — setLanguageChoice", () => {
     expect(listener).toHaveBeenCalledWith({
       themeChoice: "auto", resolvedTheme: "light",
       languageChoice: "fa", resolvedLanguage: "fa",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
     });
     store.close();
   });
@@ -338,6 +347,102 @@ describe("createSettingsStore — setLanguageChoice", () => {
     fireSystemChange(true); // an unrelated OS theme change must not re-resolve language
 
     expect(getNavigatorLanguage).toHaveBeenCalledTimes(1);
+    store.close();
+  });
+});
+
+describe("createSettingsStore — ADR-030 behavioral toggles", () => {
+  it("default to strictValidation=false, autoRepair=true, dedupeOnImport=true with no persisted value", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    const state = store.getState();
+    expect(state.strictValidation).toBe(false);
+    expect(state.autoRepair).toBe(true);
+    expect(state.dedupeOnImport).toBe(true);
+    store.close();
+  });
+
+  it("setStrictValidation(true) updates state and persists through the adapter, without touching other fields", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setStrictValidation(true);
+
+    expect(store.getState().strictValidation).toBe(true);
+    expect(store.getState().autoRepair).toBe(true);
+    expect(adapter.get("strictValidation")).toBe(true);
+    store.close();
+  });
+
+  it("setAutoRepair(false) updates state and persists through the adapter", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setAutoRepair(false);
+
+    expect(store.getState().autoRepair).toBe(false);
+    expect(adapter.get("autoRepair")).toBe(false);
+    store.close();
+  });
+
+  it("setDedupeOnImport(false) updates state and persists through the adapter", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setDedupeOnImport(false);
+
+    expect(store.getState().dedupeOnImport).toBe(false);
+    expect(adapter.get("dedupeOnImport")).toBe(false);
+    store.close();
+  });
+
+  it("reads back previously persisted toggle values on a fresh store instance (browser-restart proof)", () => {
+    const prefix = freshPrefix();
+    const { matchMedia } = fakeMatchMedia(false);
+    const getNavigatorLanguage = fakeNavigatorLanguage("en-US");
+
+    const before = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    before.setStrictValidation(true);
+    before.setAutoRepair(false);
+    before.setDedupeOnImport(false);
+    before.close();
+
+    const after = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    expect(after.getState().strictValidation).toBe(true);
+    expect(after.getState().autoRepair).toBe(false);
+    expect(after.getState().dedupeOnImport).toBe(false);
+    after.close();
+  });
+
+  it("ignores a corrupted/non-boolean persisted toggle value and falls back to that toggle's own default", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    adapter.set("strictValidation", "yes");
+    adapter.set("autoRepair", 1);
+    const { matchMedia } = fakeMatchMedia(false);
+
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    expect(store.getState().strictValidation).toBe(false);
+    expect(store.getState().autoRepair).toBe(true);
+    store.close();
+  });
+
+  it("notifies subscribers on every toggle change", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.setStrictValidation(true);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ strictValidation: true }));
     store.close();
   });
 });

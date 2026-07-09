@@ -1,9 +1,10 @@
 /**
- * Settings Screen (07-UI_UX_SYSTEM §2 "Theme Engine", §9 "Language Support").
- * Originally scoped to JUST theme switching (see git history) because real
- * Persian content didn't exist yet — adding a language switcher would have
- * had nothing real to switch to. That condition no longer holds: `fa.js` now
- * carries real translations and every screen resolves its text through
+ * Settings Screen (07-UI_UX_SYSTEM §2 "Theme Engine", §9 "Language Support";
+ * ADR-030 "Settings Behavioral Toggles" for the three toggle rows + Data row
+ * below). Originally scoped to JUST theme switching (see git history) because
+ * real Persian content didn't exist yet — adding a language switcher would
+ * have had nothing real to switch to. That condition no longer holds: `fa.js`
+ * now carries real translations and every screen resolves its text through
  * `t()`, so this screen adds the Language Engine panel — the same
  * `setLanguageChoice`/`languageChoice`/`resolvedLanguage` trio
  * `core/store/settings-state.js` has exposed since ADR-019 (Decision 2) sat
@@ -16,6 +17,20 @@
  * in `main.tsx` — not here — so both stay applied/live-synced regardless of
  * which screen is currently mounted.
  *
+ * ADR-030's three behavioral toggles (Strict Validation, Auto-repair,
+ * Deduplicate on import) are plain persisted booleans — this screen only
+ * flips them via `settingsStore.setStrictValidation`/etc; every actual
+ * behavior change they cause lives in `core/validator/derive-status.js` and
+ * `converter-screen.tsx`'s `runParse`, never here (Rule 11). Wipe Data calls
+ * `core/storage/wipe.js#wipeAllAppData()` behind a native two-step
+ * `confirm()` gate (no new dependency, matches ADR-030's own reasoning), then
+ * reloads the page so every in-memory store (parser/analyzer/settings/tags)
+ * re-hydrates from the now-empty storage instead of a stale in-memory copy.
+ * Telemetry was deliberately dropped from this screen (ADR-030): a toggle
+ * for a control with no real backing logic would be dead UI; the "nothing is
+ * ever sent" message already lives in `main.tsx`'s persistent Offline footer
+ * badge.
+ *
  * Visual design (final visual design phase, Settings step): restyled onto
  * the same Liquid Glass system as the other redesigned screens, reusing
  * `.glass-panel`/`.panel-title`/`.hint` as-is. `.radio-group`/`.radio-card`
@@ -24,9 +39,15 @@
  * highlight — a CSS-only reaction to the native input's own state. The
  * Language Engine panel below reuses this exact same pattern/classes,
  * mirroring Theme Engine one-for-one rather than inventing a second shape.
+ * The three toggle rows + Data row (ADR-030) reuse the handoff's icon-tile
+ * row layout (`.settings-row`/`.settings-row-icon`/`.toggle-switch`, added to
+ * theme.css alongside this change) inside their own glass panel, one row per
+ * control, matching the handoff prototype's Settings screen 1:1 (minus the
+ * Telemetry row).
  */
 import { createTranslator } from "../../core/i18n/translator.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
+import { wipeAllAppData } from "../../core/storage/wipe.js";
 
 type ThemeChoice = "dark" | "light" | "auto";
 type LanguageChoice = "en" | "fa" | "auto";
@@ -44,8 +65,18 @@ const LANGUAGE_CHOICE_KEYS: { value: LanguageChoice; labelKey: string }[] = [
 ];
 
 export function SettingsScreen() {
-  const { themeChoice, resolvedTheme, languageChoice, resolvedLanguage } = useSettingsState();
+  const {
+    themeChoice, resolvedTheme, languageChoice, resolvedLanguage,
+    strictValidation, autoRepair, dedupeOnImport,
+  } = useSettingsState();
   const t = createTranslator(settingsStore);
+
+  async function handleWipeData() {
+    if (!confirm(t("settings.data.wipeConfirm1"))) return;
+    if (!confirm(t("settings.data.wipeConfirm2"))) return;
+    await wipeAllAppData();
+    location.reload();
+  }
 
   return (
     <main class="settings-screen">
@@ -102,6 +133,72 @@ export function SettingsScreen() {
         <p class="hint" style={{ marginBlockStart: "14px" }}>
           {t("settings.languageEngine.currentlyAppliedPrefix")}{resolvedLanguage === "fa" ? t("settings.languageEngine.currentlyAppliedFa") : t("settings.languageEngine.currentlyAppliedEn")}
         </p>
+      </div>
+
+      <div class="panel glass-panel" style={{ marginBlockStart: "20px", padding: 0 }} aria-label={t("settings.strictValidation.title")}>
+        <div class="settings-row">
+          <div class="settings-row-icon"><img src="assets/icons/ic-shield.png" alt="" /></div>
+          <div>
+            <div class="settings-row-title">{t("settings.strictValidation.title")}</div>
+            <div class="settings-row-sub">{t("settings.strictValidation.sub")}</div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              checked={strictValidation}
+              onChange={(e) => settingsStore.setStrictValidation((e.target as HTMLInputElement).checked)}
+              aria-label={t("settings.strictValidation.title")}
+            />
+            <span class="toggle-track" />
+            <span class="toggle-knob" />
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-icon"><img src="assets/icons/ic-speed.png" alt="" /></div>
+          <div>
+            <div class="settings-row-title">{t("settings.autoRepair.title")}</div>
+            <div class="settings-row-sub">{t("settings.autoRepair.sub")}</div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              checked={autoRepair}
+              onChange={(e) => settingsStore.setAutoRepair((e.target as HTMLInputElement).checked)}
+              aria-label={t("settings.autoRepair.title")}
+            />
+            <span class="toggle-track" />
+            <span class="toggle-knob" />
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-icon"><img src="assets/icons/ic-network.png" alt="" /></div>
+          <div>
+            <div class="settings-row-title">{t("settings.dedupeOnImport.title")}</div>
+            <div class="settings-row-sub">{t("settings.dedupeOnImport.sub")}</div>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              checked={dedupeOnImport}
+              onChange={(e) => settingsStore.setDedupeOnImport((e.target as HTMLInputElement).checked)}
+              aria-label={t("settings.dedupeOnImport.title")}
+            />
+            <span class="toggle-track" />
+            <span class="toggle-knob" />
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-title">{t("settings.data.title")}</div>
+            <div class="settings-row-sub">{t("settings.data.sub")}</div>
+          </div>
+          <button type="button" class="settings-row-action settings-row-wipe" onClick={handleWipeData}>
+            {t("settings.data.wipeButton")}
+          </button>
+        </div>
       </div>
     </main>
   );

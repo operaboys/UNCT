@@ -1,10 +1,11 @@
 /**
  * Settings State — Theme Engine (07-UI_UX_SYSTEM §2: "Theme Engine: Dark
- * Mode · Light Mode · Auto Mode · System Sync"). This is the ONLY Settings
- * content documented anywhere in the blueprints — doc 07 has no dedicated
- * §4.x Settings subsection, unlike every other screen — so this store is
- * deliberately just the one preference, not a general "app settings" bag;
- * anything else is Backlog, not built here.
+ * Mode · Light Mode · Auto Mode · System Sync") plus, since ADR-030, three
+ * behavioral toggles (Strict Validation, Auto-repair, Deduplicate on
+ * import) the Liquid Glass v2 handoff's Settings screen adds. This used to
+ * be "deliberately just the one preference" (doc 07 has no dedicated §4.x
+ * Settings subsection) — ADR-030 is the backlog item that ends that scope
+ * limit; see it for the exact, precisely-defined behavior of each toggle.
  *
  * "Auto Mode" and "System Sync" are one mechanism here, not two separate
  * toggles: choosing `"auto"` resolves the live OS preference via the
@@ -20,7 +21,9 @@
  * choice on creation (default `"auto"` if nothing was ever saved), write
  * through on every `setThemeChoice`, and add the one domain behavior
  * LocalStorage itself has no concept of: deriving + live-updating
- * `resolvedTheme` from the OS preference.
+ * `resolvedTheme` from the OS preference. The three ADR-030 toggles are
+ * plain booleans — no derived/resolved counterpart needed, so they follow
+ * the simpler get/set-through pattern only.
  *
  * @typedef {"dark" | "light" | "auto"} ThemeChoice
  * @typedef {"en" | "fa" | "auto"} LanguageChoice
@@ -29,6 +32,9 @@
  *   resolvedTheme: "dark" | "light",
  *   languageChoice: LanguageChoice,
  *   resolvedLanguage: "en" | "fa",
+ *   strictValidation: boolean,
+ *   autoRepair: boolean,
+ *   dedupeOnImport: boolean,
  * }} SettingsState
  * @typedef {{
  *   matches: boolean,
@@ -59,6 +65,21 @@ const DEFAULT_CHOICE = "auto";
 const LANGUAGE_STORAGE_KEY = "language";
 /** @type {LanguageChoice} */
 const DEFAULT_LANGUAGE_CHOICE = "auto";
+
+/* ADR-030 behavioral toggles — plain persisted booleans, each with its own
+   Owner-decided default (see the ADR for exactly why each default is what
+   it is; `dedupeOnImport: true` is the one real default-behavior change). */
+const STRICT_VALIDATION_STORAGE_KEY = "strictValidation";
+const DEFAULT_STRICT_VALIDATION = false;
+const AUTO_REPAIR_STORAGE_KEY = "autoRepair";
+const DEFAULT_AUTO_REPAIR = true;
+const DEDUPE_ON_IMPORT_STORAGE_KEY = "dedupeOnImport";
+const DEFAULT_DEDUPE_ON_IMPORT = true;
+
+/** @param {unknown} value @param {boolean} fallback @returns {boolean} */
+function readBooleanChoice(value, fallback) {
+  return typeof value === "boolean" ? value : fallback;
+}
 
 /**
  * @param {(query: string) => MinimalMediaQueryList} matchMedia
@@ -116,6 +137,9 @@ function isLanguageChoice(value) {
  *   subscribe: (listener: (state: SettingsState) => void) => () => void,
  *   setThemeChoice: (choice: ThemeChoice) => void,
  *   setLanguageChoice: (choice: LanguageChoice) => void,
+ *   setStrictValidation: (value: boolean) => void,
+ *   setAutoRepair: (value: boolean) => void,
+ *   setDedupeOnImport: (value: boolean) => void,
  *   close: () => void,
  * }}
  */
@@ -130,11 +154,18 @@ export function createSettingsStore(options = {}) {
   const persistedLanguage = adapter.get(LANGUAGE_STORAGE_KEY);
   const initialLanguageChoice = isLanguageChoice(persistedLanguage) ? persistedLanguage : DEFAULT_LANGUAGE_CHOICE;
 
+  const initialStrictValidation = readBooleanChoice(adapter.get(STRICT_VALIDATION_STORAGE_KEY), DEFAULT_STRICT_VALIDATION);
+  const initialAutoRepair = readBooleanChoice(adapter.get(AUTO_REPAIR_STORAGE_KEY), DEFAULT_AUTO_REPAIR);
+  const initialDedupeOnImport = readBooleanChoice(adapter.get(DEDUPE_ON_IMPORT_STORAGE_KEY), DEFAULT_DEDUPE_ON_IMPORT);
+
   const store = createStore({
     themeChoice: initialChoice,
     resolvedTheme: resolveTheme(initialChoice, matchMedia),
     languageChoice: initialLanguageChoice,
     resolvedLanguage: resolveLanguage(initialLanguageChoice, getNavigatorLanguage),
+    strictValidation: initialStrictValidation,
+    autoRepair: initialAutoRepair,
+    dedupeOnImport: initialDedupeOnImport,
   });
 
   /** Re-resolves + notifies whenever the OS scheme changes WHILE choice is `"auto"` ("System Sync"). */
@@ -160,6 +191,24 @@ export function createSettingsStore(options = {}) {
     setLanguageChoice(choice) {
       adapter.set(LANGUAGE_STORAGE_KEY, choice);
       store.setState((prev) => ({ ...prev, languageChoice: choice, resolvedLanguage: resolveLanguage(choice, getNavigatorLanguage) }));
+    },
+
+    /** ADR-030 Decision 1. @param {boolean} value */
+    setStrictValidation(value) {
+      adapter.set(STRICT_VALIDATION_STORAGE_KEY, value);
+      store.setState((prev) => ({ ...prev, strictValidation: value }));
+    },
+
+    /** ADR-030 Decision 2. @param {boolean} value */
+    setAutoRepair(value) {
+      adapter.set(AUTO_REPAIR_STORAGE_KEY, value);
+      store.setState((prev) => ({ ...prev, autoRepair: value }));
+    },
+
+    /** ADR-030 Decision 3. @param {boolean} value */
+    setDedupeOnImport(value) {
+      adapter.set(DEDUPE_ON_IMPORT_STORAGE_KEY, value);
+      store.setState((prev) => ({ ...prev, dedupeOnImport: value }));
     },
 
     /** Stops listening for OS theme changes (test teardown; mirrors node-store.js's close()). */
