@@ -101,22 +101,24 @@ export function AppNav({ current, onNavigate }: { current: string; onNavigate: (
           ))}
         </div>
         <div class="app-nav__divider" />
-        <button
-          type="button"
-          class="app-nav__toggle"
-          aria-label={t("nav.toggleLanguage")}
-          onClick={() => settingsStore.setLanguageChoice(resolvedLanguage === "fa" ? "en" : "fa")}
-        >
-          {resolvedLanguage === "fa" ? "EN" : "فا"}
-        </button>
-        <button
-          type="button"
-          class="app-nav__toggle app-nav__toggle--theme"
-          aria-label={t("nav.toggleTheme")}
-          onClick={() => settingsStore.setThemeChoice(resolvedTheme === "dark" ? "light" : "dark")}
-        >
-          {resolvedTheme === "dark" ? "☾" : "☀"}
-        </button>
+        <div class="app-nav__toggles">
+          <button
+            type="button"
+            class="app-nav__toggle"
+            aria-label={t("nav.toggleLanguage")}
+            onClick={() => settingsStore.setLanguageChoice(resolvedLanguage === "fa" ? "en" : "fa")}
+          >
+            {resolvedLanguage === "fa" ? "EN" : "فا"}
+          </button>
+          <button
+            type="button"
+            class="app-nav__toggle app-nav__toggle--theme"
+            aria-label={t("nav.toggleTheme")}
+            onClick={() => settingsStore.setThemeChoice(resolvedTheme === "dark" ? "light" : "dark")}
+          >
+            {resolvedTheme === "dark" ? "☾︎" : "☀︎"}
+          </button>
+        </div>
       </nav>
 
       {isMobile && moreOpen ? (

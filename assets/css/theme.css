@@ -808,6 +808,19 @@ code, kbd, samp, .mono {
   background: var(--unct-divider);
   flex-shrink: 0;
 }
+/* Groups the language + theme toggle buttons into one flex item so
+   `justify-content: space-between` on `.app-nav` (mobile-only, below) has
+   exactly two items to split -- brand vs. this pair -- instead of
+   distributing space between every individual child and stranding the
+   language toggle in the middle of the row. Desktop is unaffected: this
+   is just an extra wrapper around two buttons that already sat next to
+   each other at the end of the flex row. */
+.app-nav__toggles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .app-nav__toggle {
   border: none;
   background: transparent;
