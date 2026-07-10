@@ -7,11 +7,11 @@
  * sections + "More") takes over, with "More" opening a glass bottom
  * sheet listing all 8 sections in a 2-column grid.
  *
- * The dock/sheet/dock-visibility split is pure CSS (`@media (max-width:
- * 760px)` in theme.css) — both structures are always rendered and the
- * breakpoint decides which is visible, so no resize listener is needed.
- * `moreOpen` is purely-presentational local state (like the design
- * prototype's own), not app state.
+ * The dock/sheet are conditionally RENDERED, not just CSS-hidden, gated by
+ * the `useIsMobile()` hook below (a `matchMedia("(max-width: 760px)")`
+ * listener) — see that hook's own comment for why (duplicate accessible
+ * names in the DOM otherwise). `moreOpen` is purely-presentational local
+ * state (like the design prototype's own), not app state.
  *
  * The language/theme toggles write through the SAME settingsStore actions
  * Settings Screen already uses (`setLanguageChoice`/`setThemeChoice`) —
