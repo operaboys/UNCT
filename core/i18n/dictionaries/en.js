@@ -52,7 +52,6 @@ export const en = {
   "common.fields.parser": "Parser",
   "common.fields.sourceType": "Source Type",
   "common.fields.createdAt": "Created At",
-  "common.fields.field": "Field",
   "common.fields.confidence": "Confidence",
   "common.fields.confidenceScore": "Confidence Score",
   "common.fields.signals": "Signals",
@@ -78,7 +77,6 @@ export const en = {
   "common.actions.copyToClipboard": "Copy to Clipboard",
 
   // dashboard-screen.tsx
-  "dashboard.title": "Dashboard",
   "dashboard.header.subtitle": "Universal Network Config Toolkit",
   "dashboard.header.noNodesYet": "No nodes yet",
   "dashboard.header.nodeReadySingular": "node ready",

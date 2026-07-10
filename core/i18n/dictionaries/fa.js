@@ -54,7 +54,6 @@ export const fa = {
   "common.fields.parser": "تجزیه‌گر",
   "common.fields.sourceType": "نوع منبع",
   "common.fields.createdAt": "زمان ایجاد",
-  "common.fields.field": "فیلد",
   "common.fields.confidence": "میزان اطمینان",
   "common.fields.confidenceScore": "امتیاز اطمینان",
   "common.fields.signals": "نشانه‌ها",
@@ -80,7 +79,6 @@ export const fa = {
   "common.actions.copyToClipboard": "کپی در کلیپ‌بورد",
 
   // dashboard-screen.tsx
-  "dashboard.title": "داشبورد",
   "dashboard.header.subtitle": "جعبه‌ابزار جامع کانفیگ شبکه",
   "dashboard.header.noNodesYet": "هنوز نودی وجود ندارد",
   "dashboard.header.nodeReadySingular": "نود آماده است",

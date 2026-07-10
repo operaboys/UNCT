@@ -153,9 +153,7 @@
      brand gradient without a project-wide rename. */
   --unct-purple: #8B5CF6;
   --unct-pink: #0EA5E9;
-  --unct-mint: var(--unct-ok);
   --unct-amber: var(--unct-warn);
-  --unct-danger: var(--unct-err);
 
   --unct-font-sans: "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
@@ -200,7 +198,6 @@
 
   --unct-ring-track: rgba(255, 255, 255, 0.09);
   --unct-ring-hole: rgba(10, 13, 28, 0.85);
-  --unct-code: #9DA3BE;
   --unct-track: rgba(255, 255, 255, 0.08);
   --unct-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
@@ -241,7 +238,6 @@
 
   --unct-ring-track: rgba(26, 29, 48, 0.1);
   --unct-ring-hole: rgba(255, 255, 255, 0.82);
-  --unct-code: #4A5064;
   --unct-track: rgba(26, 29, 48, 0.09);
   --unct-shadow: 0 16px 48px rgba(80, 80, 140, 0.16);
 }
@@ -542,7 +538,7 @@ code, kbd, samp, .mono {
 }
 /* The only 4-column grid in the stylesheet with no mobile breakpoint
    (confirmed via grep -n "@media" -- `.content-grid` already collapses at
-   this same 660px point). 2x2 rather than `.content-grid`'s 1-column
+   this same 760px point). 2x2 rather than `.content-grid`'s 1-column
    collapse: these are short, number-heavy cards (not tall panels), so a
    2x2 grid keeps related stats visually paired instead of stretching
    into a long single-column list. */
