@@ -1,6 +1,6 @@
 ---
 name: visual-verification
-description: Real visual proof for UI work. Use this skill for EVERY task that changes anything a user can see — layout, CSS, colors, fonts, spacing, responsive behavior, RTL/LTR, themes, icons, or any visual bug fix. It defines what counts as "verified": real screenshots of the exact reported scenario on every affected platform/theme/language, not computed-style checks. Never declare a visual task done without following this skill.
+description: Real visual proof for UI work. Use this skill for EVERY task that changes anything a user can see — layout, CSS, colors, fonts, spacing, responsive behavior, RTL/LTR, themes, icons, or any visual bug fix. It defines what counts as "verified" — real screenshots of the exact reported scenario on every affected platform/theme/language, not computed-style checks. Never declare a visual task done without following this skill.
 ---
 
 # Visual Verification: Screenshots or It Didn't Happen
