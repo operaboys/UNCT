@@ -1834,8 +1834,33 @@ code, kbd, samp, .mono {
   .app-nav__divider {
     display: none;
   }
+  /* Mobile header (<760px): the tab strip is gone (replaced by
+     .mobile-dock below), so this is just brand + language/theme toggles —
+     the glass-panel "pill" chrome that makes sense around a row of tabs
+     reads as an odd floating capsule around two icons, so it's dropped
+     here only (desktop's .app-nav keeps it untouched). Logo at the
+     writing-direction start, toggles at the end — `justify-content:
+     space-between` is already direction-aware, so this mirrors for RTL
+     with no extra rule. */
   .app-nav {
     gap: 0;
+    width: 100%;
+    justify-content: space-between;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+  }
+  /* Touch target floor (44x44) for the language/theme quick-toggle
+     buttons — the pill nav's own tab buttons don't need this (desktop-only
+     there), just these two icon-only mobile controls. */
+  .app-nav__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
   }
   .mobile-dock {
     position: fixed;
