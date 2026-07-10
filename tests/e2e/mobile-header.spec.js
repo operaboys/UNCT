@@ -20,12 +20,27 @@
  *    row instead of next to the theme toggle. The two toggle buttons are
  *    now wrapped in one `.app-nav__toggles` flex item, so `space-between`
  *    only ever has two things to split.
- * 2. The theme toggle's ☀/☾ glyphs are Emoji_Presentation=No by Unicode
- *    default, but many Android font-fallback stacks render them as full-
- *    color emoji anyway, ignoring the `color: #E8C56A` CSS entirely (shows
- *    solid black). Both glyphs now carry an explicit U+FE0E (VARIATION
- *    SELECTOR-15, "render as text") suffix to force the CSS-colorable
- *    glyph everywhere.
+ * 2. (Superseded by fix 3.) The theme toggle's ☀/☾ glyphs are
+ *    Emoji_Presentation=No by Unicode default, but many Android font-
+ *    fallback stacks render them as full-color emoji anyway, ignoring the
+ *    `color: #E8C56A` CSS entirely (shows solid black). Both glyphs were
+ *    given an explicit U+FE0E (VARIATION SELECTOR-15, "render as text")
+ *    suffix to force the CSS-colorable glyph everywhere.
+ * 3. Fix 2 turned out insufficient: real-device testing found the icon
+ *    still turning black, but only AFTER the first theme switch, on both
+ *    mobile and desktop. Root cause was never the font: `.app-nav__toggle
+ *    :hover { color: var(--unct-text); }` (two class selectors, specificity
+ *    0,2,0) beats `.app-nav__toggle--theme { color: #E8C56A; }` (one class
+ *    selector, 0,1,0), so the gold color always lost the cascade to the
+ *    muted-text hover color as soon as the button was `:hover`ed -- and a
+ *    mouse cursor left resting on the button right after a click (or a
+ *    mobile browser's "sticky hover" after a tap, which persists until you
+ *    tap elsewhere) IS a `:hover`ed state, reproducing from the very first
+ *    switch on both form factors. The Unicode glyph + U+FE0E is now gone
+ *    entirely, replaced by an inline SVG (`ThemeIcon` in
+ *    ui/components/nav.tsx) whose `stroke="#E8C56A"` is a literal SVG
+ *    attribute, never the CSS `color` property -- no `:hover` rule (or
+ *    font-fallback) can touch it again.
  */
 import { test, expect } from "@playwright/test";
 
@@ -107,15 +122,41 @@ test.describe("Mobile header (<760px) — glass panel removed, space-between, to
     expect(right.x - (left.x + left.width)).toBeLessThan(20);
   });
 
-  test("Bug #2 regression: the theme toggle's sun/moon glyph carries an explicit text-presentation selector (U+FE0E)", async ({ page }) => {
-    await page.goto("/index.html");
+  /** @type {Array<[string, { width: number, height: number }]>} */
+  const viewportsByLabel = [
+    ["mobile", { width: 390, height: 844 }],
+    ["desktop", { width: 1280, height: 900 }],
+  ];
+  for (const [label, viewport] of viewportsByLabel) {
+    test(`Bug #2 regression (${label}): the theme icon stays gold even while :hover'ed right after a theme switch`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/index.html");
 
-    const text = await page.locator(".app-nav__toggle--theme").first().textContent();
-    expect(text).not.toBeNull();
-    const codepoints = [...(text ?? "")].map((ch) => ch.codePointAt(0));
-    // U+2600 (WHITE SUN WITH RAYS) or U+263E (LAST QUARTER MOON), immediately
-    // followed by U+FE0E (VARIATION SELECTOR-15, "render as text, not emoji").
-    expect(codepoints).toEqual([codepoints[0], 0xfe0e]);
-    expect([0x2600, 0x263e]).toContain(codepoints[0]);
-  });
+      const toggle = page.locator(".app-nav__toggle--theme").first();
+      // The icon must be a real SVG, not a font glyph -- font-fallback/
+      // emoji-presentation bugs can't happen if there's no font involved.
+      await expect(toggle.locator("svg")).toHaveCount(1);
+      await expect(toggle.locator("svg circle, svg path")).not.toHaveCount(0);
+
+      // Clicking the toggle both performs the theme switch AND leaves the
+      // mouse cursor resting on the button -- the exact `:hover`ed state
+      // that exposed the real bug (a mobile tap produces the same "sticky
+      // hover" state on many browsers). Check it twice (light->dark->light)
+      // so both the sun and moon variant are covered.
+      for (let i = 0; i < 2; i += 1) {
+        await toggle.click();
+        const result = await toggle.evaluate((el) => {
+          const svg = el.querySelector("svg");
+          if (!svg) throw new Error("theme toggle has no <svg> icon");
+          return {
+            isHovered: el.matches(":hover"),
+            svgStroke: getComputedStyle(svg).stroke,
+          };
+        });
+        expect(result.isHovered).toBe(true);
+        // #E8C56A == rgb(232, 197, 106) -- must hold even while hovered.
+        expect(result.svgStroke).toBe("rgb(232, 197, 106)");
+      }
+    });
+  }
 });

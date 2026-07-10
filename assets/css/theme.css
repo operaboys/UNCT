@@ -833,10 +833,15 @@ code, kbd, samp, .mono {
 .app-nav__toggle:hover {
   color: var(--unct-text);
 }
+/* The icon's own color comes from a literal `stroke` attribute on the
+   inline SVG (see ui/components/nav.tsx's ThemeIcon), not this `color`
+   property -- a prior version used a Unicode glyph colored via `color`
+   here, which `.app-nav__toggle:hover` (two classes, higher specificity)
+   could silently override on hover/touch. Just centers the icon now. */
 .app-nav__toggle--theme {
-  color: #E8C56A;
-  font-size: 14px;
-  font-family: var(--unct-font-sans);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .app-nav__scroll {
   position: relative;
