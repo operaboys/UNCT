@@ -1876,6 +1876,13 @@ code, kbd, samp, .mono {
     min-width: 44px;
     min-height: 44px;
   }
+  /* Larger lockup on mobile only (desktop keeps the 58px default above) --
+     compared 68/74/80px against real screenshots (both themes, both
+     languages) against the dashboard hero card right below; 80px is the
+     biggest of the three with zero overlap/crowding either side. */
+  .app-nav__brand img {
+    height: 80px;
+  }
   .mobile-dock {
     position: fixed;
     left: 14px;
