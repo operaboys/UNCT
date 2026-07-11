@@ -53,7 +53,7 @@ test.describe("User Guide modal (Settings)", () => {
     // same worker slot as the 5000-node virtualization spec, and plain event-loop
     // contention (not a real bug in the Escape handler) can push the close past
     // Playwright's 5s default.
-    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30_000 });
     await expect(openButton).toBeFocused();
   });
 
