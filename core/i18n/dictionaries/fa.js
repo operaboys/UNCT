@@ -26,7 +26,7 @@ export const fa = {
   "nav.more": "بیشتر",
   "nav.subscriptionShort": "اشتراک‌ها",
   "nav.exportShort": "خروجی",
-  "nav.allSections": "همه بخش‌ها",
+  "nav.otherSections": "بخش‌های دیگر",
   "nav.toggleLanguage": "تغییر زبان",
   "nav.toggleTheme": "تغییر تم",
 

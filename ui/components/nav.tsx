@@ -4,8 +4,10 @@
  * a floating, self-centered glass pill holding the brand lockup, the 8
  * screen pills, and the language/theme quick toggles; below the 760px
  * breakpoint the pill strip hides and a fixed bottom glass dock (4 main
- * sections + "More") takes over, with "More" opening a glass bottom
- * sheet listing all 8 sections in a 2-column grid.
+ * sections + "More") takes over, with "More" opening a glass bottom sheet
+ * listing the remaining 4 sections (NAV_ITEMS minus DOCK_ITEMS, i.e.
+ * SHEET_ITEMS below) in a 2-column grid -- the dock's own 4 are already
+ * one tap away, so the sheet doesn't repeat them.
  *
  * The dock/sheet are conditionally RENDERED, not just CSS-hidden, gated by
  * the `useIsMobile()` hook below (a `matchMedia("(max-width: 760px)")`
@@ -104,6 +106,13 @@ const DOCK_ITEMS = [
   { key: "export", labelKey: "nav.exportShort" },
 ] as const;
 
+/** The "More" sheet only needs to list what the dock doesn't already
+    surface -- a section already one tap away in the dock has no business
+    being duplicated in the sheet. Derived by key (not a separately
+    maintained list) so it stays correct automatically if DOCK_ITEMS' own
+    membership ever changes. */
+const SHEET_ITEMS = NAV_ITEMS.filter((item) => !DOCK_ITEMS.some((dockItem) => dockItem.key === item.key));
+
 export function AppNav({ current, onNavigate }: { current: string; onNavigate: (key: string) => void }) {
   const { resolvedTheme, resolvedLanguage } = useSettingsState();
   const t = createTranslator(settingsStore);
@@ -158,15 +167,15 @@ export function AppNav({ current, onNavigate }: { current: string; onNavigate: (
 
       {isMobile && moreOpen ? (
         <>
-          <button type="button" class="more-sheet-backdrop" aria-label={t("nav.allSections")} onClick={() => setMoreOpen(false)} />
+          <button type="button" class="more-sheet-backdrop" aria-label={t("nav.otherSections")} onClick={() => setMoreOpen(false)} />
           <div class="more-sheet">
             <div class="more-sheet__handle" />
             <div class="more-sheet__header">
               <img src="assets/icons/unct-icon.png" alt="" />
-              <span>{t("nav.allSections")}</span>
+              <span>{t("nav.otherSections")}</span>
             </div>
             <div class="more-sheet__grid">
-              {NAV_ITEMS.map((item) => (
+              {SHEET_ITEMS.map((item) => (
                 <button
                   key={item.key}
                   type="button"

@@ -24,7 +24,7 @@ export const en = {
   "nav.more": "More",
   "nav.subscriptionShort": "Subscriptions",
   "nav.exportShort": "Export",
-  "nav.allSections": "All sections",
+  "nav.otherSections": "Other sections",
   "nav.toggleLanguage": "Switch language",
   "nav.toggleTheme": "Switch theme",
 

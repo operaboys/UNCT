@@ -160,3 +160,45 @@ test.describe("Mobile header (<760px) — glass panel removed, space-between, to
     });
   }
 });
+
+/**
+ * Regression test: the "More" bottom sheet used to `.map()` over the full
+ * NAV_ITEMS (all 8 screens), duplicating the 4 sections already one tap
+ * away in the mobile dock. It now only lists NAV_ITEMS minus DOCK_ITEMS
+ * (SHEET_ITEMS in ui/components/nav.tsx, derived by key so it can't drift
+ * from DOCK_ITEMS' own membership), and its title copy ("nav.otherSections"
+ * -- renamed from "nav.allSections", which was no longer true) reflects
+ * that it's not actually "all sections" anymore.
+ */
+test.describe("Mobile 'More' sheet — only lists sections not already in the dock", () => {
+  test("English: sheet shows exactly the 4 non-dock sections, not the dock's own 4", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/index.html");
+
+    await page.locator(".mobile-dock__item").last().click(); // "More"
+    await expect(page.locator(".more-sheet")).toBeVisible();
+
+    const items = await page.locator(".more-sheet__item").allTextContents();
+    expect(items).toHaveLength(4);
+    expect(new Set(items)).toEqual(new Set(["Analyzer", "Extractor", "Settings", "Developer Console"]));
+    // None of the dock's own 4 sections should be duplicated in the sheet.
+    for (const dockLabel of ["Dashboard", "Converter", "Subscriptions", "Export"]) {
+      expect(items).not.toContain(dockLabel);
+    }
+
+    await expect(page.locator(".more-sheet__header span")).toHaveText("Other sections");
+  });
+
+  test("Persian: sheet title reflects it's not \"all\" sections anymore", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("unct:language", JSON.stringify("fa"));
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/index.html");
+
+    await page.locator(".mobile-dock__item").last().click();
+    await expect(page.locator(".more-sheet")).toBeVisible();
+    await expect(page.locator(".more-sheet__header span")).toHaveText("بخش‌های دیگر");
+    await expect(page.locator(".more-sheet__item")).toHaveCount(4);
+  });
+});
