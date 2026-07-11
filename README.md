@@ -7,7 +7,7 @@
 > پایین‌تر)، نه فراموشی. بعد از تکمیل معماری/فازها، دو مرحله‌ی بزرگ دیگر هم تمام‌وکمال انجام شد:
 > بازطراحی کامل بصری روی هویت **«Liquid Glass v2»** (طبق Handoff رسمی طراحی، سند ۰۷ §۲ — کروم
 > برنامه، هر ۸ صفحه، فونت/توکن‌های خودمیزبان‌شده، Responsive واقعی زیر ۷۶۰px با Dock/Sheet
-> موبایل)، و ترجمه‌ی کامل فارسی + تأیید بصری RTL (`core/i18n/`، **۳۶۷ کلید** در هر دو زبان،
+> موبایل)، و ترجمه‌ی کامل فارسی + تأیید بصری RTL (`core/i18n/`، **۴۱۷ کلید** در هر دو زبان،
 > `tests/e2e/rtl-visual.spec.js`). Custom Parser/Export API (Phase 11)، Extractor Level System
 > (Phase 12)، و `riskScore`/`compatibilityScore` نهایی (ADR-027) هم رفع Block شدند. بعد از آن،
 > یک سری طولانی از باگ‌های واقعی که فقط با تست دستی کاربر واقعی پیدا شدند — کرش با ۵۰۰۰+ نود،
@@ -36,11 +36,11 @@
 جزئیات دقیق هر فاز، هر ماژول، و هر محدودیت واقعی در ادامه — این بخش صادقانه نوشته شده،
 نه خوش‌بینانه.
 
-تست: **۱۳۰۵ تست در ۱۰۵ فایل** (Vitest)، همگی Pass؛ **هر ۶۶ تست e2e** (Playwright) هم Pass؛
-`tsc --noEmit` بدون خطا؛ `npm run build` موفق (`app.js` ~۳۸۲kb، `parser-worker.js` ~۱۰۰kb،
+تست: **۱۳۱۱ تست در ۱۰۶ فایل** (Vitest)، همگی Pass؛ **هر ۷۱ تست e2e** (Playwright) هم Pass؛
+`tsc --noEmit` بدون خطا؛ `npm run build` موفق (`app.js` ~۴۱۳kb، `parser-worker.js` ~۱۰۰kb،
 `converter-worker.js` ~۵۱kb، `analyzer-worker.js` ~۱۵kb)؛ `npm audit --omit=dev` صفر
 آسیب‌پذیری. (هر عدد بالا با اجرای واقعی `npm test`/`npm run typecheck`/`npm run build`/
-`npm run test:e2e`/`npm audit` در همین چک‌پوینت — آماده‌سازی PR ادغام به `main` — دوباره تأیید
+`npm run test:e2e`/`npm audit` در همین چک‌پوینت — بعد از افزودن راهنمای کاربر — دوباره تأیید
 شد، نه از حافظه.)
 
 ---
@@ -161,7 +161,7 @@ P12-12، P12-13).
 | 4 | **Subscription Center** | Search/Filter/Sort/Group + Summary (Protocol Distribution با نمودار میله‌ای، Duplicate/Invalid Nodes، Security Ranking) + GeoIP/ASN Lookup + Latency Test + Port Availability Check + Template Library + Subscription Builder + **Deduplicate Nodes** + **Split Subscription** + **Tag Nodes** + **Merge Subscription** (Textarea + «Import & Merge»، همان Pipeline واقعی `parseRawConfig`، با `parserStore.addNode` اضافه می‌کند نه جایگزین) — همگی واقعی، هیچ Placeholder یا Deferred باقی نمانده. **Node List اکنون Virtualized است** (`@tanstack/virtual-core@3.17.3`، ADR-029؛ ۲۰۲۶-۰۷-۰۵ — پس از کرش واقعی تب با وارد‌سازی ۵۰۰۰-۶۰۰۰ نودی، تست شده تا ۵۰۰۰ نود واقعی بدون کرش) |
 | 5 | **Extractor** | هر ۱۰ Extractor واقعی و فعال: UUID/IP/Domain/Reality/Worker/DNS + Credentials/Transport/TLS Fingerprint/Flow (این ۴ تای آخر جدید). هیچ Placeholder غیرفعالی باقی نمانده |
 | 6 | **Export Center** | کامل‌ترین صفحه: TXT، Xray JSON، Sing-box JSON، Normalized JSON، Analysis JSON، Clash YAML، CSV، PDF، Excel، Markdown، ZIP (+ manifest.json)، QR (اکنون Paginated، ۲۴‌تایی — فقط QR صفحه‌ی فعلی محاسبه می‌شود)، HTML Report (Escape + DOMPurify، ADR-018)، Portable Project Package (Export/Import کامل پروژه)، Clipboard Quick Copy — همگی واقعی |
-| 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`). **+ سه توگل رفتاری ADR-030**: Strict Validation (پیش‌فرض خاموش — نودهای Warning را Rejected برچسب می‌زند، بدون حذف)، Auto-repair (پیش‌فرض روشن)، Deduplicate on import (پیش‌فرض روشن — تنها تغییر پیش‌فرض مصوب) — هر سه یک لایه‌ی Derived Status خالص (`core/validator/derive-status.js`) هستند، بدون منطق جدید در Parser/Validation Engine. **+ ردیف Data** با دکمه‌ی «Wipe all data» (تأیید دومرحله‌ای، `core/storage/wipe.js`، پاک‌سازی کامل IndexedDB+LocalStorage و Reload). ردیف Telemetry به‌صورت آگاهانه از طراحی حذف شد (تصمیم Owner) |
+| 7 | **Settings** | **Theme Engine** (Dark/Light/Auto با همگام‌سازی زنده با OS) **و Language Engine** (English/فارسی/Auto با سوییچ زنده‌ی `dir`/`lang` روی `<html>`، بدون Reload) — هر دو با Radio Card یکسان بازطراحی‌شده، هر دو Persist می‌شوند (`core/storage/local-adapter.js`). **+ سه توگل رفتاری ADR-030**: Strict Validation (پیش‌فرض خاموش — نودهای Warning را Rejected برچسب می‌زند، بدون حذف)، Auto-repair (پیش‌فرض روشن)، Deduplicate on import (پیش‌فرض روشن — تنها تغییر پیش‌فرض مصوب) — هر سه یک لایه‌ی Derived Status خالص (`core/validator/derive-status.js`) هستند، بدون منطق جدید در Parser/Validation Engine. **+ ردیف Data** با دکمه‌ی «Wipe all data» (تأیید دومرحله‌ای، `core/storage/wipe.js`، پاک‌سازی کامل IndexedDB+LocalStorage و Reload). ردیف Telemetry به‌صورت آگاهانه از طراحی حذف شد (تصمیم Owner). **+ ردیف «راهنمای کاربر»** — یک Modal تمام‌صفحه واقعی (`ui/settings/user-guide-modal.tsx`، اولین `role="dialog"` واقعی برنامه با Focus Trap/Escape/Backdrop-click، `prefers-reduced-motion`-aware) که معرفی UNCT، تأکید آفلاین‌بودن، مسیر شروع ۳ قدمی، هر ۸ صفحه (هرکدام با اسکرین‌شات واقعی از برنامه‌ی در حال اجرا، نه Mockup) و محدودیت‌های شناخته‌شده را نشان می‌دهد؛ همان محتوا در فایل جداگانه‌ی `USER_GUIDE.md` (ریشه‌ی پروژه) هم هست |
 | 8 | **Developer Console** | هر ۷ بخش سند ۰۷ §۴.۷ واقعی (Parser/Warnings/Errors/Recovery/Validation Logs + Performance Logs، از طریق `usePerformanceState()`/ADR-021 + «Alternative Candidates» از Detection Logs، ADR-028) — رتبه‌بندی واقعی Parserهای رقیب که به Threshold رسیدند اما انتخاب نشدند، از `metadata.alternativeCandidates`. ۵ جدولی که با تعداد نود Scale می‌کنند اکنون Virtualized‌اند (`ui/components/virtual-table.tsx`) |
 
 ---
@@ -170,7 +170,7 @@ P12-12، P12-13).
 
 `core/i18n/` (ADR-019) کامل و به هر ۸ صفحه + نوار ناوبری (`ui/components/nav.tsx`) وصل است:
 
-- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۳۶۷ کلید در هر دو زبان** (شمارش
+- دو دیکشنری (`core/i18n/dictionaries/en.js`, `fa.js`) با **۴۱۷ کلید در هر دو زبان** (شمارش
   واقعی با `Object.keys`، نه تخمین) — `tests/i18n/dictionaries.test.js` عدم‌تطابق کلید بین دو
   زبان و رشته‌ی خالی را رد می‌کند.
 - تمام متن هر ۸ صفحه (نه فقط برچسب‌ها) از طریق `t()`/`createTranslator` resolve می‌شود؛ نوار
@@ -1155,6 +1155,28 @@ Clone/Download ZIP بدون اجرای هیچ دستوری باید کار کن�
   Pass؛ `npm run build` موفق؛ کل Suite e2e (`npx playwright test`) — هر ۶۶ تست Pass؛
   `npm audit` (۶ آسیب‌پذیری Dev-only در زنجیره‌ی esbuild/vite/vitest، بدون تغییر نسبت به
   قبل) و `npm audit --omit=dev` (صفر) — هیچ‌کدام تغییری در وضعیت شناخته‌شده نداشتند.
+
+- **راهنمای کاربر حرفه‌ای، مصور با اسکرین‌شات واقعی (۲۰۲۶-۰۷-۱۱).** یک دکمه‌ی جدید («تازه‌کارید؟
+  باز کردن راهنمای کاربر») در بالای صفحه‌ی Settings یک Modal تمام‌صفحه باز می‌کند —
+  `ui/settings/user-guide-modal.tsx`، **اولین `role="dialog"` واقعی برنامه** (تنها Overlay
+  قبلی، Sheet موبایل «More» در `nav.tsx`، نه Focus Trap داشت نه Escape نه `role="dialog"`؛
+  این یکی هر سه را دارد، به‌علاوه‌ی ورود ملایم که فقط زیر
+  `@media (prefers-reduced-motion: no-preference)` فعال می‌شود). محتوا (هر دو زبان، از
+  `core/i18n/` — ۵۰ کلید جدید زیر `userGuide.*`): معرفی UNCT و تأکید صریح روی آفلاین/بدون‌سرور
+  بودن، مسیر شروع ۳ قدمی، توضیح هر ۸ صفحه (چه‌کاری/کِی) **کنار یک اسکرین‌شات واقعی از همان
+  صفحه در حال اجرا** (نه Mockup — گرفته‌شده با `scripts/capture-guide-screenshots.mjs`، که
+  ۸ نود واقعی روی هر ۷ پروتکل، تولیدشده با `exportTxt` واقعی نه دستی، را از طریق مبدل واقعی
+  Paste/Parse می‌کند و بعد از هر صفحه اسکرین‌شات می‌گیرد؛ یک تم (تیره) و هر دو زبان جدا —
+  ۱۶ فایل در `assets/guide/{en,fa}/*.png`)، و محدودیت‌های شناخته‌شده (ظرفیت نود تا ۳۰۰۰ نود
+  Regression-tested، فرمت‌های ورودی/خروجی پشتیبانی‌شده، حذف کامل گروه Visualization). همان
+  محتوا و تصاویر در فایل جداگانه‌ی `USER_GUIDE.md` (ریشه‌ی پروژه، برای Release) هم هست.
+  طبق `living-docs`: این اسکرین‌شات‌ها ثابت‌اند، فقط با اجرای دستی دوباره‌ی همان اسکریپت در
+  Release بعدی به‌روز می‌شوند — محدودیت شناخته‌شده و پذیرفته‌شده، بدون هشدار خودکار.
+  **تأیید**: ۵ تست e2e جدید (`tests/e2e/user-guide.spec.js` — dialog/Escape/Backdrop-click/
+  موبایل/فارسی-RTL) + یک تست Vitest برای تطابق فهرست صفحات با `nav.tsx`؛ تأیید بصری واقعی
+  با اسکرین‌شات در هر ۸ ترکیب (۲ تم × ۲ زبان × دسکتاپ/موبایل). `tsc --noEmit` بدون خطا؛ کل
+  Suite واحد — **۱۳۱۱ تست در ۱۰۶ فایل**، همه Pass؛ `npm run build` موفق؛ کل Suite e2e —
+  هر **۷۱ تست** Pass؛ `npm audit`/`npm audit --omit=dev` بدون تغییر (۶ Dev-only / صفر).
 
 ---
 
