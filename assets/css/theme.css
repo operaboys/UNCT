@@ -138,6 +138,46 @@
  * "Design Tokens" tables (dark default + light), names kept `--unct-*`.
  * ------------------------------------------------------------------- */
 :root {
+  /* Safety-net copy of :root[data-theme="dark"]'s values below (DARK is
+     the design's default theme) -- these apply for the brief window
+     before index.html's inline pre-paint script (or, if JS is disabled
+     entirely, ever) sets the real `data-theme` attribute, so no
+     var(--unct-*) is ever invalid/transparent even then. `:root[data-
+     theme="light"]`'s own block still wins whenever the attribute IS
+     present (an attribute-qualified `:root` selector is higher specificity
+     than plain `:root`, regardless of source order) -- this block is pure
+     fallback, never a competing default. Keep this exactly in sync with
+     :root[data-theme="dark"] below if either one changes. */
+  --unct-bg: #0A0D1C;
+  --unct-text: #F2F3F8;
+  --unct-text-muted: #A5AAC4;
+  --unct-text-faint: #8B90AC;
+  --unct-fg: var(--unct-text);
+  --unct-bg-image:
+    radial-gradient(circle 340px at 80% -60px, rgba(14, 165, 233, 0.4), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.25), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.2), transparent 62%);
+  --unct-glass: rgba(255, 255, 255, 0.06);
+  --unct-glass-bd: rgba(255, 255, 255, 0.13);
+  --unct-glass-hi: rgba(255, 255, 255, 0.2);
+  --unct-glass2: rgba(255, 255, 255, 0.05);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.09);
+  --unct-pill-active: rgba(255, 255, 255, 0.14);
+  --unct-pill-hi: rgba(255, 255, 255, 0.25);
+  --unct-divider: rgba(255, 255, 255, 0.12);
+  --unct-ok: #5FE3AC;   --unct-ok-bg: rgba(95, 227, 172, 0.09);   --unct-ok-bd: rgba(95, 227, 172, 0.25);
+  --unct-warn: #F0C670; --unct-warn-bg: rgba(232, 180, 74, 0.09); --unct-warn-bd: rgba(232, 180, 74, 0.22);
+  --unct-err: #F58C8C;  --unct-err-bg: rgba(239, 106, 106, 0.09); --unct-err-bd: rgba(239, 106, 106, 0.22);
+  --unct-info: #8CD9F2; --unct-info-bg: rgba(94, 201, 238, 0.09); --unct-info-bd: rgba(94, 201, 238, 0.25);
+  --unct-purp: #E7BCF5; --unct-purp-bg: rgba(216, 148, 240, 0.15); --unct-purp-bd: rgba(216, 148, 240, 0.3);
+  --unct-acc-soft: rgba(14, 165, 233, 0.18);
+  --unct-acc-bd: rgba(139, 92, 246, 0.3);
+  --unct-acc-txt: #7DD3FC;
+  --unct-ring-track: rgba(255, 255, 255, 0.09);
+  --unct-ring-hole: rgba(10, 13, 28, 0.85);
+  --unct-track: rgba(255, 255, 255, 0.08);
+  --unct-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+
   /* Brand accents — theme-independent (same in both handoff tables). */
   --unct-acc1: #8B5CF6;
   --unct-acc2: #0EA5E9;

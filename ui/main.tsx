@@ -58,6 +58,16 @@ function App() {
   // Theme Engine (07-UI_UX_SYSTEM §2): applied app-wide here, not inside
   // SettingsScreen itself, so it stays in effect (and live-syncs with the OS
   // under "auto") regardless of which screen is currently mounted.
+  //
+  // This effect alone used to be the ONLY place `data-theme` got set --
+  // but effects run after first paint, so the frame before this ran always
+  // had no attribute at all, meaning every var(--unct-*) in theme.css was
+  // briefly invalid (the Splash's own background went transparent and the
+  // just-mounted Dashboard showed through it for an instant). index.html
+  // now carries an inline <script> in <head> that sets the same attribute
+  // synchronously before that first paint, mirroring settings-state.js's
+  // resolveTheme() logic -- this effect is still needed as the ongoing
+  // "auto" OS-sync (that script only ever handles the first frame).
   const { resolvedTheme, resolvedLanguage } = useSettingsState();
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;

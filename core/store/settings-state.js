@@ -58,6 +58,13 @@
 import { createStore } from "./create-store.js";
 import { createLocalAdapter } from "../storage/local-adapter.js";
 
+/* index.html carries a small inline <head> script that duplicates this
+   file's STORAGE_KEY, isThemeChoice(), and resolveTheme() logic on purpose,
+   to resolve+apply `<html data-theme>` synchronously before first paint
+   (this store's own resolution only reaches the DOM via ui/main.tsx's
+   useEffect, which runs after paint -- too late for the very first frame).
+   If STORAGE_KEY, the theme-choice validity check, or the "auto" ->
+   OS-preference resolution below ever change, update that script to match. */
 const STORAGE_KEY = "theme";
 /** @type {ThemeChoice} */
 const DEFAULT_CHOICE = "auto";
