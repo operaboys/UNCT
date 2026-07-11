@@ -202,6 +202,6 @@ Clash YAML، JSON مخصوص Sing-box یا Xray، CSV، کد QR، گزارش PDF
   Hysteria2، TUIC و WireGuard، به‌علاوه‌ی کانفیگ و فایل Subscription مخصوص Clash/Clash.Meta،
   Sing-box و Xray. **فرمت‌های خروجی پشتیبانی‌شده**: لینک ساده، Clash YAML، JSON مخصوص Sing-box،
   JSON مخصوص Xray، JSON نرمال‌شده/تحلیل، CSV، PDF، Excel، Markdown، ZIP، کد QR، و یک گزارش HTML.
-- **Visualization**: UNCT نموداری که رابطه‌ی بین سرورها یا نقشه‌ی شبکه‌تان را نشان دهد رسم
+- **نمایش تصویری**: UNCT نموداری که رابطه‌ی بین سرورها یا نقشه‌ی شبکه‌تان را نشان دهد رسم
   نمی‌کند — چون اصلاً چنین اطلاعاتی ذخیره نمی‌شود. تنها نموداری که در اختیار دارید، نمودار
   توزیع پروتکل‌ها در «مرکز اشتراک» است.
