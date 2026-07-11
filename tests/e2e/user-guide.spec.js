@@ -47,7 +47,13 @@ test.describe("User Guide modal (Settings)", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // Generous timeout (matches this suite's own pattern for assertions that
+    // share the machine with heavy parallel specs, e.g. scale-3000-nodes.spec.js's
+    // 30s waits) -- under `fullyParallel` scheduling this test can land in the
+    // same worker slot as the 5000-node virtualization spec, and plain event-loop
+    // contention (not a real bug in the Escape handler) can push the close past
+    // Playwright's 5s default.
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 });
     await expect(openButton).toBeFocused();
   });
 
