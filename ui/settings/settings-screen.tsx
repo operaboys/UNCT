@@ -45,9 +45,11 @@
  * control, matching the handoff prototype's Settings screen 1:1 (minus the
  * Telemetry row).
  */
+import { useState } from "preact/hooks";
 import { createTranslator } from "../../core/i18n/translator.js";
 import { settingsStore, useSettingsState } from "../store/use-settings-state.js";
 import { wipeAllAppData } from "../../core/storage/wipe.js";
+import { UserGuideModal } from "./user-guide-modal.js";
 
 type ThemeChoice = "dark" | "light" | "auto";
 type LanguageChoice = "en" | "fa" | "auto";
@@ -70,6 +72,7 @@ export function SettingsScreen() {
     strictValidation, autoRepair, dedupeOnImport,
   } = useSettingsState();
   const t = createTranslator(settingsStore);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   async function handleWipeData() {
     if (!confirm(t("settings.data.wipeConfirm1"))) return;
@@ -87,7 +90,20 @@ export function SettingsScreen() {
         </p>
       </div>
 
-      <div class="panel glass-panel" aria-label={t("settings.themeEngine.title")}>
+      <div class="panel glass-panel guide-entry" style={{ padding: 0 }} aria-label={t("userGuide.rowTitle")}>
+        <div class="settings-row">
+          <div class="settings-row-icon"><img src="assets/icons/ic-bars.png" alt="" /></div>
+          <div>
+            <div class="settings-row-title">{t("userGuide.rowTitle")}</div>
+            <div class="settings-row-sub">{t("userGuide.rowSub")}</div>
+          </div>
+          <button type="button" class="btn btn--primary settings-row-action" onClick={() => setGuideOpen(true)}>
+            {t("userGuide.openButton")}
+          </button>
+        </div>
+      </div>
+
+      <div class="panel glass-panel" style={{ marginBlockStart: "20px" }} aria-label={t("settings.themeEngine.title")}>
         <div class="panel-title">{t("settings.themeEngine.title")}</div>
         <fieldset class="radio-group">
           <legend class="hint" style={{ marginBlockEnd: "10px" }}>{t("settings.themeEngine.legend")}</legend>
@@ -200,6 +216,8 @@ export function SettingsScreen() {
           </button>
         </div>
       </div>
+
+      <UserGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
     </main>
   );
 }
