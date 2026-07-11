@@ -77,6 +77,14 @@ Core Product → Single HTML Application → PWA → Android APK
 >
 > این تصمیم باید قبل از Phase 9 (سند 09) گرفته شود، نه همین الان.
 
+> ✅ **این Flag حل شد (بازبینی ۲۰۲۶-۰۷-۰۵):** گزینه‌ی ۲ («Build Step سبک، فقط برای Bundle/
+> Type-Check نهایی») با `docs/adr/ADR-014-BUILD-STEP-SCOPED-TO-UI-AND-ASSEMBLY.md` انتخاب شد —
+> `esbuild` فقط برای `ui/` + Assembly نهایی، `core/` دست‌نخورده و بدون Build. زیرسؤال Worker
+> Inlining را ADR-014 عمداً باز گذاشت («تا اولین‌بار که واقعاً یک صفحه‌ی Phase 9 یک Worker وصل
+> کند») و بعداً با `docs/adr/ADR-016-CONVERTER-SCREEN-WORKER-ROUTING.md` بسته شد. جزئیات کامل و
+> ارجاع دقیق به فایل‌های واقعی در `ULTIMATE_BLUEPRINT_INDEX.md`، بخش «Gap شناخته‌شده — Build &
+> Bundling Strategy».
+
 ---
 
 ## 5. Android Strategy

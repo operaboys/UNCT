@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>UNCT — Dashboard Mockup v4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --violet: #7c5cfc;
+    --pink: #ff6b9d;
+    --mint: #1fd1a6;
+    --amber: #ffb648;
+    --ink: #211b3d;
+    --ink-mute: #6b6584;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(circle at 15% 10%, rgba(124, 92, 252, 0.35), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(255, 107, 157, 0.3), transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(31, 209, 166, 0.22), transparent 50%),
+      linear-gradient(160deg, #f0ecff 0%, #fdf1f6 50%, #eefbf6 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    padding: 28px 36px;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* === Liquid Glass base === */
+  .glass {
+    position: relative;
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 1px 1px rgba(255,255,255,0.7) inset,
+      0 8px 30px -12px rgba(80, 60, 130, 0.25),
+      0 1.5px 4px rgba(80, 60, 130, 0.06);
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.5), transparent);
+    pointer-events: none;
+  }
+  .glass::after {
+    content: '';
+    position: absolute;
+    top: -40%; left: -10%;
+    width: 60%; height: 100%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.55), transparent 70%);
+    transform: rotate(-20deg);
+    pointer-events: none;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .logo-block { display: flex; align-items: center; gap: 12px; }
+
+  .logo-icon {
+    width: 42px; height: 42px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--violet), var(--pink));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: white; font-size: 16px;
+    box-shadow: 0 8px 20px -6px rgba(124, 92, 252, 0.55), 0 1px 0 rgba(255,255,255,0.4) inset;
+  }
+
+  .logo-text { font-weight: 800; font-size: 19px; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 12px; color: var(--ink-mute); font-weight: 500; }
+
+  .status-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-size: 13px; font-weight: 600;
+  }
+  .status-chip .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 0 4px rgba(31, 209, 166, 0.25);
+  }
+
+  .hero-band {
+    background: linear-gradient(120deg, rgba(124,92,252,0.88) 0%, rgba(155,123,255,0.85) 50%, rgba(255,107,157,0.85) 100%);
+    padding: 30px 34px;
+    margin-bottom: 22px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .hero-band::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.28), transparent 70%);
+    top: -110px; right: -50px;
+    border-radius: 50%;
+  }
+  .hero-text { color: white; position: relative; z-index: 1; }
+  .hero-text .eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9; margin-bottom: 6px; }
+  .hero-text h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .hero-text p { font-size: 13px; opacity: 0.92; font-weight: 500; }
+  .hero-cta {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    color: var(--violet);
+    padding: 13px 24px; border-radius: 16px;
+    font-weight: 700; font-size: 14px;
+    position: relative; z-index: 1;
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.15);
+    cursor: pointer;
+  }
+
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+  .stat-card { padding: 20px; }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    backdrop-filter: blur(6px);
+  }
+  .stat-card:nth-child(1) .stat-icon { background: rgba(124, 92, 252, 0.16); }
+  .stat-card:nth-child(2) .stat-icon { background: rgba(31, 209, 166, 0.18); }
+  .stat-card:nth-child(3) .stat-icon { background: rgba(255, 107, 157, 0.16); }
+  .stat-card:nth-child(4) .stat-icon { background: rgba(255, 182, 72, 0.2); }
+
+  /* Signature element: the Signal Ring — a small live-feeling radial gauge,
+     unique to a tool whose whole job is judging connection quality. */
+  .signal-ring {
+    width: 36px; height: 36px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .signal-ring svg { transform: rotate(-90deg); }
+  .signal-ring .track { fill: none; stroke: rgba(124,92,252,0.12); stroke-width: 3; }
+  .signal-ring .fill { fill: none; stroke: url(#ringGradient); stroke-width: 3; stroke-linecap: round; }
+
+  .stat-label { font-size: 12px; color: var(--ink-mute); font-weight: 600; margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .stat-value.mint { color: #12a483; }
+  .stat-value small { font-size: 13px; color: var(--ink-mute); font-weight: 600; }
+
+  .content-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
+  .panel { padding: 22px; }
+
+  .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+  .panel-title .see-all { font-size: 12px; color: var(--violet); font-weight: 600; cursor: pointer; }
+
+  .node-item { display: flex; align-items: center; gap: 14px; padding: 12px 8px; border-radius: 14px; transition: background 0.15s; position: relative; z-index: 1; }
+  .node-item:hover { background: rgba(255,255,255,0.35); }
+
+  .proto-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.4) inset;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: white;
+    letter-spacing: -0.5px;
+    position: relative;
+  }
+  .proto-icon.vless { background: linear-gradient(135deg, var(--violet), #9b7bff); }
+  .proto-icon.trojan { background: linear-gradient(135deg, var(--pink), #ff8fb8); }
+  .proto-icon.vmess { background: linear-gradient(135deg, var(--amber), #ffc873); }
+  .proto-icon.ss { background: linear-gradient(135deg, var(--mint), #5ce0bd); }
+  .proto-icon::after {
+    content: '';
+    position: absolute;
+    bottom: 5px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 2px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.55);
+  }
+  .proto-icon svg { width: 20px; height: 20px; }
+
+  .node-info { flex: 1; position: relative; z-index: 1; }
+  .node-addr { font-size: 13.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .node-meta { font-size: 11.5px; color: var(--ink-mute); font-weight: 500; margin-top: 2px; }
+
+  .node-score { font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 100px; position: relative; z-index: 1; }
+  .node-score.high { background: rgba(31, 209, 166, 0.2); color: #0d8a6e; }
+  .node-score.mid { background: rgba(255, 182, 72, 0.25); color: #a8690f; }
+
+  .dist-item { margin-bottom: 14px; position: relative; z-index: 1; }
+  .dist-head { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .dist-head .n { color: var(--ink-mute); }
+  .dist-track { height: 8px; background: rgba(255,255,255,0.5); border-radius: 100px; overflow: hidden; }
+  .dist-fill { height: 100%; border-radius: 100px; }
+
+  .action-btn { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 15px; font-weight: 700; font-size: 13.5px; margin-bottom: 10px; cursor: pointer; position: relative; z-index: 1; }
+  .action-btn.primary { background: linear-gradient(135deg, var(--violet), var(--pink)); color: white; box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45); }
+  .action-btn.secondary { background: rgba(255,255,255,0.5); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none">
+        <path d="M6 5V10.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M18 5V10.5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M6 10.5C6 15 8.5 19 12 19C15.5 19 18 15 18 10.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.4 3"/>
+        <circle cx="6" cy="5" r="2" fill="white"/>
+        <circle cx="18" cy="5" r="2" fill="white"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">UNCT</div>
+      <div class="logo-sub">Universal Network Config Toolkit</div>
+    </div>
+  </div>
+  <div class="status-chip glass"><span class="pulse"></span>247 nodes ready</div>
+</header>
+
+<div class="hero-band glass">
+  <div class="hero-text">
+    <div class="eyebrow">Dashboard Overview</div>
+    <h1>Your config library is looking sharp ✨</h1>
+    <p>82 avg security score across 247 nodes · updated 2 minutes ago</p>
+  </div>
+  <div class="hero-cta">+ Import Config</div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-card glass">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M4 7L12 3L20 7V17L12 21L4 17V7Z" stroke="#7c5cfc" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7L12 11L20 7M12 11V21" stroke="#7c5cfc" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="stat-label">Total Nodes</div>
+    <div class="stat-value">247</div>
+  </div>
+  <div class="stat-card glass">
+    <div class="signal-ring">
+      <svg viewBox="0 0 36 36" width="36" height="36">
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1fd1a6"/>
+            <stop offset="100%" stop-color="#7c5cfc"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="18" cy="18" r="15"/>
+        <circle class="fill" cx="18" cy="18" r="15" stroke-dasharray="94.2" stroke-dashoffset="16.9"/>
+      </svg>
+    </div>
+    <div class="stat-label">Avg Security</div>
+    <div class="stat-value mint">82<small>/100</small></div>
+  </div>
+  <div class="stat-card glass">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="9" stroke="#ff6b9d" stroke-width="1.8"/><path d="M8.5 12.5L10.8 15L15.5 9" stroke="#ff6b9d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="stat-label">Valid Nodes</div>
+    <div class="stat-value">231<small>/247</small></div>
+  </div>
+  <div class="stat-card glass">
+    <div class="stat-icon">
+      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="9" stroke="#ffb648" stroke-width="1.8"/><path d="M3 12H21M12 3C14.5 5.5 15.8 8.6 15.8 12C15.8 15.4 14.5 18.5 12 21C9.5 18.5 8.2 15.4 8.2 12C8.2 8.6 9.5 5.5 12 3Z" stroke="#ffb648" stroke-width="1.8"/></svg>
+    </div>
+    <div class="stat-label">Protocols</div>
+    <div class="stat-value">6</div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <div class="panel glass">
+    <div class="panel-title">Recent Imports <span class="see-all">See all →</span></div>
+
+    <div class="node-item">
+      <div class="proto-icon vless">VL</div>
+      <div class="node-info">
+        <div class="node-addr">jp-relay-04.example.net:443</div>
+        <div class="node-meta">VLESS · Reality · 2m ago</div>
+      </div>
+      <div class="node-score high">94</div>
+    </div>
+    <div class="node-item">
+      <div class="proto-icon trojan">TR</div>
+      <div class="node-info">
+        <div class="node-addr">de-fra-worker.pages.dev:8443</div>
+        <div class="node-meta">Trojan · TLS · 6m ago</div>
+      </div>
+      <div class="node-score high">88</div>
+    </div>
+    <div class="node-item">
+      <div class="proto-icon vmess">VM</div>
+      <div class="node-info">
+        <div class="node-addr">185.22.14.90:8880</div>
+        <div class="node-meta">VMess · WS · 14m ago</div>
+      </div>
+      <div class="node-score mid">61</div>
+    </div>
+    <div class="node-item">
+      <div class="proto-icon ss">SS</div>
+      <div class="node-info">
+        <div class="node-addr">sg-node-11.example.com:2087</div>
+        <div class="node-meta">Shadowsocks · 1h ago</div>
+      </div>
+      <div class="node-score high">90</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel glass" style="margin-bottom: 20px;">
+      <div class="panel-title">Protocol Mix</div>
+      <div class="dist-item">
+        <div class="dist-head"><span>VLESS</span><span class="n">94</span></div>
+        <div class="dist-track"><div class="dist-fill" style="width:38%; background:linear-gradient(90deg,var(--violet),#9b7bff);"></div></div>
+      </div>
+      <div class="dist-item">
+        <div class="dist-head"><span>VMess</span><span class="n">59</span></div>
+        <div class="dist-track"><div class="dist-fill" style="width:24%; background:linear-gradient(90deg,var(--amber),#ffc873);"></div></div>
+      </div>
+      <div class="dist-item">
+        <div class="dist-head"><span>Trojan</span><span class="n">44</span></div>
+        <div class="dist-track"><div class="dist-fill" style="width:18%; background:linear-gradient(90deg,var(--pink),#ff8fb8);"></div></div>
+      </div>
+      <div class="dist-item">
+        <div class="dist-head"><span>Shadowsocks</span><span class="n">50</span></div>
+        <div class="dist-track"><div class="dist-fill" style="width:20%; background:linear-gradient(90deg,var(--mint),#5ce0bd);"></div></div>
+      </div>
+    </div>
+
+    <div class="panel glass">
+      <div class="panel-title">Quick Actions</div>
+      <div class="action-btn primary"><span>Import Config</span><span>+</span></div>
+      <div class="action-btn secondary"><span>Export All</span><span>→</span></div>
+      <div class="action-btn secondary"><span>Run Diagnostics</span><span>→</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

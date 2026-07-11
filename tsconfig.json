@@ -1,0 +1,21 @@
+{
+  "//": "Type-CHECK only (tsc --noEmit), never emits. core/ stays plain JS+JSDoc, zero build (ADR-005); ui/ is real TS/TSX, bundled only at final assembly (ADR-014).",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "types": []
+  },
+  "include": ["core/**/*.js", "core/**/*.d.ts", "tests/**/*.js", "ui/**/*.ts", "ui/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "build"]
+}

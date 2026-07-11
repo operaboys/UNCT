@@ -75,6 +75,21 @@ interface CompletenessResult {
 
 > 🔗 **تعریف دقیق Leak Risk (پیشنهاد بازبینی):** برای جلوگیری از برداشت متفاوت توسعه‌دهندگان، مقیاس از قبل در `AnalysisObject` (سند 05) به‌صورت Enum ثابت شده: `dnsLeakRisk: "none" | "low" | "medium" | "high"`. این Analyzer باید دقیقاً همین چهار مقدار را تولید کند، نه یک عدد یا مقیاس دیگر.
 
+> ⚠️ **یادداشت پیاده‌سازی — DNS Analyzer: Blocked با تعهد رسمی (آپدیت Phase 10)**
+>
+> این ماژول **Blocked** است، نه صرفاً «هنوز نساخته‌شده». دقت در تشخیص علت ریشه‌ای مهم است:
+>
+> **مشکل لایه‌ی اول — Parser‌ها عمداً بلاک `dns{}` را Skip می‌کنند:**
+> در هر شش Parser (`core/parser/*/extract.js`)، بلاک `dns{}` موجود در Xray/Sing-box JSON در مرحله‌ی استخراج به‌عمد رد می‌شود. این تصمیم طراحی آگاهانه بود تا از اشتباه گرفتن «DNS Address سطح-کانفیگ» با «Node Address (آدرس Outbound هر کانکشن)» جلوگیری شود (سند 04). نتیجه: هیچ داده‌ی DNS‌ای وارد `UNMNode` نمی‌شود.
+>
+> **مشکل لایه‌ی دوم — UNM هیچ جایگاهی برای داده‌ی سطح-کانفیگ ندارد:**
+> حتی اگر Parser‌ها داده‌ی DNS را استخراج می‌کردند، `UNMNode` (سند 05) یک شیء **per-node** است — هر VLESS/VMESS/... یک `UNMNode` مجزاست. اما تنظیمات DNS (بلاک `dns{}`) در فرمت‌های واقعی یک بار برای **کل کانفیگ** نوشته می‌شوند، مشترک بین همه‌ی Outboundها. UNM ساختاری برای حمل این اطلاعات ندارد.
+>
+> **راه‌حل واقعی — نیازمند Full ADR:**
+> رفع کامل این مشکل به دو تغییر هم‌زمان نیاز دارد: (الف) اضافه کردن استخراج `dns{}` به همه‌ی شش Parser، و (ب) طراحی یک ساختار `ConfigMetadata` جدید که در آن چند `UNMNode` از یک کانفیگ مشترک با یک `configId` مرتبط می‌شوند و DNS در سطح `ConfigMetadata` نگه داشته می‌شود — نه در `UNMNode`. این تغییر مستقیماً محدوده‌ی **Architecture Freeze** (UNM Schema + Parser Philosophy) را لمس می‌کند و نمی‌توان بدون یک ADR کامل اجرا کرد.
+>
+> **تعهد رسمی:** DNS Analyzer بلافاصله پس از تکمیل **Phase 12** ساخته می‌شود — نه Backlog نامحدود. ADR مربوطه قبل از شروع آن نوشته می‌شود.
+
 ### 2.5 Subscription Analyzer
 Total Nodes, Protocol Distribution, Duplicate Nodes, Invalid Nodes, Dead Nodes Candidate, Security Ranking
 
@@ -90,8 +105,97 @@ Android, iOS, Windows, Linux, MacOS
 **Client Compatibility** *(نرم‌افزار کلاینت)*
 Xray, Sing-box, Clash Meta, Nekobox, v2rayNG, Hiddify
 
-### 2.7 Performance Analyzer
-*(در نسخه‌ی اصلی فقط اسم برده شده بود — جزئیات این ماژول هنوز Spec ندارد و باید قبل از پیاده‌سازی نوشته شود.)*
+### 2.7 Performance Analyzer — Spec کامل (Phase 12، P12-2)
+
+> **ماهیت:** این Analyzer برخلاف سایر ماژول‌های §2 (که per-node کار می‌کنند)، یک **Worker Pool Monitor** است — متریک‌های عملیاتی زنده‌ی سه Worker Pool (Parser / Analyzer / Converter) را در یک Snapshot جمع می‌کند. هیچ فیلدی به `UNMNode` اضافه نمی‌شود.
+
+#### متریک‌های قابل استخراج از معماری موجود
+
+بر اساس تحقیق مستقیم در `core/worker/worker-manager.js`، Worker Manager در حال حاضر فقط دو getter عمومی دارد:
+- `poolSize` — اندازه‌ی pool (از `hardwareConcurrency`)
+- `pendingCount` — تعداد Job‌های در صف (`queue.length`)
+
+برای تأمین متریک‌های مفید، تغییرات **Additive** زیر به `worker-manager.js` اضافه می‌شوند (بدون تغییر در پروتکل پیام‌رسانی، منطق dispatch، یا رفتار Pool):
+
+| متریک | منبع | تغییر لازم |
+|---|---|---|
+| `poolSize` | getter موجود | بدون تغییر |
+| `pendingCount` | getter موجود | بدون تغییر |
+| `busyCount` | `pool.filter(s => s.busy).length` | یک getter جدید |
+| `completedCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `cancelledCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `failedCount` | شمارنده‌ی `let` داخلی | increment در `settle()` — Additive |
+| `lastJobDurationMs` | `Date.now() - job.startedAt` | افزودن `enqueuedAt`/`startedAt` به Job struct — Additive |
+| `avgRecentDurationMs` | میانگین ۱۰ Job آخر | یک ring-buffer کوچک — Additive |
+| `snapshotAt` | `Date.now()` هنگام فراخوانی `getStats()` | — |
+
+تمام این تغییرات از نوع **Additive** هستند (فیلد جدید روی struct داخلی، getter/method جدید روی خروجی — بدون تغییر در پروتکل `postMessage` یا رفتار Pool). بنابراین به **Lightweight ADR** نیاز دارند، نه Full ADR.
+
+#### متریک حذف‌شده با دلیل (Rule 9)
+
+**Memory Usage:** Web Worker API هیچ مکانیزمی برای گزارش Heap Usage per-worker در اختیار نمی‌گذارد.
+- `performance.memory` فقط Chrome-only، deprecated، و process-level است (نه per-worker).
+- `performance.measureMemory()` به COOP/COEP origin isolation headers نیاز دارد که یک static-file zero-build app که از `file://` سرو می‌شود نمی‌تواند آن‌ها را تضمین کند (ADR-014).
+
+این متریک به‌جای فرض کردن یا جعل کردن، **صریحاً از Spec حذف شده** (Rule 9).
+
+#### خروجی — `PoolStats`
+
+```typescript
+interface PoolStats {
+  poolName: "parser" | "analyzer" | "converter";
+  poolSize: number;
+  busyCount: number;
+  pendingCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  failedCount: number;
+  lastJobDurationMs: number | null;
+  avgRecentDurationMs: number | null;
+  snapshotAt: number; // Date.now()
+}
+```
+
+#### جریان داده (Data Flow)
+
+```
+WorkerManager.getStats()
+    ↑ (Additive — جدید)
+    │
+[parser-worker-client.ts]    [analyzer-worker-client.ts]    [converter-worker-client.ts]
+    │ پس از هر batch          │ پس از هر batch              │ پس از هر batch
+    └─────────────────────────┴─────────────────────────────┘
+                              │
+                    core/store/performance-state.js
+                    (store جدید، همان الگوی analyzer-state.js)
+                    { pools: Record<PoolName, PoolStats> }
+                              │
+                    ui/store/use-performance-state.ts
+                    (hook جدید، همان الگوی use-analyzer-state.ts)
+                              │
+                    ui/devconsole/devconsole-screen.tsx
+                    (جایگزین section aria-disabled="true" موجود)
+```
+
+#### مصرف‌کننده‌ی UI
+
+سند ۰۷ §۴.۷ بخش **Performance Logs** در Developer Console. در حال حاضر به‌صورت `aria-disabled="true"` Placeholder است (`ui/devconsole/devconsole-screen.tsx` خط ۱۲۶). این Placeholder باید با یک جدول سه‌ردیفه (Parser / Analyzer / Converter) جایگزین شود:
+
+| Pool | Size | Busy | Queued | Completed | Cancelled | Failed | Avg Duration |
+|---|---|---|---|---|---|---|---|
+| Parser | ... | ... | ... | ... | ... | ... | ... ms |
+| Analyzer | ... | ... | ... | ... | ... | ... | ... ms |
+| Converter | ... | ... | ... | ... | ... | ... | ... ms |
+
+#### شرط کدنویسی
+
+پیش از نوشتن هر کد، یک **Lightweight ADR** (فرمت کوتاه طبق ULTIMATE_BLUEPRINT_INDEX §Architecture Freeze Scope) در `docs/adr/` ثبت می‌شود که تغییرات Additive به `worker-manager.js` را مستند کند — چون `core/worker/` در Architecture Freeze Scope است.
+
+#### تست‌های الزامی
+
+- `tests/worker/worker-manager.test.js`: افزودن Test Case برای `getStats()` (شمارنده‌ها، busyCount، timing)
+- `tests/store/performance-state.test.js`: الگوی `tests/store/analyzer-state.test.js`
+- `tests/ui/devconsole/performance-logs.test.js`: تست Vitest برای hook + render (نه Playwright — بدون side-effect شبکه)
 
 ### 2.8 ~~Normalization Analyzer~~ *(ترفیع‌یافته — بازبینی نهایی)*
 
@@ -109,7 +213,40 @@ Xray, Sing-box, Clash Meta, Nekobox, v2rayNG, Hiddify
 | 61–80 | Poor |
 | 81–100 | Critical |
 
-> ⏳ **Flag باز (بازبینی اولویت ۲ — باید قبل از شروع Phase 6 مشخص شود، نه الان):** جدول بالا فقط خروجی نهایی `riskScore` را طبقه‌بندی می‌کند، ولی **فرمول تولید `riskScore` هنوز تعریف نشده** (مثلاً چه درصدی از Security/Compatibility/DNS/Reality در آن سهیم است). الان برای Phase 1 تا 5 مشکلی ایجاد نمی‌کند، چون `riskScore` هنوز محاسبه نمی‌شود؛ ولی این فرمول باید قبل از پیاده‌سازی واقعی Phase 6 (سند 09) به‌صورت دقیق نوشته شود — احتمالاً به‌عنوان یک Section مجزا در همین سند، نه الان.
+> ✅ **Flag رفع شد (ADR-027):** فرمول تولید `riskScore` اکنون در بخش ۳.۱ زیر، به‌صورت دقیق و
+> کامل، مشخص شده است.
+
+### 3.1 فرمول `riskScore` و `compatibilityScore` (ADR-027)
+
+> این بخش همان Section مجزایی است که یادداشت بالا از قبل پیش‌بینی کرده بود. جزئیات کامل استدلال
+> (چرا این وزن‌ها، چرا Reality یک ترم مستقل چهارم نیست، چرا `null`/`unknown` به میانه‌ی عددی ۵۰
+> نگاشت می‌شوند) در `docs/adr/ADR-027-RISK-SCORE-FORMULA.md` است؛ اینجا فقط فرمول نهایی برای
+> ارجاع سریع تکرار می‌شود.
+
+**پیش‌نیاز — `compatibilityScore`** (از خروجی `analyzeCompatibility()`، §2.6، فقط از روی
+`clients`، نه `platforms` — چون `platforms` عملاً از `clients` مشتق می‌شود و دوباره‌شمردن همان
+داده خواهد بود):
+
+```
+value(true) = 100, value(false) = 0, value(null) = 50   (میانه‌ی عددی — بدون قضاوت)
+compatibilityScore = round(میانگین value(...) روی هر ۶ کلاینت نام‌برده در §2.6)
+```
+
+**`riskScore` نهایی** — دقیقاً سه ورودی مستقل (نه چهار — سهم Reality از قبل به‌طور کامل داخل
+`securityScore` و `compatibilityScore` جذب شده؛ استدلال کامل در ADR-027):
+
+```
+securityRisk      = 100 - securityScore        (ADR-011)
+compatibilityRisk = 100 - compatibilityScore   (بالا)
+dnsRisk           = { none:0, low:25, medium:50, high:100, unknown:50 }[dnsLeakRisk]  (ADR-022)
+
+riskScore = clamp(round(0.5*securityRisk + 0.2*compatibilityRisk + 0.3*dnsRisk), 0, 100)
+```
+
+وزن‌ها ثابت‌اند (نه Config قابل‌تنظیم): Security ۵۰٪ (پهن‌ترین و مستقیم‌ترین معیار ریسک واقعی)،
+DNS ۳۰٪ (یک مسیر ریسک واقعی و مستقل که `securityScore` اصلاً نمی‌بیند)، Compatibility ۲۰٪
+(اسمش صراحتاً در Scope اصلی این بخش بود، ولی مفهوماً ملایم‌تر است — عدم سازگاری یک شکست
+Usability است، نه Exposure). پیاده‌سازی: `core/analyzer/risk-score.js`.
 
 ---
 

@@ -1,0 +1,2030 @@
+/**
+ * Liquid Glass v2 — the Claude-Design handoff redesign
+ * (docs/design/design_handoff_unct_liquid_glass/README.md). Glassmorphism
+ * panels (backdrop blur + saturation) floating over ambient radial glows
+ * on a deep navy canvas, dark theme default, Vazirmatn UI type.
+ *
+ * Token-name contract: the handoff uses short names (`--bg`, `--txt`,
+ * `--acc1`, …); this project keeps its existing `--unct-*` names and only
+ * updates the VALUES to the handoff's token tables (design tokens that had
+ * no `--unct-*` equivalent yet were added under the same prefix). No
+ * project-wide variable rename happened, per the handoff task's explicit
+ * key rule.
+ *
+ * Font self-hosting note (ADR-014/doc 01 Offline-First — no Google Fonts
+ * CDN at runtime): all woff2 files in ../fonts/ were fetched once during
+ * development, per weight and per subset. The handoff's UI font is
+ * Vazirmatn (Persian+Latin, one font for both languages — replacing the
+ * old Plus Jakarta Sans Latin-only face), code/numbers stay JetBrains
+ * Mono, now in the 400/500/600/700 weights the design actually uses.
+ * Vazirmatn ships as two subsets per weight (arabic + latin) with
+ * `unicode-range` so the browser only decodes what the page really shows.
+ */
+
+/* ---------------------------------------------------------------------
+ * Font faces — self-hosted, exactly the weights/subsets used.
+ * ------------------------------------------------------------------- */
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-400-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-500-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-600-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-700-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-800-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/vazirmatn-800-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-700.woff2") format("woff2");
+}
+
+/* ---------------------------------------------------------------------
+ * Design Tokens — the Liquid Glass v2 palette, values from the handoff's
+ * "Design Tokens" tables (dark default + light), names kept `--unct-*`.
+ * ------------------------------------------------------------------- */
+:root {
+  /* Safety-net copy of :root[data-theme="dark"]'s values below (DARK is
+     the design's default theme) -- these apply for the brief window
+     before index.html's inline pre-paint script (or, if JS is disabled
+     entirely, ever) sets the real `data-theme` attribute, so no
+     var(--unct-*) is ever invalid/transparent even then. `:root[data-
+     theme="light"]`'s own block still wins whenever the attribute IS
+     present (an attribute-qualified `:root` selector is higher specificity
+     than plain `:root`, regardless of source order) -- this block is pure
+     fallback, never a competing default. Keep this exactly in sync with
+     :root[data-theme="dark"] below if either one changes. */
+  --unct-bg: #0A0D1C;
+  --unct-text: #F2F3F8;
+  --unct-text-muted: #A5AAC4;
+  --unct-text-faint: #8B90AC;
+  --unct-fg: var(--unct-text);
+  --unct-bg-image:
+    radial-gradient(circle 340px at 80% -60px, rgba(14, 165, 233, 0.4), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.25), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.2), transparent 62%);
+  --unct-glass: rgba(255, 255, 255, 0.06);
+  --unct-glass-bd: rgba(255, 255, 255, 0.13);
+  --unct-glass-hi: rgba(255, 255, 255, 0.2);
+  --unct-glass2: rgba(255, 255, 255, 0.05);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.09);
+  --unct-pill-active: rgba(255, 255, 255, 0.14);
+  --unct-pill-hi: rgba(255, 255, 255, 0.25);
+  --unct-divider: rgba(255, 255, 255, 0.12);
+  --unct-ok: #5FE3AC;   --unct-ok-bg: rgba(95, 227, 172, 0.09);   --unct-ok-bd: rgba(95, 227, 172, 0.25);
+  --unct-warn: #F0C670; --unct-warn-bg: rgba(232, 180, 74, 0.09); --unct-warn-bd: rgba(232, 180, 74, 0.22);
+  --unct-err: #F58C8C;  --unct-err-bg: rgba(239, 106, 106, 0.09); --unct-err-bd: rgba(239, 106, 106, 0.22);
+  --unct-info: #8CD9F2; --unct-info-bg: rgba(94, 201, 238, 0.09); --unct-info-bd: rgba(94, 201, 238, 0.25);
+  --unct-purp: #E7BCF5; --unct-purp-bg: rgba(216, 148, 240, 0.15); --unct-purp-bd: rgba(216, 148, 240, 0.3);
+  --unct-acc-soft: rgba(14, 165, 233, 0.18);
+  --unct-acc-bd: rgba(139, 92, 246, 0.3);
+  --unct-acc-txt: #7DD3FC;
+  --unct-ring-track: rgba(255, 255, 255, 0.09);
+  --unct-ring-hole: rgba(10, 13, 28, 0.85);
+  --unct-track: rgba(255, 255, 255, 0.08);
+  --unct-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+
+  /* Brand accents — theme-independent (same in both handoff tables). */
+  --unct-acc1: #8B5CF6;
+  --unct-acc2: #0EA5E9;
+  /* The brand gradient + primary-button shadow, verbatim from the handoff
+     ("Brand accent" section) — referenced by every gradient button, icon
+     tile, arrow, toggle-on state, and the splash loading bar. */
+  --unct-grad: linear-gradient(135deg, #8B5CF6, #0EA5E9);
+  --unct-grad-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 20px rgba(14, 165, 233, 0.45);
+
+  /* Legacy brand names (pre-handoff palette), re-pointed to the new
+     accents so the many existing `linear-gradient(var(--unct-purple),
+     var(--unct-pink))` component rules resolve to the handoff's own
+     brand gradient without a project-wide rename. */
+  --unct-purple: #8B5CF6;
+  --unct-pink: #0EA5E9;
+  --unct-amber: var(--unct-warn);
+
+  --unct-font-sans: "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --unct-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+/* Scoped to exactly the two states Settings' Theme Engine resolves to
+   (`resolvedTheme`, applied as `<html data-theme>` by ui/main.tsx).
+   DARK is the design's default theme. */
+:root[data-theme="dark"] {
+  --unct-bg: #0A0D1C;
+  --unct-text: #F2F3F8;
+  --unct-text-muted: #A5AAC4;
+  --unct-text-faint: #8B90AC;
+  --unct-fg: var(--unct-text);
+  /* Ambient glows (handoff --glow1/2/3): three fixed radial pools over the
+     deep navy canvas — cyan top/inline-end, light-blue bottom/inline-start,
+     soft purple center. Implemented as body background layers (fixed
+     attachment) instead of extra DOM. */
+  --unct-bg-image:
+    radial-gradient(circle 340px at 80% -60px, rgba(14, 165, 233, 0.4), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.25), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.2), transparent 62%);
+
+  --unct-glass: rgba(255, 255, 255, 0.06);
+  --unct-glass-bd: rgba(255, 255, 255, 0.13);
+  --unct-glass-hi: rgba(255, 255, 255, 0.2);
+  --unct-glass2: rgba(255, 255, 255, 0.05);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.09);
+  --unct-pill-active: rgba(255, 255, 255, 0.14);
+  --unct-pill-hi: rgba(255, 255, 255, 0.25);
+  --unct-divider: rgba(255, 255, 255, 0.12);
+
+  --unct-ok: #5FE3AC;   --unct-ok-bg: rgba(95, 227, 172, 0.09);   --unct-ok-bd: rgba(95, 227, 172, 0.25);
+  --unct-warn: #F0C670; --unct-warn-bg: rgba(232, 180, 74, 0.09); --unct-warn-bd: rgba(232, 180, 74, 0.22);
+  --unct-err: #F58C8C;  --unct-err-bg: rgba(239, 106, 106, 0.09); --unct-err-bd: rgba(239, 106, 106, 0.22);
+  --unct-info: #8CD9F2; --unct-info-bg: rgba(94, 201, 238, 0.09); --unct-info-bd: rgba(94, 201, 238, 0.25);
+  --unct-purp: #E7BCF5; --unct-purp-bg: rgba(216, 148, 240, 0.15); --unct-purp-bd: rgba(216, 148, 240, 0.3);
+
+  --unct-acc-soft: rgba(14, 165, 233, 0.18);
+  --unct-acc-bd: rgba(139, 92, 246, 0.3);
+  --unct-acc-txt: #7DD3FC;
+
+  --unct-ring-track: rgba(255, 255, 255, 0.09);
+  --unct-ring-hole: rgba(10, 13, 28, 0.85);
+  --unct-track: rgba(255, 255, 255, 0.08);
+  --unct-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="light"] {
+  /* The handoff's light --bg is itself a gradient; the flat fallback color
+     here is its first stop, the real gradient rides in --unct-bg-image's
+     last (bottom) layer, under the three glows. */
+  --unct-bg: #E9EBFA;
+  --unct-text: #1A1D30;
+  --unct-text-muted: #565C74;
+  --unct-text-faint: #7A80A0;
+  --unct-fg: var(--unct-text);
+  --unct-bg-image:
+    radial-gradient(circle 340px at 80% -60px, rgba(139, 92, 246, 0.38), transparent 62%),
+    radial-gradient(circle 360px at 8% 108%, rgba(94, 201, 238, 0.3), transparent 62%),
+    radial-gradient(circle 210px at 46% 48%, rgba(216, 148, 240, 0.26), transparent 62%),
+    linear-gradient(160deg, #E9EBFA, #F3EEFA 55%, #EAF2F7);
+
+  --unct-glass: rgba(255, 255, 255, 0.55);
+  --unct-glass-bd: rgba(255, 255, 255, 0.8);
+  --unct-glass-hi: rgba(255, 255, 255, 0.92);
+  --unct-glass2: rgba(255, 255, 255, 0.62);
+  --unct-glass2-bd: rgba(255, 255, 255, 0.88);
+  --unct-pill-active: rgba(255, 255, 255, 0.9);
+  --unct-pill-hi: rgba(255, 255, 255, 1);
+  --unct-divider: rgba(26, 29, 48, 0.12);
+
+  --unct-ok: #17966A;   --unct-ok-bg: rgba(23, 150, 106, 0.1);   --unct-ok-bd: rgba(23, 150, 106, 0.3);
+  --unct-warn: #B07D0E; --unct-warn-bg: rgba(188, 132, 18, 0.1); --unct-warn-bd: rgba(188, 132, 18, 0.3);
+  --unct-err: #C74747;  --unct-err-bg: rgba(199, 71, 71, 0.09);  --unct-err-bd: rgba(199, 71, 71, 0.28);
+  --unct-info: #1F7FAE; --unct-info-bg: rgba(31, 127, 174, 0.09); --unct-info-bd: rgba(31, 127, 174, 0.28);
+  --unct-purp: #A44FC4; --unct-purp-bg: rgba(164, 79, 196, 0.1); --unct-purp-bd: rgba(164, 79, 196, 0.3);
+
+  --unct-acc-soft: rgba(14, 165, 233, 0.12);
+  --unct-acc-bd: rgba(14, 165, 233, 0.32);
+  --unct-acc-txt: #0369A1;
+
+  --unct-ring-track: rgba(26, 29, 48, 0.1);
+  --unct-ring-hole: rgba(255, 255, 255, 0.82);
+  --unct-track: rgba(26, 29, 48, 0.09);
+  --unct-shadow: 0 16px 48px rgba(80, 80, 140, 0.16);
+}
+
+body {
+  margin: 0;
+  /* Handoff page container: max-width 1280 centered, 22/26/40 padding
+     desktop, 16/14/110 mobile (110px bottom clears the floating dock). */
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-block: 22px 40px;
+  padding-inline: 26px;
+  font-family: var(--unct-font-sans);
+  background-color: var(--unct-bg, #0A0D1C);
+  background-image: var(--unct-bg-image, none);
+  background-attachment: fixed;
+  background-size: cover;
+  color: var(--unct-fg, var(--unct-text));
+}
+/* The centered 1280px body still needs the canvas behind it painted:
+   propagate the background to the root so the margins outside body's box
+   aren't white. html carries the same background; body's own paints over
+   it seamlessly (same tokens). */
+html {
+  background-color: var(--unct-bg, #0A0D1C);
+  background-image: var(--unct-bg-image, none);
+  background-attachment: fixed;
+  background-size: cover;
+}
+@media (max-width: 760px) {
+  body {
+    padding-block: 16px 110px;
+    padding-inline: 14px;
+  }
+}
+
+code, kbd, samp, .mono {
+  font-family: var(--unct-font-mono);
+}
+
+/* ---------------------------------------------------------------------
+ * .glass-panel — the reusable Liquid Glass surface (07-UI_UX_SYSTEM §2).
+ * Apply to top-level panels/cards, not every small inline element.
+ * ------------------------------------------------------------------- */
+/* The handoff's signature glass recipe, verbatim: token background +
+   blur(30px) saturate(180%) + 1px token border + inset top highlight in
+   the box-shadow (which REPLACES the old ::before sheen / ::after glint
+   overlays — the new look is a flat frosted pane, not a glossy one). */
+.glass-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--unct-glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--unct-glass-bd);
+  box-shadow: inset 0 1px 0 var(--unct-glass-hi), var(--unct-shadow);
+}
+
+/* The old sheen/glint pseudo-element overlays are gone in the new design;
+   `content: none` keeps every existing `position: relative; z-index: 1`
+   lift on panel children harmless rather than requiring their removal. */
+.glass-panel::before,
+.glass-panel::after {
+  content: none;
+}
+
+/* ---------------------------------------------------------------------
+ * .signal-ring — the Signal Ring signature element (07-UI_UX_SYSTEM §2).
+ * A live gradient ring (purple -> mint) showing a Security Score. This is
+ * DISPLAY ONLY — the score itself always comes from
+ * core/analyzer/core/security-analyzer.js (ADR-011); nothing here computes
+ * a value. Usage:
+ *   <div class="signal-ring" style="--signal-value: 87">
+ *     <span>87</span>
+ *   </div>
+ * `--signal-value` is a 0-100 number set by the consumer per node/context —
+ * this repeats identically everywhere a Security Score is shown (Dashboard,
+ * Subscription Center, Node Detail), never a one-off local variant.
+ * ------------------------------------------------------------------- */
+.signal-ring {
+  --signal-value: 0;
+  --signal-size: 64px;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--signal-size);
+  height: var(--signal-size);
+  border-radius: 50%;
+  /* Handoff health-ring recipe: solid ok-colored arc over the token ring
+     track (not the old purple→mint sweep). */
+  background: conic-gradient(
+    var(--unct-ok) 0 calc(var(--signal-value) * 1%),
+    var(--unct-ring-track) calc(var(--signal-value) * 1%) 100%
+  );
+}
+
+.signal-ring::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: var(--unct-ring-hole);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--unct-glass-bd);
+}
+
+.signal-ring span {
+  position: relative;
+  z-index: 1;
+  font-family: var(--unct-font-mono);
+  font-weight: 800;
+  color: var(--unct-ok);
+}
+
+/* ---------------------------------------------------------------------
+ * .protocol-badge — gradient badges with a monospace abbreviation, one
+ * distinct gradient per protocol (07-UI_UX_SYSTEM §2). Rounded SQUARE
+ * (12px radius), not a circle — corrected against the approved Dashboard
+ * reference mockup (docs/design/dashboard-reference.html), which echoes
+ * the logo's own rounded-square language; this class had not yet been
+ * used in any real screen, so the correction has zero regression risk.
+ * Usage:
+ *   <span class="protocol-badge protocol-badge--vless">VL</span>
+ *   <span class="protocol-badge protocol-badge--lg protocol-badge--vless">VL</span>
+ * ------------------------------------------------------------------- */
+/* Handoff icon-tile look: a tinted, bordered rounded square with a mono
+   abbreviation in the tint's own text color (`iconStyle(bg, bd, color)` in
+   the design source) — replacing the old white-on-gradient badge. Each
+   protocol maps to one of the handoff's tint triads. The `--unct-badge-
+   gradient` custom property is still SET by the per-protocol variants
+   because `.dist-fill` (Protocol Distribution bars on Dashboard/
+   Subscription Center) composes with these same classes for its bar fill. */
+.protocol-badge {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  font-family: var(--unct-font-mono);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--unct-badge-txt, var(--unct-acc-txt));
+  background: var(--unct-badge-bg, var(--unct-acc-soft));
+  border: 1px solid var(--unct-badge-bd, var(--unct-acc-bd));
+  flex-shrink: 0;
+}
+
+/* Larger context (Dashboard's Recent Imports list). */
+.protocol-badge--lg {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 11px;
+}
+
+.protocol-badge--vless { --unct-badge-bg: var(--unct-acc-soft); --unct-badge-bd: var(--unct-acc-bd); --unct-badge-txt: var(--unct-acc-txt); --unct-badge-gradient: var(--unct-grad); }
+.protocol-badge--vmess { --unct-badge-bg: var(--unct-info-bg); --unct-badge-bd: var(--unct-info-bd); --unct-badge-txt: var(--unct-info); --unct-badge-gradient: linear-gradient(135deg, var(--unct-acc2), var(--unct-info)); }
+.protocol-badge--trojan { --unct-badge-bg: var(--unct-purp-bg); --unct-badge-bd: var(--unct-purp-bd); --unct-badge-txt: var(--unct-purp); --unct-badge-gradient: linear-gradient(135deg, var(--unct-acc1), var(--unct-purp)); }
+.protocol-badge--shadowsocks { --unct-badge-bg: var(--unct-warn-bg); --unct-badge-bd: var(--unct-warn-bd); --unct-badge-txt: var(--unct-warn); --unct-badge-gradient: linear-gradient(135deg, #E8B44A, #F0C670); }
+.protocol-badge--hysteria2 { --unct-badge-bg: var(--unct-ok-bg); --unct-badge-bd: var(--unct-ok-bd); --unct-badge-txt: var(--unct-ok); --unct-badge-gradient: linear-gradient(135deg, #3ECF8E, #5FE3AC); }
+.protocol-badge--tuic { --unct-badge-bg: var(--unct-err-bg); --unct-badge-bd: var(--unct-err-bd); --unct-badge-txt: var(--unct-err); --unct-badge-gradient: linear-gradient(135deg, var(--unct-err), var(--unct-purp)); }
+.protocol-badge--wireguard { --unct-badge-bg: var(--unct-info-bg); --unct-badge-bd: var(--unct-info-bd); --unct-badge-txt: var(--unct-info); --unct-badge-gradient: linear-gradient(135deg, var(--unct-info), var(--unct-ok)); }
+
+/* ---------------------------------------------------------------------
+ * Dashboard reusable classes (07-UI_UX_SYSTEM §4.1, approved reference
+ * docs/design/dashboard-reference.html). Added here, not a per-screen
+ * stylesheet, because a stat card / list row / action button is a shared
+ * pattern future screen redesigns will reuse — same reasoning as
+ * `.glass-panel`/`.signal-ring`/`.protocol-badge` above. Every spacing/
+ * position value below uses CSS Logical Properties (RTL-GUIDELINES.md §4,
+ * no exceptions) so this layout mirrors correctly under `dir="rtl"` with
+ * zero structural changes later.
+ * ------------------------------------------------------------------- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: 24px;
+}
+
+.logo-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-text {
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.3px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  color: var(--unct-text-muted);
+  font-weight: 500;
+}
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  padding-inline: 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.status-chip .pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--unct-ok);
+  box-shadow: 0 0 0 4px var(--unct-ok-bg);
+  flex-shrink: 0;
+}
+
+/* Hero band — deliberately combined with .glass-panel in markup
+   (class="hero-band glass-panel") so it inherits the blur/highlight/
+   glint/shadow machinery while overriding only background + padding;
+   this rule must be defined AFTER .glass-panel in this file so its
+   `background` wins the cascade at equal specificity. */
+.hero-band {
+  position: relative;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(14, 165, 233, 0.88) 100%);
+  padding-block: 30px;
+  padding-inline: 34px;
+  margin-block-end: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.hero-band::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -110px;
+  inset-inline-end: -50px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-text {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+.hero-text .eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  opacity: 0.9;
+  margin-block-end: 6px;
+}
+.hero-text h1 {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-block-end: 4px;
+}
+.hero-text p {
+  font-size: 13px;
+  opacity: 0.92;
+  font-weight: 500;
+}
+.hero-cta {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--unct-acc1);
+  padding-block: 13px;
+  padding-inline: 24px;
+  border-radius: 16px;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-block-end: 22px;
+}
+/* The only 4-column grid in the stylesheet with no mobile breakpoint
+   (confirmed via grep -n "@media" -- `.content-grid` already collapses at
+   this same 760px point). 2x2 rather than `.content-grid`'s 1-column
+   collapse: these are short, number-heavy cards (not tall panels), so a
+   2x2 grid keeps related stats visually paired instead of stretching
+   into a long single-column list. */
+@media (max-width: 760px) {
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.stat-card {
+  padding: 20px;
+}
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-end: 12px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.stat-icon--nodes { background: var(--unct-acc-soft); border: 1px solid var(--unct-acc-bd); }
+.stat-icon--valid { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); }
+.stat-icon--protocols { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); }
+
+.stat-label {
+  font-size: 12px;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+  margin-block-end: 4px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  font-family: var(--unct-font-mono);
+}
+.stat-value--mint { color: var(--unct-ok); }
+.stat-value small {
+  font-size: 13px;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+/* Unified-mobile-behavior Checkpoint: `.content-grid`'s asymmetric ratio is
+   intentional on wide viewports (Dashboard/Converter's master-detail
+   layout, pixel-matched to an approved reference) — unlike `.panel-grid`,
+   it can't use `auto-fit`/`minmax` without losing that 1.6:1 weighting, so
+   a breakpoint collapses it to a single stacked column instead, matching
+   `.panel-grid`'s own collapse point (2 × its 320px minmax + 20px gap). */
+@media (max-width: 760px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.panel {
+  padding: 22px;
+}
+.panel-title {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 700;
+  margin-block-end: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-title .see-all {
+  font: inherit;
+  font-size: 12px;
+  color: var(--unct-acc-txt);
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.panel-title .see-all:hover {
+  color: var(--unct-text);
+}
+
+/* A titled sub-section nested inside a bigger `.glass-panel` (e.g. Developer
+   Console's "Alternative Candidates" living inside the "Detection Logs"
+   panel — conceptually one topic, per that screen's own header comment, so
+   kept in one panel rather than split into two — but visually
+   indistinguishable from a second independent table once both are
+   `VirtualTable`s of real data). A top border + background tint + extra
+   padding makes the boundary between the parent table and this subsection
+   unambiguous without promoting it to its own `.glass-panel`. */
+.panel-subsection {
+  margin-block-start: 20px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--unct-divider);
+}
+.panel-subsection .panel-title {
+  background: var(--unct-glass2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-block-end: 12px;
+}
+
+/* RTL fix (docs/architecture/RTL-GUIDELINES.md): `.cta-arrow` wraps every
+   literal "forward/continue" arrow glyph (&rarr;, Dashboard's "See all"/
+   Quick Actions buttons). The glyph itself is a fixed Unicode character --
+   CSS Logical Properties don't reach into rendered text content -- so
+   without this it keeps pointing physically right even under dir="rtl",
+   reading as "backward" relative to the surrounding RTL flow. Mirroring it
+   with a horizontal flip restores the correct "continues this way" meaning
+   in both directions, matching how the rest of this stylesheet already
+   auto-mirrors via `dir` (RTL-GUIDELINES.md §4) without any component logic
+   change. */
+[dir="rtl"] .cta-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
+.node-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-block: 12px;
+  padding-inline: 8px;
+  border-radius: 14px;
+  transition: background 0.15s;
+}
+.node-item {
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass2-bd);
+  border-radius: 16px;
+}
+.node-item:hover {
+  background: var(--unct-pill-active);
+}
+.node-info {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.node-addr {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.node-meta {
+  font-size: 11.5px;
+  color: var(--unct-text-muted);
+  font-weight: 500;
+  margin-block-start: 2px;
+}
+.node-score {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 800;
+  padding-block: 6px;
+  padding-inline: 12px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.node-score {
+  font-family: var(--unct-font-mono);
+}
+.node-score.high { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); color: var(--unct-ok); }
+.node-score.mid { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); color: var(--unct-warn); }
+
+.dist-item {
+  position: relative;
+  z-index: 1;
+  margin-block-end: 14px;
+}
+.dist-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-block-end: 6px;
+}
+.dist-head .n { color: var(--unct-text-muted); }
+.dist-track {
+  height: 6px;
+  background: var(--unct-track);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.dist-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--unct-badge-gradient, var(--unct-grad));
+}
+
+.action-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-block: 14px;
+  padding-inline: 16px;
+  border-radius: 15px;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  margin-block-end: 10px;
+  cursor: pointer;
+}
+.action-btn.primary {
+  background: var(--unct-grad);
+  color: #ffffff;
+  box-shadow: var(--unct-grad-shadow);
+}
+.action-btn.secondary {
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass-bd);
+  color: var(--unct-text);
+}
+
+/* ---------------------------------------------------------------------
+ * App Navigation (07-UI_UX_SYSTEM §2) — shared tab bar across all Main
+ * Screens (ui/components/nav.tsx). See that file's header comment for the
+ * mobile horizontal-scroll decision and the edge-fade's RTL reasoning.
+ * ------------------------------------------------------------------- */
+/* Handoff top chrome: a floating, self-centered pill (radius 99px, glass,
+   8px/10px padding) holding the brand lockup, nav pills, and the language/
+   theme toggles, instead of the old full-width bar. */
+.app-nav {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  margin-block-end: 20px;
+  border-radius: 99px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-nav__brand {
+  display: flex;
+  align-items: center;
+  padding-block: 4px;
+  padding-inline: 16px 12px;
+  flex-shrink: 0;
+}
+.app-nav__brand img {
+  height: 58px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.app-nav__divider {
+  width: 1px;
+  height: 22px;
+  background: var(--unct-divider);
+  flex-shrink: 0;
+}
+/* Groups the language + theme toggle buttons into one flex item so
+   `justify-content: space-between` on `.app-nav` (mobile-only, below) has
+   exactly two items to split -- brand vs. this pair -- instead of
+   distributing space between every individual child and stranding the
+   language toggle in the middle of the row. Desktop is unaffected: this
+   is just an extra wrapper around two buttons that already sat next to
+   each other at the end of the flex row. */
+.app-nav__toggles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.app-nav__toggle {
+  border: none;
+  background: transparent;
+  padding-block: 8px;
+  padding-inline: 12px;
+  border-radius: 99px;
+  color: var(--unct-text-muted);
+  font-family: var(--unct-font-mono);
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.app-nav__toggle:hover {
+  color: var(--unct-text);
+}
+/* The icon's own color comes from a literal `stroke` attribute on the
+   inline SVG (see ui/components/nav.tsx's ThemeIcon), not this `color`
+   property -- a prior version used a Unicode glyph colored via `color`
+   here, which `.app-nav__toggle:hover` (two classes, higher specificity)
+   could silently override on hover/touch. Just centers the icon now. */
+.app-nav__toggle--theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.app-nav__scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+}
+.app-nav__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: none;
+  border-radius: 99px;
+  padding-block: 8px;
+  padding-inline: 16px;
+  font: inherit;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--unct-text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-tab:not(:disabled):hover {
+  color: var(--unct-text);
+}
+/* Active pill (the `disabled` current tab): handoff --pill-active surface
+   with the inset top highlight, not the old brand-gradient fill. */
+.nav-tab:disabled {
+  background: var(--unct-pill-active);
+  box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  color: var(--unct-text);
+  font-weight: 600;
+  opacity: 1;
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------------
+ * Screen Header + shared form chrome (07-UI_UX_SYSTEM §4.2, Converter
+ * Screen redesign) — a page title/subtitle plus a small set of controls
+ * (buttons, textareas, tables, alerts) every subsequent screen redesign
+ * will also need. Defined once here rather than per-screen, same
+ * reasoning as `.glass-panel`/`.protocol-badge`/`ui/components/nav.tsx`
+ * above. CSS Logical Properties throughout (RTL-GUIDELINES.md §4, no
+ * exceptions).
+ * ------------------------------------------------------------------- */
+.screen-header {
+  margin-block-end: 22px;
+}
+.screen-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-block-end: 6px;
+}
+.screen-subtitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--unct-text-muted);
+  max-width: 640px;
+}
+
+/* `.hint` had no rule anywhere before this pass (plain browser-default
+   text even inside the redesigned Dashboard's glass panels) — a muted tone
+   matching the rest of the palette instead of default black, used for
+   helper text and empty-state messages across every screen. `position:
+   relative; z-index: 1` (repeated on every class below that sits directly
+   inside a `.glass-panel`) is load-bearing, not decorative: `.glass-panel`'s
+   `::before`/`::after` are absolutely-positioned decorative overlays, and
+   per CSS stacking rules ANY positioned element paints above STATIC
+   in-flow content in the same stacking context regardless of DOM order —
+   so plain unpositioned text sitting in a glass panel silently renders
+   BENEATH that panel's own highlight sheen/glint, getting partially washed
+   out wherever the gradient happens to fall. Confirmed by rendering the
+   same text in isolation outside any `.glass-panel` (no artifact) vs. inside
+   one (visible partial wash) — this is why `.panel-title`/`.node-item`/
+   `.hero-text` etc. already did this same lift; every new content class
+   below needs the same treatment to actually sit on top of its panel. */
+.hint {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-faint);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Buttons — inline-flex, unlike Dashboard's full-width block `.action-btn`
+   (a deliberately different shape for a deliberately different context:
+   a horizontal toolbar here vs. a vertical stacked action list there). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-block: 11px;
+  padding-inline: 20px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn--primary {
+  background: var(--unct-grad);
+  color: #ffffff;
+  box-shadow: var(--unct-grad-shadow);
+  border-radius: 10px;
+}
+.btn--ghost {
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass-bd);
+  color: var(--unct-text-muted);
+  border-radius: 10px;
+}
+.btn--ghost:not(:disabled):hover {
+  color: var(--unct-text);
+}
+
+.dropzone {
+  position: relative;
+  z-index: 1;
+  border: 1.5px dashed var(--unct-acc-bd);
+  border-radius: 16px;
+  background: var(--unct-acc-soft);
+  padding: 4px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone--active {
+  border-color: var(--unct-acc1);
+  background: var(--unct-acc-soft);
+}
+
+.code-textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  /* Handoff localization rule: code/log/URL content is ALWAYS LTR,
+     regardless of UI language — node URIs and YAML/JSON previews must not
+     inherit the RTL page direction. */
+  direction: ltr;
+  text-align: left;
+  border: 1px solid var(--unct-glass2-bd);
+  border-radius: 13px;
+  padding: 16px;
+  background: var(--unct-glass2);
+  font-family: var(--unct-font-mono);
+  font-size: 11.5px;
+  line-height: 1.9;
+  color: var(--unct-text);
+  resize: vertical;
+}
+.code-textarea:focus {
+  outline: 2px solid var(--unct-acc1);
+  outline-offset: -2px;
+}
+.code-textarea::placeholder {
+  color: var(--unct-text-muted);
+}
+
+.form-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 14px;
+}
+
+.alert {
+  position: relative;
+  z-index: 1;
+  margin-block-start: 14px;
+  padding-block: 12px;
+  padding-inline: 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.alert--error {
+  background: var(--unct-err-bg);
+  border: 1px solid var(--unct-err-bd);
+  color: var(--unct-err);
+}
+
+.kv-list {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding-block-end: 10px;
+  border-block-end: 1px solid var(--unct-glass2-bd);
+}
+.kv-row:last-child {
+  border-block-end: none;
+  padding-block-end: 0;
+}
+.kv-row dt {
+  margin: 0;
+  color: var(--unct-text-muted);
+  font-weight: 600;
+}
+.kv-row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+  /* Long unbroken values (Base64 Encoded Data, Cloudflare/Worker Analysis
+     signal strings, etc.) otherwise overflow this flex item's default
+     content-based min-width and get visually clipped by `.glass-panel`'s
+     own `overflow: hidden` instead of wrapping to the next line. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.plain-list {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding-inline-start: 20px;
+  font-size: 13px;
+}
+.plain-list li {
+  margin-block-end: 6px;
+}
+
+.select {
+  /* max-width + the text-overflow trio below: a native <select> otherwise
+     sizes itself to fit its single LONGEST <option> text (e.g. Export
+     Center's "Clash YAML / Clash Meta / Mihomo / Provider File"), which
+     overflows narrow viewports regardless of the currently selected
+     option's own length — this is what was actually behind the "label
+     wraps above the control" mobile issue found in an earlier Checkpoint,
+     not a flex/legend problem. `min-width: 0` is the other half of that
+     fix, missed at the time: as a flex item of `.field`, a <select>'s
+     default `min-width: auto` refuses to shrink below its own intrinsic
+     content width regardless of `max-width`, which is exactly why Export
+     Center's format <select> (the widest option list of any screen using
+     this class) still overflowed its card on narrow viewports. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-block: 9px;
+  padding-inline: 14px;
+  border: 1px solid var(--unct-glass-bd);
+  border-radius: 10px;
+  background: var(--unct-glass2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--unct-text);
+  cursor: pointer;
+}
+/* Native dropdown popups paint on the OS' own surface, not the glass —
+   without an explicit dark option color they'd be white-on-white in the
+   dark theme. */
+.select option {
+  background-color: var(--unct-bg);
+  color: var(--unct-text);
+}
+
+.table-scroll {
+  position: relative;
+  z-index: 1;
+  overflow-x: auto;
+}
+/* Node List virtualization (doc 14 §1/§2, 2026-07-05): the scroll container
+   `use-virtualizer.ts` measures/scrolls — needs a bounded height so
+   "off-screen" has a real meaning; a shorter list just ends up shorter than
+   this cap; a 5000+-node list scrolls inside it instead of growing the page
+   to the node count's full height. */
+.table-scroll--virtual {
+  max-height: 640px;
+  overflow-y: auto;
+}
+/* Sticky column headers ONLY inside the bounded/virtualized scroll container
+   — every other `.table-scroll` in the app has no max-height, so the whole
+   page scrolls past its header naturally (no fix needed there). Needs its
+   own background (matching `.glass-panel`'s own, not `.data-table th`'s
+   transparent default) so scrolled-past rows don't show through the header
+   while it sits pinned at the top.
+   `backdrop-filter` (2026-07-06 real bug): the same `rgba(255,255,255,0.42)`
+   opacity as `.glass-panel`, ALONE, is not enough to hide a scrolled-past
+   row's text — a single semi-transparent color layer over moving text still
+   lets its shape read through, especially with a light/short row like a log
+   table's, which is exactly what a real screenshot showed here (Developer
+   Console's "NODE ID"/"PARSER"/"CONFIDENCE" header overlapping a scrolled row
+   underneath). `.glass-panel` itself never has this problem because it pairs
+   that SAME opacity with a real `blur(28px)` — opacity+blur together is the
+   actual Liquid Glass mechanism (07-UI_UX_SYSTEM §2), not opacity alone. This
+   header is a thin one-row strip, not a large panel, so a lighter `blur(16px)`
+   (between the icon-scale `blur(6px)`/`blur(10px)` elsewhere in this file and
+   `.glass-panel`'s full `28px`) already fully obscures passing text while
+   staying cheap to paint on a `position: sticky` element repainted every
+   scroll frame. This value works for LIGHT mode; dark mode needs its own
+   background/blur values entirely (see the `:root[data-theme="dark"]`
+   override below and its own long comment) — bright text on a near-black
+   background needs meaningfully more opacity/blur than dark text on a
+   bright one before it stops reading through at the same visual strength. */
+.table-scroll--virtual .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  /* A real drop-shadow (not just the hairline `border-block-end` below,
+     which is a 1px near-invisible-on-dark line meant as a subtle divider,
+     not a strong separator) so the boundary between the frozen header and
+     the row scrolling directly beneath it is never ambiguous -- a tight,
+     high-DPI crop of exactly the `<th>`'s own bounding box (not a wider
+     screenshot, which made an adjacent-but-NOT-overlapping row underneath
+     look like it was bleeding through at normal viewing scale) proved this
+     header's box itself is clean; this shadow exists purely so a real
+     user's eye gets an unambiguous "this is a separate, elevated layer"
+     cue too. */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.data-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+/* `table-layout: fixed` alone still squeezes every column to fit 100% of
+   the container (the reported bug: narrow specialty columns like GeoIP/
+   Port Check collapse until their header text wraps letter-by-letter, in
+   both languages, on both mobile and desktop -- nothing to do with RTL or
+   viewport, purely `table-layout: auto`'s default fit-to-container
+   behavior with 8-12 real columns). The fix is a `min-width` on the table
+   itself so it's allowed to grow past its container and let the ALREADY-
+   EXISTING `.table-scroll { overflow-x: auto }` do its job instead.
+   The value per column count below is not an arbitrary number: it is
+   the real per-column minimum content width of the worst offender --
+   Subscription Center's 12-column Node List (doc: `NodeTableHeaderRow`,
+   `ui/subscription/subscription-screen.tsx`) -- summed once from each
+   column's actual header/content width need (Include 60 + Protocol 100 +
+   Address 170 + Port 70 + Valid 80 + Security Score 120 + Latency 100 +
+   Port Check 110 + GeoIP 150 + Imported At 130 + Template 110 + Tags
+   160 = 1360px), giving a ~113px-per-column average that is then applied
+   to every OTHER `.data-table` in the app in proportion to its own real
+   column count via `:has(th:nth-child(N))` -- so a small 4-6 column table
+   (Converter, most Extractor panels) gets a modest, honestly-smaller
+   min-width instead of being stretched to the 12-column table's number,
+   while an 8-9 column table (DevConsole's Performance Logs, Extractor's
+   Worker Analysis) gets a proportionally larger one. Ascending order
+   matters: for a table matching more than one threshold, the later
+   (larger) rule wins the cascade. */
+.data-table:has(th:nth-child(4)) { min-width: 450px; }
+.data-table:has(th:nth-child(5)) { min-width: 570px; }
+.data-table:has(th:nth-child(6)) { min-width: 680px; }
+.data-table:has(th:nth-child(7)) { min-width: 790px; }
+.data-table:has(th:nth-child(8)) { min-width: 910px; }
+.data-table:has(th:nth-child(9)) { min-width: 1020px; }
+.data-table:has(th:nth-child(12)) { min-width: 1360px; }
+/* Root cause of a bug that survived several backdrop-filter/opacity
+   iterations on the sticky header below (2026-07-06, real user report with
+   a real screenshot): the ~113px/column average above was calibrated
+   against Subscription Center's Node List, which never shows a raw UUID --
+   but Developer Console's Parser Logs/Diagnostics/Validation Logs/
+   Detection Logs tables DO show a raw 36-character Node ID as their first
+   column, and `table-layout: fixed` divides a table's min-width EVENLY
+   across columns with no per-column hint. On a 4-column table
+   (450px / 4 = 112.5px), that Node ID column was starved to under half of
+   what a 36-char UUID needs at this app's 13px monospace font, so it
+   wrapped onto 2 lines -- and a 2-line row breaks the sticky header's
+   whole occlusion premise: the header only ever covers ONE line's height,
+   so a wrapped row's second line was never actually BEHIND the header at
+   all -- it sat genuinely next to it, in its own space, fully legible
+   regardless of ANY `backdrop-filter`/opacity value (this is why every
+   value tried on `.table-scroll--virtual .data-table th` below still
+   showed real, readable text -- none of them could fix a bug that was
+   never about translucency in the first place). First attempted fix used
+   `min-width` on the `<th>` -- verified WRONG in a real browser: under
+   `table-layout: fixed`, Chromium's column-width algorithm only consults
+   the first row's `width` (not `min-width`) to size columns, so that
+   `min-width` was silently ignored for sizing purposes, the column stayed
+   at its even 1/4 share, and the now-`nowrap` UUID text overflowed its
+   cell horizontally, VISUALLY OVERLAPPING the Parser column instead of
+   wrapping -- a different, equally-real bug, caught by re-running the same
+   real-browser screenshot check rather than trusting the CSS in isolation.
+   Real fix: an explicit `width` (which `table-layout: fixed` DOES honor
+   for first-row column sizing) sized to fit a full UUID, so the column
+   never needs to wrap OR overflow -- forcing `.table-scroll`'s existing
+   horizontal scroll if the container is too narrow for it plus the other
+   columns, the exact same mechanism as the per-table min-width above, just
+   applied per-column here. */
+.data-table th.col-nodeid { width: 300px; }
+.data-table td.col-nodeid { white-space: nowrap; }
+/* Second half of the same bug, found only after re-checking with a real
+   Xray import at a real narrower viewport (1000px) instead of trusting the
+   `.col-nodeid` fix alone: DevConsole's Parser Logs "Created At" column and
+   Subscription Center's Node List "Imported At" column both print the raw
+   ISO 8601 `createdAt` timestamp (e.g. "2026-07-06T17:34:16.036Z", 24
+   chars) with NO explicit width, so `table-layout: fixed` gave it the same
+   even, un-reserved share as every plain text column (~168px content box at
+   1000px viewport) -- but a 24-char string at this app's 13px monospace
+   font measures ~187px, so it silently wrapped via the pre-existing
+   `overflow-wrap: anywhere` on `.data-table td` (needed elsewhere for
+   Base64/long values), taking the WHOLE ROW to 2 lines even though the
+   Node ID cell itself was, by then, already correctly single-line. This is
+   why checking `scrollWidth > clientWidth` on individual cells during the
+   first diagnosis pass was a dead end: a `<td>` has no fixed height, so it
+   always grows to fit its own content -- `scrollHeight === clientHeight`
+   for EVERY cell in a row regardless of which one actually wrapped, since
+   they all inherit the row's final (tallest-cell) height. Measuring the
+   text's actual rendered width directly (not comparing scroll/client
+   metrics) is what exposed it. Same fix pattern as `.col-nodeid`: an
+   explicit `width` (`table-layout: fixed` honors first-row `width`, not
+   `min-width`) sized to fit the full timestamp with room to spare. */
+.data-table th.col-timestamp { width: 210px; }
+.data-table td.col-timestamp { white-space: nowrap; }
+/* Third bug in this same family (2026-07-07, real mobile screenshot):
+   `.col-nodeid`/`.col-timestamp` reserve real width for THEIR OWN columns,
+   but `table-layout: fixed` still divides the table's overall computed
+   width -- if that computed width is capped by an outdated per-table
+   `min-width` tier (the generic `:has(th:nth-child(N))` rules above, which
+   predate these two classes and don't know about them), the OTHER,
+   un-classed columns (e.g. Parser Logs' "Parser"/"Source Type") get
+   whatever is left over, which can be zero or negative on a narrow mobile
+   viewport where the tier's old budget is smaller than what the two
+   explicit-width columns alone already need (Parser Logs: 450px tier vs.
+   300px Node ID + 210px Created At = 510px+padding already over budget) --
+   a column truly given ~0px still renders its text, wrapping every single
+   character onto its own line (the "vertical letter stack" visual bug).
+   Fix: raise the min-width specifically for table shapes that combine a
+   known column count with these known-wide columns, using a MORE specific
+   `:has()` selector (real CSS specificity, not source order) so it wins
+   over the generic same-column-count tier above without touching tables
+   that don't have either special column. Values = the two columns' real
+   border-box width (`.col-nodeid` 320px, `.col-timestamp` 230px) + ~110px
+   per remaining column (the same average the generic tiers already use). */
+.data-table:has(th:nth-child(2)):has(th.col-nodeid) { min-width: 430px; }
+.data-table:has(th:nth-child(3)):has(th.col-nodeid) { min-width: 540px; }
+.data-table:has(th:nth-child(4)):has(th.col-nodeid) { min-width: 650px; }
+.data-table:has(th:nth-child(4)):has(th.col-nodeid):has(th.col-timestamp) { min-width: 770px; }
+.data-table:has(th:nth-child(12)):has(th.col-timestamp) { min-width: 1460px; }
+.data-table th {
+  text-align: start;
+  /* 12px (was 11.5px) + `--unct-text` (was `--unct-text-muted`, 2026-07-06
+     real legibility bug): `--unct-text-muted` is this file's token for
+     genuinely secondary text (`.hint`, captions, placeholders) -- a column
+     header is neither. Unlike a `.hint`, a user reads a table header
+     continuously while scanning many rows underneath it, so it needs the
+     SAME full-contrast ink as the data it labels, not a dimmer one; the
+     small uppercase/letter-spaced/bold styling already gives it a distinct
+     "label" look without needing a muted color on top. The font-size bump
+     is a minor legibility assist alongside the color fix -- verified against
+     the column min-widths computed two checkpoints ago (assets/css/theme.css
+     `.data-table:has(th:nth-child(N))`): those are generous per-column
+     minimums (e.g. Include 60px for a 7-char label), not the label's own
+     tight measured width, so 0.5px more per glyph does not push any column
+     past its budget or reintroduce the header-wrap bug that min-width fixed. */
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--unct-text);
+  padding-block: 10px;
+  padding-inline: 10px;
+  border-block-end: 1px solid var(--unct-divider);
+  /* Headers are short labels (e.g. "Port Check"/"بررسی پورت", "Latency"/
+     "تأخیر") that must stay on one line -- wrapping mid-word is the exact
+     visual bug reported. Data cells keep wrapping normally (long values
+     like addresses/tags DO need to wrap); only `td`'s pre-existing
+     `overflow-wrap: anywhere` below (for genuinely unbroken long strings
+     like Base64 data) is unaffected -- that rule is untouched. */
+  white-space: nowrap;
+}
+.data-table td {
+  padding-block: 10px;
+  padding-inline: 10px;
+  border-block-end: 1px solid var(--unct-glass2-bd);
+  font-weight: 500;
+  /* Long unbroken values (e.g. Extractor's Worker Encoded Data, Base64
+     strings with no natural break point) otherwise force the whole table
+     wider than its container instead of wrapping inside their own cell —
+     the same fix applied to `.kv-row dd` above, for the table equivalent. */
+  overflow-wrap: anywhere;
+}
+.data-table tr:last-child td {
+  border-block-end: none;
+}
+.data-table tr:hover td {
+  background: var(--unct-glass2);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding-block: 4px;
+  padding-inline: 10px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.tag--valid { background: var(--unct-ok-bg); border: 1px solid var(--unct-ok-bd); color: var(--unct-ok); }
+.tag--invalid { background: var(--unct-err-bg); border: 1px solid var(--unct-err-bd); color: var(--unct-err); }
+/* The four `ErrorSeverity` levels (Developer Console's Warnings & Errors):
+   "error" reuses `.tag--invalid` above (same color, same meaning) rather
+   than a redundant duplicate rule; "critical" is a bolder variant of the
+   same red for the one level above plain "error". */
+.tag--info { background: var(--unct-info-bg); border: 1px solid var(--unct-info-bd); color: var(--unct-info); }
+.tag--warning { background: var(--unct-warn-bg); border: 1px solid var(--unct-warn-bd); color: var(--unct-warn); }
+.tag--critical { background: var(--unct-err-bg); border: 1px solid var(--unct-err); color: var(--unct-err); font-weight: 800; }
+
+/* Subscription Center "Tag Nodes" (doc 03 §2.2) — the small "×" remove
+   button inside a `.tag--info` chip. Inherits the chip's own text color
+   rather than a fixed one, so it stays readable against every `.tag--*`
+   variant and both themes without a separate override. */
+.tag-remove {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  margin-inline-start: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.tag-remove:hover {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------
+ * Panel Grid (07-UI_UX_SYSTEM §4.3, Analyzer Screen redesign) — a
+ * symmetric, wrapping grid for screens with many equal-weight panels
+ * (Analyzer's nine analysis sections), as opposed to `.content-grid`'s
+ * fixed 1.6fr/1fr master-detail shape (built for Dashboard's specific
+ * layout, not a general-purpose grid). Reused instead of re-derived by
+ * any future screen with the same "many small cards" shape.
+ * ------------------------------------------------------------------- */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* `.data-table` modifier: centers badge/glyph cells (Analyzer's Platform &
+   Client Compatibility tables) instead of the default start-aligned text. */
+.data-table--center th,
+.data-table--center td {
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+ * Subscription Center redesign additions — a text `.input` (Search had
+ * no styled text-input class yet, only `.select`/`.code-textarea`), a
+ * `.btn--sm` modifier for the many compact per-row actions this screen's
+ * Node List needs (Test/Check/Lookup/Save as Template), and `.field` for
+ * inline "Label: control" pairs (Filter/Sort's protocol+validity,
+ * field+direction). All three are generic enough for later screens to
+ * reuse rather than re-derive.
+ * ------------------------------------------------------------------- */
+.input {
+  padding-block: 9px;
+  padding-inline: 14px;
+  border: 1px solid var(--unct-glass-bd);
+  border-radius: 10px;
+  background: var(--unct-glass2);
+  font: inherit;
+  font-size: 13px;
+  color: var(--unct-text);
+}
+.input:focus {
+  outline: 2px solid var(--unct-acc1);
+  outline-offset: -2px;
+}
+.input::placeholder {
+  color: var(--unct-text-muted);
+}
+/* Compact variant for dense per-row contexts (Subscription Center's Tag
+   input, one per Node List row) — same `.input` base, smaller footprint. */
+.input--sm {
+  padding-block: 5px;
+  padding-inline: 10px;
+  font-size: 12px;
+  width: 140px;
+}
+
+.btn--sm {
+  padding-block: 6px;
+  padding-inline: 12px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+
+.field {
+  /* `min-width: 0` overrides the flex default of `min-width: auto`, which
+     otherwise refuses to shrink a flex item below its content's intrinsic
+     min-size (the oversized <select> above) — without this, `.select`'s
+     own `max-width: 100%` has nothing to shrink against inside a wrapping
+     `.form-actions` row. */
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--unct-text-muted);
+}
+
+/* ---------------------------------------------------------------------
+ * Export Center redesign additions — a responsive grid of small QR-code
+ * cards, and a rounded/bordered frame for the sandboxed HTML Report
+ * `<iframe>` preview. `.qr-card` is combined with `.glass-panel` in markup
+ * (`class="qr-card glass-panel"`, same composition technique as
+ * `.hero-band`/`.stat-card`), so `.qr-card > *` lifts its direct children
+ * (svg/figcaption/button) above the glass panel's own decorative
+ * ::before/::after overlays — the same z-index fix documented on `.hint`
+ * above, needed here because none of this card's children are nested
+ * inside an already-elevated wrapper the way most other panels' content is.
+ * ------------------------------------------------------------------- */
+.qr-grid {
+  /* `auto-fit` (not `auto-fill`, same fix `.panel-grid` above already
+     uses): `auto-fill` always reserves as many 160px tracks as the
+     container's width allows, even ones with no real item to fill --
+     with only 1-2 QR cards on a wide desktop panel, those phantom empty
+     tracks pinned the real card(s) to the left instead of letting them
+     take the container's actual available width. `auto-fit` collapses
+     the empty tracks so existing items size into the freed space. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+.qr-card {
+  /* `auto-fit` alone only removes the phantom empty tracks -- it doesn't
+     cap how wide a *lone* track can stretch, so on a wide desktop panel
+     with just 1 real card, that single 1fr track (and this card filling
+     it) would otherwise stretch to the panel's full width. Capped
+     independently of the `<svg>`'s own 220px max-width below so the
+     whole card (padding + figcaption + button, not just the QR image)
+     stays a compact, consistent size regardless of node count. */
+  max-width: 240px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.qr-card > * {
+  position: relative;
+  z-index: 1;
+}
+.qr-card svg {
+  /* The <svg>'s own width/height attrs (ui/export/export-screen.tsx) are
+     an absolute pixel size derived from moduleCount, entirely independent
+     of `.qr-card`'s actual (grid-driven, auto-fill) width -- nothing
+     constrained that intrinsic size to the card, so the code rendered as
+     an oversized square regardless of viewport. The SVG's own `viewBox`
+     already makes it freely scalable; this just lets it. Downloaded SVG
+     files are unaffected -- `handleDownloadQr` serializes markup from
+     `qrToSvgMarkup()` directly, not this rendered element's outerHTML. */
+  width: 100%;
+  height: auto;
+  max-width: 220px;
+  border-radius: 8px;
+}
+.qr-card figcaption {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--unct-text-muted);
+}
+
+.embed-frame {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 400px;
+  border: 1px solid var(--unct-glass-bd);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+/* ---------------------------------------------------------------------
+ * Radio Card group (07-UI_UX_SYSTEM §2, Settings Screen redesign) — a
+ * clickable "pill" wrapping a native radio input, for small mutually-
+ * exclusive choice sets (currently just Theme; reusable by any future
+ * settings-like control). `:has(input:checked)` reacts to the native
+ * input's own state declaratively — no JS-computed class string needed,
+ * so this stays a pure visual restyle with zero new logic.
+ * ------------------------------------------------------------------- */
+/* A plain reset, not `display: flex` — a `<legend>` inside a flex-formatted
+   `<fieldset>` becomes a flex item itself in most engines and sits inline
+   with the options instead of above them, so the actual options row is a
+   separate child (`.form-actions`, already flex/wrap/gap) instead. */
+.radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.radio-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 6px;
+  padding-inline: 16px;
+  border-radius: 99px;
+  border: 1px solid var(--unct-glass2-bd);
+  background: var(--unct-glass2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--unct-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+/* Active segment: handoff segmented-control style — pill-active surface +
+   inset top highlight, not a brand-colored ring. */
+.radio-card:has(input:checked) {
+  background: var(--unct-pill-active);
+  box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  color: var(--unct-text);
+}
+
+/* ---------------------------------------------------------------------
+ * Settings row + Toggle switch (ADR-030 Settings Behavioral Toggles) — an
+ * icon-tile + title/subtitle + control row, one per Settings screen panel
+ * child, matching the handoff's Strict Validation/Auto-repair/Deduplicate
+ * rows. The switch is a real checkbox visually hidden under a track/knob
+ * pair (`:checked ~` reacts to the native input's own state, same
+ * declarative pattern `.radio-card:has(input:checked)` already uses above)
+ * — keyboard/screen-reader semantics stay native, nothing is a fake `<div>`
+ * button standing in for an `<input>`.
+ * ------------------------------------------------------------------- */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-block: 17px;
+  padding-inline: 22px;
+  border-bottom: 1px solid var(--unct-glass2-bd);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-row-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: var(--unct-acc-soft);
+  border: 1px solid var(--unct-acc-bd);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.settings-row-icon img {
+  width: 22px;
+  height: 26px;
+  object-fit: contain;
+}
+.settings-row-title {
+  color: var(--unct-text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.settings-row-sub {
+  color: var(--unct-text-muted);
+  font-size: 11px;
+  margin-block-start: 2px;
+}
+.settings-row-action {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.toggle-switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass2-bd);
+  transition: background 0.15s;
+  /* Purely decorative — the real hit target is the checkbox underneath
+     (`inset: 0` on `.toggle-switch input` above), so clicks/taps must pass
+     straight through instead of landing on this track. */
+  pointer-events: none;
+}
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+  pointer-events: none;
+}
+.toggle-switch input:checked ~ .toggle-track {
+  background: var(--unct-grad);
+}
+.toggle-switch input:checked ~ .toggle-knob {
+  transform: translateX(18px);
+}
+:root[dir="rtl"] .toggle-switch input:checked ~ .toggle-knob {
+  transform: translateX(-18px);
+}
+.settings-row-wipe {
+  border-radius: 10px;
+  background: var(--unct-err-bg);
+  border: 1px solid var(--unct-err-bd);
+  color: var(--unct-err);
+  font-size: 12px;
+  font-weight: 600;
+  padding-block: 8px;
+  padding-inline: 18px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* =======================================================================
+ * Dark Mode residue — with the handoff's per-theme token tables now living
+ * in the `:root[data-theme=…]` blocks at the top of this file, every
+ * component rule above is theme-aware through the tokens it references,
+ * and the old wall of literal-color dark overrides is gone. Only the two
+ * rules whose values genuinely cannot be expressed through the shared
+ * tokens remain below (the sticky table header's occlusion background and
+ * the scroll FAB's, both of which need a near-opaque theme-base tint, not
+ * a glass token).
+ * ===================================================================== */
+
+/* Sticky virtual-table header (see the long light-mode comment above):
+   dark occlusion background re-based on the handoff's new #0A0D1C canvas. */
+:root[data-theme="dark"] .table-scroll--virtual .data-table th {
+  background: rgba(10, 13, 28, 0.80);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+/* Scroll-to-Top/Bottom FAB (`ui/components/scroll-fab.tsx`) — fixed at the
+   physical bottom-left corner in BOTH ltr/rtl (`left`, not a logical
+   inset-inline-start; see the component's own header comment for why).
+   Translucent + blur so passing content reads through hazily; the exact
+   opacity pair (Light 0.40 / Dark 0.80 at blur(16px)) was set by explicit
+   user direction after several tuning rounds — do not retune casually. */
+.scroll-fab {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.40);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  color: var(--unct-text);
+  box-shadow: 0 8px 16px -6px rgba(124, 92, 252, 0.45);
+  transition: transform 0.15s;
+}
+.scroll-fab:hover {
+  transform: translateY(-2px);
+}
+:root[data-theme="dark"] .scroll-fab {
+  background: rgba(10, 13, 28, 0.80);
+}
+/* Below the handoff's 760px breakpoint a fixed glass dock occupies the
+   bottom 14–80px band — lift the FAB above it. */
+@media (max-width: 760px) {
+  .scroll-fab {
+    bottom: 96px;
+  }
+}
+
+/* =======================================================================
+ * Handoff chrome — splash screen, mobile glass dock, "More" bottom sheet,
+ * and the offline footer badge (README §Chrome). Rendered by ui/main.tsx
+ * and ui/components/nav.tsx; pure presentation, no screen logic.
+ * ===================================================================== */
+
+@keyframes unctLoad {
+  0% { width: 8%; }
+  60% { width: 74%; }
+  100% { width: 96%; }
+}
+@keyframes unctFadeOut {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: var(--unct-bg);
+  background-image: var(--unct-bg-image);
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  animation: unctFadeOut 1.6s ease forwards;
+}
+.splash img {
+  width: 230px;
+  object-fit: contain;
+}
+.splash__bar {
+  width: 210px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--unct-track);
+  overflow: hidden;
+}
+.splash__bar-fill {
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #8B5CF6, #0EA5E9);
+  animation: unctLoad 1.4s ease-out forwards;
+}
+.splash__label {
+  color: var(--unct-text-faint);
+  font-size: 10px;
+  letter-spacing: 3px;
+  font-family: var(--unct-font-mono);
+  direction: ltr;
+}
+
+/* Centered footer status pill: "Offline · everything stays on your
+   device" (README §Chrome, footer badge). */
+.offline-badge {
+  width: fit-content;
+  margin-inline: auto;
+  margin-block-start: 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 99px;
+  background: var(--unct-ok-bg);
+  border: 1px solid var(--unct-ok-bd);
+  padding: 7px 16px;
+}
+.offline-badge img {
+  width: 13px;
+  height: 17px;
+  object-fit: contain;
+}
+.offline-badge span {
+  color: var(--unct-text-muted);
+  font-size: 11.5px;
+}
+
+/* Mobile floating glass dock (<760px): fixed 14px from edges/bottom,
+   5-col grid (4 main sections + More). Hidden on desktop; the top pill
+   nav's tab strip is hidden on mobile in exchange (see .app-nav rules). */
+.mobile-dock {
+  display: none;
+}
+.more-sheet-backdrop,
+.more-sheet {
+  display: none;
+}
+@media (max-width: 760px) {
+  .app-nav__scroll,
+  .app-nav__divider {
+    display: none;
+  }
+  /* Mobile header (<760px): the tab strip is gone (replaced by
+     .mobile-dock below), so this is just brand + language/theme toggles —
+     the glass-panel "pill" chrome that makes sense around a row of tabs
+     reads as an odd floating capsule around two icons, so it's dropped
+     here only (desktop's .app-nav keeps it untouched). Logo at the
+     writing-direction start, toggles at the end — `justify-content:
+     space-between` is already direction-aware, so this mirrors for RTL
+     with no extra rule. */
+  .app-nav {
+    gap: 0;
+    width: 100%;
+    justify-content: space-between;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+  }
+  /* Touch target floor (44x44) for the language/theme quick-toggle
+     buttons — the pill nav's own tab buttons don't need this (desktop-only
+     there), just these two icon-only mobile controls. */
+  .app-nav__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* Larger lockup on mobile only (desktop keeps the 58px default above) --
+     compared 68/74/80px against real screenshots (both themes, both
+     languages) against the dashboard hero card right below; 80px is the
+     biggest of the three with zero overlap/crowding either side. */
+  .app-nav__brand img {
+    height: 80px;
+  }
+  .mobile-dock {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    z-index: 60;
+    border-radius: 24px;
+    background: var(--unct-glass);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-glass-hi), 0 14px 36px rgba(0, 0, 0, 0.4);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 13px 8px;
+    align-items: center;
+  }
+  .mobile-dock__item {
+    border: none;
+    background: transparent;
+    text-align: center;
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 0;
+    cursor: pointer;
+    color: var(--unct-text-faint);
+  }
+  .mobile-dock__item--active {
+    color: var(--unct-text);
+    font-weight: 700;
+  }
+  .more-sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 18, 0.45);
+    z-index: 40;
+    border: none;
+    padding: 0;
+  }
+  .more-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    border-radius: 30px 30px 0 0;
+    background: var(--unct-glass);
+    backdrop-filter: blur(36px) saturate(180%);
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    border-top: 1px solid var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-glass-hi), 0 -20px 60px rgba(0, 0, 0, 0.5);
+    padding: 14px 20px 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .more-sheet__handle {
+    width: 44px;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--unct-divider);
+    align-self: center;
+  }
+  .more-sheet__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .more-sheet__header img {
+    width: 26px;
+    height: 28px;
+    object-fit: contain;
+  }
+  .more-sheet__header span {
+    color: var(--unct-text);
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .more-sheet__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .more-sheet__item {
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    cursor: pointer;
+    background: var(--unct-glass2);
+    border: 1px solid var(--unct-glass2-bd);
+    font: inherit;
+    color: var(--unct-text);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: start;
+  }
+  .more-sheet__item--active {
+    background: var(--unct-pill-active);
+    border-color: var(--unct-glass-bd);
+    box-shadow: inset 0 1px 0 var(--unct-pill-hi);
+  }
+}

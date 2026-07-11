@@ -23,12 +23,12 @@ Minimal Dependencies · Maximum Control
 | `htm` (اختیاری) | جایگزین JSX بدون نیاز به Build Step | ✅ تأییدشده (همراه Preact) |
 | js-yaml | YAML Parsing/Serialization | تأییدشده (نسخه‌ی قبلی) |
 | Dexie Adapter (اختیاری) | لایه‌ی کمکی روی IndexedDB | تأییدشده (نسخه‌ی قبلی) |
-| QRCode Generator | تولید QR Code | تأییدشده (نسخه‌ی قبلی) |
-| ZIP Utility | ساخت/خواندن فایل ZIP | تأییدشده (نسخه‌ی قبلی) |
-| **DOMPurify** | HTML Sanitization / XSS Protection | 🔴 **REQUIRED** *(اصلاح‌شده — بازبینی اولویت ۳؛ Used In: Export Engine, HTML Preview, Report Rendering — اگر Export HTML و Import داده‌ی خارجی وجود دارد، این Dependency اختیاری نیست)* |
+| QRCode Generator | تولید QR Code | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `uqr@0.1.3` (ADR-017، Phase 9 Export Engine — جایگزین `qrcode-generator` که به‌خاطر معماری غیرقابل‌Tree-Shake، در همان ADR کنار گذاشته شد)** |
+| ZIP Utility | ساخت/خواندن فایل ZIP | تأییدشده (نسخه‌ی قبلی) — **پکیج مشخص: `fflate@0.8.3` (ADR-017، Phase 9 Export Engine)** |
+| **DOMPurify** | HTML Sanitization / XSS Protection | 🔴 **REQUIRED** — **پکیج مشخص: `dompurify@3.4.11` (ADR-018، Phase 9 Export Engine — HTML Report)**؛ مصرف به‌صورت دو لایه: `escapeHtml()` دستی روی هر مقدار + یک پاس `DOMPurify.sanitize(..., {WHOLE_DOCUMENT:true})` روی کل سند *(اصلاح‌شده — بازبینی اولویت ۳؛ Used In: Export Engine, HTML Preview, Report Rendering — اگر Export HTML و Import داده‌ی خارجی وجود دارد، این Dependency اختیاری نیست)* |
 | **Testing Framework** | Automated Testing | ⏳ Phase 1 Decision Required — **Candidates:** Vitest, Jest, Web Test Runner *(بازبینی اولویت ۳؛ هنوز انتخاب نهایی نشده). 💭 یادآوری (بازبینی نهایی): این دومین بار است که `Vitest` به‌عنوان گزینه‌ی برتر پیشنهاد می‌شود (سازگار با ESM، سریع) — همچنان تصمیم نهایی با مهدی است، نه یک انتخاب خودکار.* |
 | **Preact Testing Library** | Component Testing | ⏳ Phase 9 Decision Required *(جدید — بازبینی نهایی؛ همراه با انتخاب Testing Framework اصلی تصمیم‌گیری می‌شود)* |
-| یک کتابخانه‌ی Virtual List سبک | رندر لیست‌های ۱۰,۰۰۰+ آیتمی (طبق سند 13) | ⏳ نیاز به انتخاب دقیق در Phase 9 — **باید Actively Maintained باشد** (پیشنهاد بازبینی؛ بعضی کتابخانه‌های Virtual Scroll سال‌هاست آپدیت نشده‌اند) |
+| Virtual List | رندر لیست‌های ۱۰,۰۰۰+ آیتمی (طبق سند 13) | ✅ **حل‌شده (2026-07-05، ADR-029) — پکیج مشخص: `@tanstack/virtual-core@3.17.3`**، مصرف‌شده از طریق یک Hook اختصاصی Preact (`ui/components/use-virtualizer.ts`) — بدون نیاز به `preact/compat` (این پکیج به هیچ فریم‌ورکی، حتی React، وابسته نیست؛ `virtua` و `preact-virtual-list` به همین دلیل/به‌خاطر بازبینی قدیمی رد شدند — جزئیات کامل در ADR-029). ابتدا در Subscription Center's Node List (`NodeTable`) به‌کار رفت، پس از کرش واقعی تب با یک وارد‌سازی ۵۰۰۰-۶۰۰۰ نودی |
 | Comlink (Google) | تسهیل ارتباط Worker ↔ Main Thread | 🔸 **NOT Approved Yet** *(جدید — بازبینی نهایی؛ پیشنهاد شد ولی هنوز تأیید نشده — Web Worker با `postMessage` خام طبق سند 10 از قبل کار می‌کند؛ Comlink فقط Syntactic Sugar اضافه می‌کند، نه قابلیت جدید. باید قبل از Phase 5 طبق Rule بخش ۵ همین سند بررسی شود، نه پیش‌فرض پذیرفته شود)* |
 
 ---
@@ -70,10 +70,10 @@ Minimal Dependencies · Maximum Control
 
 | سقف | مقدار |
 |---|---|
-| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) |
-| کل Dependencyهای خارجی (Preact + YAML + ZIP + QR + Virtual List + ...) | ≤ 150KB (gzip) |
+| UI Layer (Preact + Componentها) | ≤ 50KB (gzip) — **Baseline اندازه‌گیری‌شده (2026-07-05، پس از ADR-029 — Virtual List): 105050 بایت (102.59 KiB)، تأییدشده توسط مهدی به‌عنوان Overage پذیرفته‌شده. این عدد شامل دو بخش است: (۱) یک Drift ۳۰۱۱۶ بایتی که از Checkpointهای بین ADR-018 (۶۷۵۹۴ بایت) و این مرحله (Template/Builder/Recent Exports/Alternative Candidates/Dedup-Split-Tag-Merge/رشد فرهنگ‌لغت i18n) انباشته شده بود و در این مرحله هنگام اندازه‌گیری کشف شد — نه ناشی از Virtual List، (۲) Overage جدید همین Checkpoint: +۷۳۴۰ بایت از `@tanstack/virtual-core` (Probe مجزا: ۶۷۲۰ بایت). دلیل پذیرش: رفع یک کرش واقعی تب با داده‌ی واقعی. جزئیات کامل در `ADR-029-VIRTUAL-LIST-TANSTACK.md`** |
+| کل Dependencyهای خارجی (Preact + YAML + ZIP + QR + HTML Sanitizer + Virtual List + ...) | ≤ 150KB (gzip) — با فاصله‌ی زیاد رعایت می‌شود (105050 بایت ≈ 102.6 KiB، کاملاً زیر ۱۵۰KB) |
 
-**قانون:** قبل از هر Release، اندازه‌ی Bundle نهایی باید اندازه‌گیری شود (مثلاً با `source-map-explorer` یا ابزار مشابه در زمان توسعه، نه به‌عنوان Runtime Dependency). عبور از سقف بدون تأیید معماری مجاز نیست.
+**قانون:** قبل از هر Release، اندازه‌ی Bundle نهایی باید اندازه‌گیری شود (مثلاً با `source-map-explorer` یا ابزار مشابه در زمان توسعه، نه به‌عنوان Runtime Dependency). عبور از سقف بدون تأیید معماری مجاز نیست — جزئیات این تأیید برای Overageهای فعلی در `ADR-017-EXPORT-DEPENDENCIES.md`'s Addendum (fflate/uqr)، `ADR-018-HTML-REPORT-DOMPURIFY.md` (dompurify) و `ADR-029-VIRTUAL-LIST-TANSTACK.md` (`@tanstack/virtual-core` + Drift کشف‌شده) ثبت شده. از این Checkpoint به بعد، Checkpointهای جدید باید نسبت به Baseline ۱۰۵۰۵۰ بایت (نه اعداد قدیمی‌تر) سنجیده شوند؛ هر Overage جدید نسبت به این Baseline هم باز نیاز به تأیید معماری مجزا دارد.
 
 ---
 
@@ -139,7 +139,10 @@ Minimal Dependencies · Maximum Control
 
 | Field | Value |
 |---|---|
-| نسخه | v2.6 |
+| نسخه | v2.9 |
+| اصلاحات نسبت به v2.8 | (2026-07-05، رفع کرش بحرانی Subscription Center با ۵۰۰۰+ نود) ردیف Virtual List از ⏳ به ✅: `@tanstack/virtual-core@3.17.3`، مصرف‌شده از طریق `ui/components/use-virtualizer.ts` (بدون نیاز به `preact/compat`) — جزئیات کامل انتخاب/رد رقبا (`virtua`، `preact-virtual-list`) در `ADR-029-VIRTUAL-LIST-TANSTACK.md`؛ به‌روزرسانی Baseline بخش ۲.۱ به ۱۰۵۰۵۰ بایت، شامل شفاف‌سازی یک Drift ۳۰۱۱۶ بایتی از Checkpointهای قبلی که در این اندازه‌گیری کشف شد |
+| اصلاحات نسبت به v2.7 | (Phase 9 Export Engine — تکمیل) ثبت پکیج مشخص برای ردیف از‌قبل‌تأییدشده‌ی DOMPurify: `dompurify@3.4.11` (HTML Report Export) — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-018-HTML-REPORT-DOMPURIFY.md`؛ به‌روزرسانی Baseline بخش ۲.۱ به ۶۷۵۹۴ بایت (هر سه Dependency فاز Export Engine: fflate+uqr+dompurify) |
+| اصلاحات نسبت به v2.6 | (Phase 9 Export Engine) ثبت پکیج مشخص برای دو ردیف از‌قبل‌تأییدشده‌ی عمومی: `fflate@0.8.3` برای ZIP Utility، `uqr@0.1.3` برای QRCode Generator (جایگزین `qrcode-generator@2.0.4` که به‌خاطر معماری غیرقابل‌Tree-Shake کنار گذاشته شد) — طبق Dependency Lock Rule (بخش ۶.۲)، با جزئیات کامل در `ADR-017-EXPORT-DEPENDENCIES.md` |
 | اصلاحات نسبت به v2.5 | (بازبینی نهایی) ثبت یادآوری دومین پیشنهاد Vitest برای Testing Framework — بدون تصمیم‌گیری خودسرانه |
 | اصلاحات نسبت به v2.4 | (بازبینی نهایی) افزودن Bundle Size Budget (Section 2.1)؛ افزودن Preact Testing Library به Candidate List؛ ثبت Comlink به‌عنوان Dependency پیشنهادی-ولی-تأییدنشده (نیاز به بررسی قبل از Phase 5) |
 | سند بعدی | `15-BLUEPRINT_TESTING_FRAMEWORK` |

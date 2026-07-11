@@ -1,0 +1,129 @@
+/**
+ * App entry point (ADR-014's Build Pipeline). Renders Phase 9's real
+ * screens behind a minimal, dependency-free screen switcher — plain Preact
+ * state, not a router library (adding one would be a new 14-DEPENDENCY_
+ * POLICY decision, out of scope for wiring up the second screen). Rule 11
+ * direction only: `ui/` may import `core/`; `core/` never imports `ui/` or
+ * Preact.
+ */
+import { render } from "preact";
+import { useEffect, useState } from "preact/hooks";
+import { DashboardScreen } from "./dashboard/dashboard-screen.js";
+import { ConverterScreen } from "./converter/converter-screen.js";
+import { AnalyzerScreen } from "./analyzer/analyzer-screen.js";
+import { SubscriptionScreen } from "./subscription/subscription-screen.js";
+import { ExtractorScreen } from "./extractor/extractor-screen.js";
+import { ExportScreen } from "./export/export-screen.js";
+import { SettingsScreen } from "./settings/settings-screen.js";
+import { DevConsoleScreen } from "./devconsole/devconsole-screen.js";
+import { AppNav } from "./components/nav.js";
+import { ScrollFab } from "./components/scroll-fab.js";
+import { createTranslator } from "../core/i18n/translator.js";
+import { settingsStore, useSettingsState } from "./store/use-settings-state.js";
+import { parserStore } from "./store/use-parser-state.js";
+import { templateLibraryStore } from "./store/use-template-state.js";
+
+type Screen =
+  | "dashboard" | "converter" | "analyzer" | "subscription" | "extractor"
+  | "export" | "settings" | "devconsole";
+
+/**
+ * Splash screen (handoff README §Chrome): a fixed brand overlay with the
+ * lockup + animated loading bar, fading out via CSS keyframes and
+ * unmounting at 1.6s. Runs once per page load (this component mounts once
+ * at app start); in-app navigation never re-triggers it.
+ */
+function Splash() {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setDone(true), 1600);
+    return () => clearTimeout(timer);
+  }, []);
+  if (done) return null;
+  return (
+    <div class="splash">
+      <img src="assets/icons/unct-lockup.png" alt="UNCT" />
+      <div class="splash__bar">
+        <div class="splash__bar-fill" />
+      </div>
+      <div class="splash__label">LOADING…</div>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState<Screen>("dashboard");
+  const t = createTranslator(settingsStore);
+
+  // Theme Engine (07-UI_UX_SYSTEM §2): applied app-wide here, not inside
+  // SettingsScreen itself, so it stays in effect (and live-syncs with the OS
+  // under "auto") regardless of which screen is currently mounted.
+  //
+  // This effect alone used to be the ONLY place `data-theme` got set --
+  // but effects run after first paint, so the frame before this ran always
+  // had no attribute at all, meaning every var(--unct-*) in theme.css was
+  // briefly invalid (the Splash's own background went transparent and the
+  // just-mounted Dashboard showed through it for an instant). index.html
+  // now carries an inline <script> in <head> that sets the same attribute
+  // synchronously before that first paint, mirroring settings-state.js's
+  // resolveTheme() logic -- this effect is still needed as the ongoing
+  // "auto" OS-sync (that script only ever handles the first frame).
+  const { resolvedTheme, resolvedLanguage } = useSettingsState();
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
+  }, [resolvedTheme]);
+
+  // Language (ADR-019-BILINGUAL-I18N-ARCHITECTURE Decision 2/07-UI_UX_SYSTEM
+  // §9): `lang`/`dir` are page-wide attributes, applied here for the same
+  // reason as Theme above — they must stay correct regardless of which
+  // screen is mounted. This phase wires the attribute only; no screen's text
+  // is connected to the Dictionary yet (infrastructure-only scope).
+  useEffect(() => {
+    document.documentElement.lang = resolvedLanguage;
+    document.documentElement.dir = resolvedLanguage === "fa" ? "rtl" : "ltr";
+  }, [resolvedLanguage]);
+
+  // Critical Fix #3: every parserStore mutation already write-throughs to
+  // core/storage/ in the background — this is the read-side counterpart,
+  // loading whatever was persisted in a prior session once on mount instead
+  // of starting empty (closes 09-ROADMAP Phase 8's "persist after browser
+  // restart" Exit Condition).
+  useEffect(() => {
+    parserStore.hydrate();
+    // Same "load whatever was persisted last session" read-side counterpart
+    // as parserStore.hydrate() above, for the cross-session Template Library
+    // (P12-8) — its own IndexedDB database, independent of the working set.
+    templateLibraryStore.hydrate();
+  }, []);
+
+  return (
+    <div>
+      <AppNav current={screen} onNavigate={(next) => setScreen(next as Screen)} />
+      {screen === "dashboard" ? (
+        <DashboardScreen onNavigate={(next) => setScreen(next as Screen)} />
+      ) : screen === "converter" ? (
+        <ConverterScreen />
+      ) : screen === "analyzer" ? (
+        <AnalyzerScreen />
+      ) : screen === "subscription" ? (
+        <SubscriptionScreen />
+      ) : screen === "extractor" ? (
+        <ExtractorScreen />
+      ) : screen === "export" ? (
+        <ExportScreen />
+      ) : screen === "settings" ? (
+        <SettingsScreen />
+      ) : (
+        <DevConsoleScreen />
+      )}
+      <div class="offline-badge">
+        <img src="assets/icons/ic-lock.png" alt="" />
+        <span>{t("common.offlineBadge")}</span>
+      </div>
+      <ScrollFab />
+      <Splash />
+    </div>
+  );
+}
+
+render(<App />, document.getElementById("app")!);

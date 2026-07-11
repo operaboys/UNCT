@@ -1,0 +1,448 @@
+// @vitest-environment jsdom
+/**
+ * Settings State (core/store/settings-state.js, Theme Engine — 07-UI_UX_SYSTEM
+ * §2 — plus Language, ADR-019-BILINGUAL-I18N-ARCHITECTURE Decision 2) tests.
+ * Run under jsdom so `createLocalAdapter()`'s DEFAULT engine is a REAL
+ * `localStorage` (jsdom implements it fully) — the same "exercise the real
+ * default integration, not a mock" rigor `tests/storage/node-store.test.js`
+ * already applies to `createIdbAdapter()` via `fake-indexeddb/auto`. Each test
+ * gets its own uniquely-prefixed `createLocalAdapter` (mirroring that suite's
+ * `freshDbName()`) so tests never see each other's persisted keys.
+ *
+ * jsdom has no `matchMedia` implementation at all (confirmed: `typeof
+ * window.matchMedia === "undefined"`, unlike `localStorage`) — there is no
+ * devDependency that polyfills it the way `fake-indexeddb` polyfills
+ * `indexedDB`, so it is always injected here via `options.matchMedia`, never
+ * left to the (nonexistent) global default. `navigator.language` DOES exist
+ * in jsdom, but its exact default locale is an implementation detail of the
+ * jsdom version in use, not something a test should depend on — so
+ * `options.getNavigatorLanguage` is always injected here too, for the same
+ * determinism reason.
+ */
+import { describe, it, expect, vi } from "vitest";
+import { createSettingsStore } from "../../core/store/settings-state.js";
+import { createLocalAdapter } from "../../core/storage/local-adapter.js";
+
+let prefixCounter = 0;
+/** A fresh, never-reused localStorage key prefix per test. */
+function freshPrefix() {
+  prefixCounter += 1;
+  return `unct-test-${prefixCounter}:`;
+}
+
+/**
+ * A real, controllable fake `matchMedia` — no real implementation exists in
+ * jsdom to polyfill, so this stands in for the OS-level Web Platform API.
+ * @param {boolean} initialMatches
+ */
+function fakeMatchMedia(initialMatches) {
+  /** @type {(() => void) | undefined} */
+  let handler;
+  const mql = {
+    matches: initialMatches,
+    addEventListener(/** @type {string} */ event, /** @type {() => void} */ cb) {
+      handler = cb;
+    },
+    removeEventListener(/** @type {string} */ event, /** @type {() => void} */ cb) {
+      if (handler === cb) handler = undefined;
+    },
+  };
+  return {
+    matchMedia: () => mql,
+    /** Simulates the OS theme changing, firing the registered `change` listener (if any). */
+    fireSystemChange(/** @type {boolean} */ nextMatches) {
+      mql.matches = nextMatches;
+      handler?.();
+    },
+    hasListener: () => handler !== undefined,
+  };
+}
+
+/**
+ * A controllable fake `navigator.language` getter — see header comment above.
+ * @param {string} locale
+ */
+function fakeNavigatorLanguage(locale) {
+  return () => locale;
+}
+
+describe("createSettingsStore — defaults", () => {
+  it("defaults to \"auto\" choice with no persisted value, resolved from the injected system preference", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(true);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    expect(store.getState()).toEqual({
+      themeChoice: "auto", resolvedTheme: "dark",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+
+  it("resolves \"auto\" to \"light\" when the system preference does not match dark", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    expect(store.getState()).toEqual({
+      themeChoice: "auto", resolvedTheme: "light",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+
+  it("uses the REAL default createLocalAdapter() (real jsdom localStorage), not just an injected one", () => {
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ matchMedia });
+    try {
+      expect(store.getState().themeChoice).toBe("auto");
+    } finally {
+      store.close();
+      // Clean up the real, shared default-prefixed key so other tests/files are unaffected.
+      createLocalAdapter().remove("theme");
+    }
+  });
+});
+
+describe("createSettingsStore — persistence (real localStorage round-trip)", () => {
+  it("reads back a previously persisted choice on a fresh store instance (browser-restart proof)", () => {
+    const prefix = freshPrefix();
+    const { matchMedia } = fakeMatchMedia(true);
+    const getNavigatorLanguage = fakeNavigatorLanguage("en-US");
+
+    const before = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    before.setThemeChoice("light");
+    before.close();
+
+    const after = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    expect(after.getState()).toEqual({
+      themeChoice: "light", resolvedTheme: "light",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    after.close();
+  });
+
+  it("ignores a corrupted/unrecognized persisted value and falls back to the \"auto\" default", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    adapter.set("theme", "not-a-real-choice");
+    const { matchMedia } = fakeMatchMedia(true);
+
+    const store = createSettingsStore({ adapter, matchMedia });
+    expect(store.getState().themeChoice).toBe("auto");
+    store.close();
+  });
+});
+
+describe("createSettingsStore — setThemeChoice", () => {
+  it("setThemeChoice(\"dark\") updates state and persists through the adapter", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setThemeChoice("dark");
+
+    expect(store.getState()).toEqual({
+      themeChoice: "dark", resolvedTheme: "dark",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    expect(adapter.get("theme")).toBe("dark");
+    store.close();
+  });
+
+  it("an explicit \"dark\"/\"light\" choice ignores the system preference entirely", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(true); // system says dark
+    const store = createSettingsStore({ adapter, matchMedia });
+
+    store.setThemeChoice("light");
+
+    expect(store.getState().resolvedTheme).toBe("light");
+    store.close();
+  });
+
+  it("notifies subscribers on every change", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.setThemeChoice("dark");
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      themeChoice: "dark", resolvedTheme: "dark",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+});
+
+describe("createSettingsStore — \"Auto Mode\"/\"System Sync\" live tracking", () => {
+  it("while choice is \"auto\", a live OS preference change updates resolvedTheme", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia, fireSystemChange } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    expect(store.getState().resolvedTheme).toBe("light");
+
+    fireSystemChange(true);
+
+    expect(store.getState()).toEqual({
+      themeChoice: "auto", resolvedTheme: "dark",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+
+  it("an OS preference change is ignored while an explicit (non-auto) choice is active", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia, fireSystemChange } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    store.setThemeChoice("dark");
+
+    fireSystemChange(true); // system "changes" to dark too, but choice is the explicit "dark", not "auto"
+    fireSystemChange(false);
+
+    expect(store.getState()).toEqual({
+      themeChoice: "dark", resolvedTheme: "dark",
+      languageChoice: "auto", resolvedLanguage: "en",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+
+  it("close() unsubscribes from the OS media query", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia, hasListener } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia });
+    expect(hasListener()).toBe(true);
+
+    store.close();
+
+    expect(hasListener()).toBe(false);
+  });
+});
+
+describe("createSettingsStore — language defaults", () => {
+  it("defaults to \"auto\" choice with no persisted value, resolved from the injected navigator.language", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("fa-IR") });
+
+    expect(store.getState().languageChoice).toBe("auto");
+    expect(store.getState().resolvedLanguage).toBe("fa");
+    store.close();
+  });
+
+  it("resolves \"auto\" to \"en\" for any non-Persian locale", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("de-DE") });
+
+    expect(store.getState().resolvedLanguage).toBe("en");
+    store.close();
+  });
+
+  it("resolves \"auto\" to \"en\" when navigator.language is unavailable", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: () => undefined });
+
+    expect(store.getState().resolvedLanguage).toBe("en");
+    store.close();
+  });
+});
+
+describe("createSettingsStore — language persistence (real localStorage round-trip)", () => {
+  it("reads back a previously persisted language choice on a fresh store instance", () => {
+    const prefix = freshPrefix();
+    const { matchMedia } = fakeMatchMedia(false);
+    const getNavigatorLanguage = fakeNavigatorLanguage("en-US");
+
+    const before = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    before.setLanguageChoice("fa");
+    before.close();
+
+    const after = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    expect(after.getState().languageChoice).toBe("fa");
+    expect(after.getState().resolvedLanguage).toBe("fa");
+    after.close();
+  });
+
+  it("ignores a corrupted/unrecognized persisted language value and falls back to the \"auto\" default", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    adapter.set("language", "not-a-real-choice");
+    const { matchMedia } = fakeMatchMedia(false);
+
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    expect(store.getState().languageChoice).toBe("auto");
+    store.close();
+  });
+});
+
+describe("createSettingsStore — setLanguageChoice", () => {
+  it("setLanguageChoice(\"fa\") updates state and persists through the adapter, without touching Theme fields", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    const { matchMedia } = fakeMatchMedia(true);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setLanguageChoice("fa");
+
+    expect(store.getState()).toEqual({
+      themeChoice: "auto", resolvedTheme: "dark",
+      languageChoice: "fa", resolvedLanguage: "fa",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    expect(adapter.get("language")).toBe("fa");
+    store.close();
+  });
+
+  it("an explicit \"en\"/\"fa\" choice ignores navigator.language entirely", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("fa-IR") });
+
+    store.setLanguageChoice("en");
+
+    expect(store.getState().resolvedLanguage).toBe("en");
+    store.close();
+  });
+
+  it("notifies subscribers on every change", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.setLanguageChoice("fa");
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      themeChoice: "auto", resolvedTheme: "light",
+      languageChoice: "fa", resolvedLanguage: "fa",
+      strictValidation: false, autoRepair: true, dedupeOnImport: true,
+    });
+    store.close();
+  });
+
+  it("resolves navigator.language exactly once, at creation (Language's \"auto\" is first-load-only, unlike Theme's System Sync)", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia, fireSystemChange } = fakeMatchMedia(false);
+    const getNavigatorLanguage = vi.fn(() => "en-US");
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage });
+
+    expect(getNavigatorLanguage).toHaveBeenCalledTimes(1);
+
+    fireSystemChange(true); // an unrelated OS theme change must not re-resolve language
+
+    expect(getNavigatorLanguage).toHaveBeenCalledTimes(1);
+    store.close();
+  });
+});
+
+describe("createSettingsStore — ADR-030 behavioral toggles", () => {
+  it("default to strictValidation=false, autoRepair=true, dedupeOnImport=true with no persisted value", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    const state = store.getState();
+    expect(state.strictValidation).toBe(false);
+    expect(state.autoRepair).toBe(true);
+    expect(state.dedupeOnImport).toBe(true);
+    store.close();
+  });
+
+  it("setStrictValidation(true) updates state and persists through the adapter, without touching other fields", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setStrictValidation(true);
+
+    expect(store.getState().strictValidation).toBe(true);
+    expect(store.getState().autoRepair).toBe(true);
+    expect(adapter.get("strictValidation")).toBe(true);
+    store.close();
+  });
+
+  it("setAutoRepair(false) updates state and persists through the adapter", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setAutoRepair(false);
+
+    expect(store.getState().autoRepair).toBe(false);
+    expect(adapter.get("autoRepair")).toBe(false);
+    store.close();
+  });
+
+  it("setDedupeOnImport(false) updates state and persists through the adapter", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+
+    store.setDedupeOnImport(false);
+
+    expect(store.getState().dedupeOnImport).toBe(false);
+    expect(adapter.get("dedupeOnImport")).toBe(false);
+    store.close();
+  });
+
+  it("reads back previously persisted toggle values on a fresh store instance (browser-restart proof)", () => {
+    const prefix = freshPrefix();
+    const { matchMedia } = fakeMatchMedia(false);
+    const getNavigatorLanguage = fakeNavigatorLanguage("en-US");
+
+    const before = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    before.setStrictValidation(true);
+    before.setAutoRepair(false);
+    before.setDedupeOnImport(false);
+    before.close();
+
+    const after = createSettingsStore({ adapter: createLocalAdapter({ prefix }), matchMedia, getNavigatorLanguage });
+    expect(after.getState().strictValidation).toBe(true);
+    expect(after.getState().autoRepair).toBe(false);
+    expect(after.getState().dedupeOnImport).toBe(false);
+    after.close();
+  });
+
+  it("ignores a corrupted/non-boolean persisted toggle value and falls back to that toggle's own default", () => {
+    const prefix = freshPrefix();
+    const adapter = createLocalAdapter({ prefix });
+    adapter.set("strictValidation", "yes");
+    adapter.set("autoRepair", 1);
+    const { matchMedia } = fakeMatchMedia(false);
+
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    expect(store.getState().strictValidation).toBe(false);
+    expect(store.getState().autoRepair).toBe(true);
+    store.close();
+  });
+
+  it("notifies subscribers on every toggle change", () => {
+    const adapter = createLocalAdapter({ prefix: freshPrefix() });
+    const { matchMedia } = fakeMatchMedia(false);
+    const store = createSettingsStore({ adapter, matchMedia, getNavigatorLanguage: fakeNavigatorLanguage("en-US") });
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.setStrictValidation(true);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ strictValidation: true }));
+    store.close();
+  });
+});

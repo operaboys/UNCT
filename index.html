@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UNCT — Universal Network Config Toolkit</title>
+  <link rel="icon" type="image/png" href="assets/icons/unct-icon.png" />
+  <link rel="stylesheet" href="assets/css/theme.css" />
+  <script>
+    /* Pre-paint theme resolution -- runs synchronously before the first
+       paint so <html data-theme> is never absent for a frame (theme.css's
+       var(--unct-*) tokens only exist under `:root[data-theme=...]`; the
+       previous fix -- setting the attribute in ui/main.tsx's useEffect --
+       runs AFTER React/Preact's first paint, so that frame briefly rendered
+       with every var() invalid, i.e. the Splash's own background went
+       transparent and the mounted Dashboard showed through it for an
+       instant). Mirrors core/store/settings-state.js's STORAGE_KEY
+       ("theme"), isThemeChoice(), and resolveTheme() exactly on purpose --
+       if that logic ever changes, update this block to match (that file's
+       own comment points back here). ui/main.tsx's useEffect still runs
+       afterward and stays the source of truth for live "auto" OS-sync;
+       this script only ever needs to get the FIRST frame right. */
+    (function () {
+      try {
+        var raw = localStorage.getItem("unct:theme");
+        var choice = raw ? JSON.parse(raw) : "auto";
+        if (choice !== "dark" && choice !== "light" && choice !== "auto") choice = "auto";
+        var resolved = choice === "auto"
+          ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+          : choice;
+        document.documentElement.dataset.theme = resolved;
+      } catch (e) {
+        document.documentElement.dataset.theme = "dark";
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

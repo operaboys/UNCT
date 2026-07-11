@@ -1,0 +1,506 @@
+/**
+ * Selectors over `ParserState` — the only sanctioned way UI reads node data
+ * (ANTI_CHAOS Rule 11's Selector Pattern boundary). Each selector is a small,
+ * pure function returning a ready View Model; none compute a new score or
+ * validity here — sorting/filtering on a value already computed by
+ * Validation/Analyzer is display, not Core logic, so it is allowed in this
+ * boundary layer. Computing a NEW score/validity belongs in
+ * `core/validator/`/`core/analyzer/`, never here.
+ *
+ * Memoizing a selector's result across renders (Render Optimization Rules,
+ * spec 13) is the `ui/store/` Preact bridge's job, not this file's — these
+ * functions stay plain and framework-agnostic.
+ *
+ * @typedef {import("../types/unm").UNMNode} UNMNode
+ * @typedef {import("../types/unm").Protocol} Protocol
+ * @typedef {import("./parser-state").ParserState} ParserState
+ * @typedef {import("./analyzer-state").AnalyzerState} AnalyzerState
+ * @typedef {import("./template-state").TemplateState} TemplateState
+ * @typedef {import("../analyzer/analyze-node.js").AnalysisBundle} AnalysisBundle
+ * @typedef {import("../types/errors").ErrorSeverity} ErrorSeverity
+ * @typedef {import("../analyzer/types").SubscriptionSummary} SubscriptionSummary
+ */
+import { isValidIPv4, isValidIPv6 } from "../validator/validators.js";
+import { normalizeText } from "../i18n/normalize.js";
+import { getErrorDef, compareSeverity } from "../errors/index.js";
+import { analyzeSubscription, duplicateKey } from "../analyzer/extended/subscription-analyzer.js";
+
+/**
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectAllNodes(state) {
+  return state.nodes;
+}
+
+/**
+ * @param {TemplateState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectAllTemplates(state) {
+  return state.templates;
+}
+
+/**
+ * @param {ParserState} state
+ * @param {string} nodeId
+ * @returns {UNMNode | undefined}
+ */
+export function selectNodeById(state, nodeId) {
+  return state.nodes.find((n) => n.nodeId === nodeId);
+}
+
+/**
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectValidNodeIds(state) {
+  return state.nodes.filter((n) => n.validation.overallValid).map((n) => n.nodeId);
+}
+
+/**
+ * Sorted by `analysis.securityScore` (Analyzer-computed, ADR-011), highest
+ * first. Nodes the Analyzer has not yet scored (`analysis` absent) sort
+ * last, not first — an unscored node is not implied to be insecure.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesSortedBySecurity(state) {
+  return [...state.nodes].sort((a, b) => {
+    const scoreA = a.analysis?.securityScore;
+    const scoreB = b.analysis?.securityScore;
+    if (scoreA === undefined && scoreB === undefined) return 0;
+    if (scoreA === undefined) return 1;
+    if (scoreB === undefined) return -1;
+    return scoreB - scoreA;
+  });
+}
+
+/**
+ * Count nodes per `protocol` (Converter Screen's Parser Preview "Protocol
+ * Count", doc 07 §4.2) — a tally of an already-set field, not a new
+ * classification.
+ * @param {ParserState} state
+ * @returns {Readonly<Record<string, number>>}
+ */
+export function selectProtocolCounts(state) {
+  /** @type {Record<string, number>} */
+  const counts = {};
+  for (const n of state.nodes) {
+    counts[n.protocol] = (counts[n.protocol] || 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Flatten `metadata.warnings` across every node (Parser Preview "Warnings",
+ * doc 07 §4.2) — concatenation of values the Parser already produced.
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedWarnings(state) {
+  return state.nodes.flatMap((n) => n.metadata.warnings);
+}
+
+/**
+ * Flatten `metadata.errors` across every node (Parser Preview "Errors",
+ * doc 07 §4.2).
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedErrors(state) {
+  return state.nodes.flatMap((n) => n.metadata.errors);
+}
+
+/**
+ * Flatten `metadata.recoveryActions` across every node (Converter Screen's
+ * "Recovery Actions" section, doc 07 §4.2 — "این اطلاعات از قبل در
+ * metadata.recoveryActions وجود دارد؛ این بخش فقط نمایش آن در UI است").
+ * @param {ParserState} state
+ * @returns {readonly string[]}
+ */
+export function selectAggregatedRecoveryActions(state) {
+  return state.nodes.flatMap((n) => n.metadata.recoveryActions);
+}
+
+/**
+ * Look up one node's Analyzer verdict bundle (Analyzer Screen, doc 07 §4.3)
+ * from `AnalyzerState` — a separate domain store from `ParserState`, see
+ * `core/store/analyzer-state.js` for why the bundle is not on `node.analysis`.
+ * @param {AnalyzerState} state
+ * @param {string} nodeId
+ * @returns {AnalysisBundle | undefined}
+ */
+export function selectAnalysisByNodeId(state, nodeId) {
+  return state.analysisByNodeId[nodeId];
+}
+
+/**
+ * Sort nodes by recency, most recent first (Dashboard's "Recent Imports",
+ * doc 07 §4.1). `createdAt` is always internally generated by `createNode`
+ * (Rule 4, ISO 8601, lexicographically sortable as-is) — never user input —
+ * so this only orders an already-trustworthy value, it does not derive one.
+ * Scoped to the CURRENT session's nodes: no Phase 9 screen writes to the
+ * durable `core/storage/` yet, so there is no cross-session import history
+ * to sort here.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesSortedByCreatedAt(state) {
+  return [...state.nodes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/**
+ * Average `security.securityScore` across every node the Analyzer has
+ * scored so far (Dashboard's "Health Overview", doc 07 §4.1). `null` when
+ * nothing has been analyzed yet — never fabricated as 0 (Rule 9).
+ * @param {AnalyzerState} state
+ * @returns {number | null}
+ */
+export function selectAverageSecurityScore(state) {
+  const scores = Object.values(state.analysisByNodeId).map((a) => a.security.securityScore);
+  if (scores.length === 0) return null;
+  return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+}
+
+/**
+ * Full-text search across the identity fields every node always has, plus
+ * `remark` (Subscription Center's "Search Nodes", doc 07 §4.4 / doc 03
+ * §2.1) — several parsers (url/singbox/clash/xray `normalize.js`) populate
+ * `remark` from `ps=`/`tag`/`name` today, unlike `group`/`tags` (spec 05
+ * §2), which no parser populates yet and would always miss. Case-insensitive
+ * substring match; a blank query returns every node, not none.
+ *
+ * The query is run through `normalizeText` (same digit/letter normalization
+ * the Parser Factory applies to raw input, `core/i18n/normalize.js`) before
+ * comparison: a node's `remark` already passed through that normalization at
+ * parse time (the whole raw config is normalized before extraction), but the
+ * query is typed live and never goes through that pipeline — without this, a
+ * user search typed with an Arabic-letterform keyboard (e.g. "ي" for "ی")
+ * would miss matches against already-normalized Persian text.
+ * @param {ParserState} state
+ * @param {string} query
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesMatchingSearch(state, query) {
+  const q = normalizeText(query).trim().toLowerCase();
+  if (q === "") return state.nodes;
+  return state.nodes.filter(
+    (n) =>
+      n.protocol.toLowerCase().includes(q) ||
+      n.address.toLowerCase().includes(q) ||
+      String(n.port).includes(q) ||
+      (typeof n.remark === "string" && n.remark.toLowerCase().includes(q)),
+  );
+}
+
+/**
+ * Narrow to one protocol (Subscription Center's "Filter", doc 07 §4.4).
+ * `"all"` is the no-op case, returning every node.
+ * @param {ParserState} state
+ * @param {Protocol | "all"} protocol
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesFilteredByProtocol(state, protocol) {
+  if (protocol === "all") return state.nodes;
+  return state.nodes.filter((n) => n.protocol === protocol);
+}
+
+/**
+ * Narrow by the Validation Engine's `overallValid` verdict (Subscription
+ * Center's "Filter", doc 07 §4.4). `"all"` is the no-op case.
+ * @param {ParserState} state
+ * @param {"valid" | "invalid" | "all"} validity
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesFilteredByValidity(state, validity) {
+  if (validity === "all") return state.nodes;
+  const wantValid = validity === "valid";
+  return state.nodes.filter((n) => n.validation.overallValid === wantValid);
+}
+
+/**
+ * Generic ascending/descending sort over one of the few fields every node
+ * always has (Subscription Center's "Sort", doc 07 §4.4) — the same
+ * reorder-only boundary as `selectNodesSortedByCreatedAt`/
+ * `selectNodesSortedBySecurity` above, just parameterized over field and
+ * direction instead of one fixed field.
+ * @param {ParserState} state
+ * @param {"protocol" | "address" | "port" | "createdAt"} field
+ * @param {"asc" | "desc"} direction
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesSortedByField(state, field, direction) {
+  const sign = direction === "asc" ? 1 : -1;
+  return [...state.nodes].sort((a, b) => {
+    const va = a[field];
+    const vb = b[field];
+    if (va < vb) return -1 * sign;
+    if (va > vb) return 1 * sign;
+    return 0;
+  });
+}
+
+/**
+ * Group nodes by `protocol` (Subscription Center's "Group", doc 07 §4.4) —
+ * the only grouping field every node reliably has today; `group` (spec 05
+ * §2) exists on UNMNode but no parser populates it yet, so grouping by it
+ * would always collapse to a single bucket.
+ * @param {ParserState} state
+ * @returns {Readonly<Record<string, readonly UNMNode[]>>}
+ */
+export function selectNodesGroupedByProtocol(state) {
+  /** @type {Record<string, UNMNode[]>} */
+  const groups = {};
+  for (const n of state.nodes) {
+    (groups[n.protocol] ??= []).push(n);
+  }
+  return groups;
+}
+
+/**
+ * Nodes carrying a `uuid` (Extractor Screen's "UUID Extractor", doc 07 §4.5 /
+ * doc 03 §3 "Extract UUID") — `uuid` is only meaningful for vless/vmess
+ * (`UUID_PROTOCOLS`, core/unm/schema/enums.js), but this selector just
+ * surfaces whatever the field already holds, it does not judge plausibility
+ * (that is the Validation Engine's `uuidValid`, already a separate field).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithUuid(state) {
+  return state.nodes.filter((n) => Boolean(n.uuid));
+}
+
+/**
+ * Nodes whose `address` is a literal IP (v4 or v6) — Extractor Screen's "IP
+ * Extractor" (doc 07 §4.5 / doc 03 §3 "Extract IPs"). Reuses the Validation
+ * Engine's own `isValidIPv4`/`isValidIPv6` (core/validator/validators.js)
+ * rather than re-deriving IP-shape detection — this is a classification of
+ * an already-set field's shape, not a new validity judgment.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithIpAddress(state) {
+  return state.nodes.filter((n) => isValidIPv4(n.address) || isValidIPv6(n.address));
+}
+
+/**
+ * Nodes whose `address` is NOT a literal IP — Extractor Screen's "Domain
+ * Extractor" (doc 07 §4.5 / doc 03 §3 "Extract Domains"), the complement of
+ * {@link selectNodesWithIpAddress}.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithDomainAddress(state) {
+  return state.nodes.filter((n) => !isValidIPv4(n.address) && !isValidIPv6(n.address));
+}
+
+/**
+ * Nodes using Reality (`security === "reality"`) — Extractor Screen's
+ * "Reality Extractor" (doc 07 §4.5), surfacing the raw `pbk`/`sid` UNM
+ * fields every such node already carries. This is narrower than doc 03
+ * §3's "Extract Reality Keys" (listed there under "Advanced Extraction —
+ * نیمه‌قطعی", i.e. Phase 10-dependent) — it does not attempt that deeper,
+ * not-yet-built feature, only this already-real field lookup. The Reality
+ * Analyzer's plausibility verdict (`pbkPlausible`/`sidPlausible`, Phase 6,
+ * frozen) is a separate `AnalyzerState` lookup the UI composes alongside
+ * this, the same way the Analyzer Screen's Reality Analysis section does.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithReality(state) {
+  return state.nodes.filter((n) => n.security === "reality");
+}
+
+/**
+ * Nodes carrying a `password` and/or `method` (Extractor Screen's
+ * "Credentials Extractor") — real UNM auth fields for Shadowsocks (both),
+ * Trojan/Hysteria2 (`password` only). Never extracted as its own panel
+ * before this checkpoint (P12-12): the Extractor Screen's original six
+ * panels classify address/uuid shape, not authentication fields. This is
+ * the same Rule 11 boundary as {@link selectNodesWithUuid} — presence
+ * classification only, no new validity judgment (that stays `validation`'s).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithCredentials(state) {
+  return state.nodes.filter((n) => Boolean(n.password) || Boolean(n.method));
+}
+
+/**
+ * Nodes carrying a `host` and/or `path` (Extractor Screen's "Transport
+ * Extractor") — the WS/gRPC/HTTPUpgrade Header-Host and URL-path UNM
+ * fields, populated by all six core parsers (verified via grep before
+ * adding) whenever the source config uses one of those transports. Distinct
+ * from the Worker Extractor's `pathSegments` (a Worker-detection-specific
+ * decomposition of a URL that already looked like a Worker) — this
+ * surfaces the raw transport fields for every node that has them,
+ * regardless of whether Worker detection ever runs.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithTransportPath(state) {
+  return state.nodes.filter((n) => Boolean(n.host) || Boolean(n.path));
+}
+
+/**
+ * Nodes carrying an `alpn` list and/or a `fingerprint` (Extractor Screen's
+ * "TLS Fingerprint Extractor") — the uTLS/ALPN evasion fields real Xray/
+ * Sing-box/Clash TLS or Reality configs set to mimic a real browser's TLS
+ * handshake. Independent of the Reality Extractor (`pbk`/`sid`): a node can
+ * carry `fingerprint`/`alpn` under plain `security: "tls"` with no Reality
+ * involved at all, so this is not a subset/superset of that panel.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithTlsFingerprint(state) {
+  return state.nodes.filter((n) => (Array.isArray(n.alpn) && n.alpn.length > 0) || Boolean(n.fingerprint));
+}
+
+/**
+ * Nodes carrying a `flow` (Extractor Screen's "Flow Extractor") — VLESS's
+ * flow-control field (e.g. `xtls-rprx-vision`), populated by all six core
+ * parsers (verified via grep). Often paired with Reality but not always
+ * (flow is valid under plain TLS too), so this is a genuinely independent
+ * field lookup, not a re-display of the Reality Extractor's data.
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectNodesWithFlow(state) {
+  return state.nodes.filter((n) => Boolean(n.flow));
+}
+
+/**
+ * Parser Logs — Developer Console's "Parser Logs" section (doc 07 §4.7).
+ * A read-only log view over fields the Parser already wrote onto every
+ * node (`metadata.parser`, `sourceType`, `createdAt`) — no new Core logic,
+ * just a per-node projection of already-real data.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, parser: string, sourceType: string, createdAt: string }[]}
+ */
+export function selectParserLog(state) {
+  return state.nodes.map((n) => ({
+    nodeId: n.nodeId,
+    parser: n.metadata.parser,
+    sourceType: n.sourceType,
+    createdAt: n.createdAt,
+  }));
+}
+
+/**
+ * Detection Logs / Detection Metadata Viewer — Developer Console (doc 07
+ * §4.7), surfacing 04-PARSER_ENGINE Stage 02's "Detection Metadata": both
+ * halves of the same section, the winning parser's Confidence Score
+ * (`metadata.confidence`) AND the "Alternative Candidates" that also
+ * cleared the threshold but weren't picked (`metadata.alternativeCandidates`,
+ * ADR-028). One selector rather than two separate ones — both fields are
+ * per-node facts about the exact same "how was this node's format detected"
+ * question, read from the same node loop, so splitting them into a second
+ * selector would just duplicate the iteration for no real separation of
+ * concerns. Falls back to `[]` for nodes with no `alternativeCandidates`
+ * (Custom Parser plugin nodes never went through `parseWithFallback`'s
+ * ranking at all — absent, not a fabricated empty detection run).
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, parser: string, confidence: number, alternativeCandidates: readonly { name: string, confidence: number }[] }[]}
+ */
+export function selectDetectionLog(state) {
+  return state.nodes.map((n) => ({
+    nodeId: n.nodeId,
+    parser: n.metadata.parser,
+    confidence: n.metadata.confidence,
+    alternativeCandidates: n.metadata.alternativeCandidates ?? [],
+  }));
+}
+
+/**
+ * Validation Logs — Developer Console (doc 07 §4.7). Flattens every node's
+ * `ValidationObject` down to its genuine per-field FAILURES: a `null` flag
+ * means "not applicable to this protocol" (neutral, spec 05 §5), not a
+ * failure, and `overallValid` is itself a derived aggregate of the other
+ * fields rather than a separate field check — both are excluded, leaving
+ * only entries that are actually `=== false`.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, field: string }[]}
+ */
+export function selectValidationFailureLog(state) {
+  /** @type {{ nodeId: string, field: string }[]} */
+  const failures = [];
+  for (const n of state.nodes) {
+    for (const [field, value] of Object.entries(n.validation)) {
+      if (field === "overallValid") continue;
+      if (value === false) failures.push({ nodeId: n.nodeId, field });
+    }
+  }
+  return failures;
+}
+
+/**
+ * Diagnostics Log — Developer Console (doc 07 §4.7), sorted most-severe-first
+ * via the Error Code Registry's own `compareSeverity` (core/errors/). Every
+ * `metadata.warnings`/`metadata.errors` line is already written by its
+ * producer (Validation Engine's `apply-validation.js`, every parser's
+ * `recover.js`) as `"CODE: message"`; the CODE prefix is the registry's own
+ * error code, so the real severity is recovered via `getErrorDef` rather
+ * than re-derived or guessed. Lines that do not start with a registered code
+ * (none today, but a defensive boundary) are skipped rather than guessed at.
+ * @param {ParserState} state
+ * @returns {readonly { nodeId: string, code: string, severity: ErrorSeverity, message: string }[]}
+ */
+export function selectDiagnosticsSortedBySeverity(state) {
+  /** @type {{ nodeId: string, code: string, severity: ErrorSeverity, message: string }[]} */
+  const entries = [];
+  for (const n of state.nodes) {
+    for (const line of [...n.metadata.errors, ...n.metadata.warnings]) {
+      const separator = line.indexOf(": ");
+      if (separator === -1) continue;
+      const code = line.slice(0, separator);
+      const def = getErrorDef(code);
+      if (!def) continue;
+      entries.push({ nodeId: n.nodeId, code, severity: def.severity, message: line.slice(separator + 2) });
+    }
+  }
+  return entries.sort((a, b) => compareSeverity(b.severity, a.severity));
+}
+
+/**
+ * Subscription Center's Summary Panel (06-ANALYZER_ENGINE §2.5, Phase 10) —
+ * the one selector here that reads BOTH domain stores: `ParserState` (the
+ * node collection) and `AnalyzerState` (security scores — see
+ * `core/store/analyzer-state.js` for why those live separately from
+ * `node.analysis`). Unlike every selector above, the actual aggregation
+ * (duplicate grouping, ranking) is NOT computed here — that is Core analysis
+ * logic and belongs in `core/analyzer/extended/subscription-analyzer.js`
+ * (§2.5's own boundary: a whole-collection Analyzer module, not a per-node
+ * one). This selector only joins the two stores and forwards to it.
+ * @param {ParserState} state
+ * @param {AnalyzerState} [analyzerState]
+ * @returns {SubscriptionSummary}
+ */
+export function selectSubscriptionSummary(state, analyzerState = { analysisByNodeId: {} }) {
+  return analyzeSubscription(state.nodes, analyzerState.analysisByNodeId);
+}
+
+/**
+ * Deduplicate Nodes (doc 03 §2.2) — a pure FILTER, not a new judgment
+ * (Rule 11): keeps exactly one node per `duplicateKey` group, reusing the
+ * exact same identity criterion `selectSubscriptionSummary`'s
+ * `duplicateNodeCount` already reports (`core/analyzer/extended/
+ * subscription-analyzer.js`), so "how many are duplicates" and "which ones
+ * get removed" can never drift apart. Within a group, keeps the node with
+ * the EARLIEST `createdAt` (first imported) — ties broken by whichever was
+ * encountered first in `state.nodes`. Output preserves the original
+ * relative order of `state.nodes` (a filter, not a re-sort).
+ * @param {ParserState} state
+ * @returns {readonly UNMNode[]}
+ */
+export function selectDeduplicatedNodes(state) {
+  /** @type {Map<string, UNMNode>} */
+  const bestByKey = new Map();
+  for (const n of state.nodes) {
+    const key = duplicateKey(n);
+    const current = bestByKey.get(key);
+    if (!current || n.createdAt < current.createdAt) bestByKey.set(key, n);
+  }
+  const keepIds = new Set([...bestByKey.values()].map((n) => n.nodeId));
+  return state.nodes.filter((n) => keepIds.has(n.nodeId));
+}

@@ -1,4 +1,4 @@
-# MASTER BLUEPRINT v1.2
+# MASTER BLUEPRINT v1.3
 
 **Universal Network Config Toolkit (UNCT)**
 
@@ -6,7 +6,7 @@
 |---|---|
 | **Project Codename** | UNCT |
 | **Status** | LOCKED (Core Vision) |
-| **Version History** | v1.0 → v1.1 (Dev Sequence Added) → v1.2 (Reformatted, No Scope Change) |
+| **Version History** | v1.0 → v1.1 (Dev Sequence Added) → v1.2 (Reformatted, No Scope Change) → v1.3 (ADR-024: Offline First refined to allow Opt-In network features) |
 
 ---
 
@@ -23,7 +23,12 @@
 
 - Zero Backend
 - Privacy First
-- Offline First
+- **Offline First (Core Pipeline) — Optional Online Features (Opt-In, User-Initiated):**
+  زنجیره‌ی اصلی پردازش (Parser→UNM→Analyzer→Converter) همیشه و بدون استثنا آفلاین است.
+  قابلیت‌های جانبی و اختیاری که نیاز به اتصال شبکه دارند (مثل Latency Test) مجازند، به‌شرط
+  آنکه: (۱) فقط با اقدام صریح کاربر (کلیک) فعال شوند، نه خودکار؛ (۲) هرگز داده‌ی Credential
+  (uuid, password, کلیدها) ارسال نکنند؛ (۳) در `core/network/` — معماری مجزا از Pipeline
+  اصلی — قرار گیرند. *(تغییر از مطلق به «پیش‌فرض با استثنای صریح» — ADR-024)*
 - Mobile First
 - Parser Driven Architecture
 - Modular Design
@@ -92,6 +97,14 @@
 - Traffic Forwarder
 - Packet Sniffer
 - Real-Time Connection Engine
+
+> **یادداشت تفسیری (ADR-024):** یک تست یک‌باره و کاربر-محور مثل «Latency Check» (فقط
+> address+port، بدون Credential، فقط با کلیک صریح کاربر) با موارد بالا **یک چیز نیست**.
+> تفاوت اساسی اینجاست: ابزارهای Non-Goal بالا اتصال را *برقرار و نگه می‌دارند* تا ترافیک را
+> از طریق آن هدایت کنند. یک Latency Check صرفاً یک اتصال TCP/ICMP لحظه‌ای با کاربر-initiate
+> انجام می‌دهد تا یک عدد ms برگرداند — مثل صدها ابزار ping/check آنلاین موجود. این پروژه
+> هرگز یک Proxy Client یا Tunnel Software نمی‌شود؛ ولی یک دکمه‌ی «Test Latency» در
+> محدوده‌ی قابلیت‌های مجاز (ADR-024) است.
 
 ---
 

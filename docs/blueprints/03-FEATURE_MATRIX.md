@@ -114,11 +114,18 @@
 - Sing-box Route Inspector
 - Template Builder
 - Subscription Builder
-- Visual Topology Mapper
-- **Extractor Level System** *(جدید — بازبینی نهایی)*: تفکیک رسمی Extractorها به سطح Basic/Advanced/Deep با امکان انتخاب توسط کاربر — فعلاً بدون نیاز واقعی، چون «Extract Metadata» (بخش ۳) و Individual Extractorها روی فیلدهای متفاوتی کار می‌کنند و تداخلی ندارند. اگر تعداد Extractorها در آینده زیاد شد، این ایده بررسی می‌شود.
-- **Plugin Extensions / Future Plugins** *(اصلاح‌شده — پیشنهاد بازبینی)*
+- ~~Visual Topology Mapper~~ *(بازبینی P12-11 — حذف کامل، بند زیر)*
+- **Extractor Level System** *(بازبینی P12-12 — عدد دقیق جایگزین جمله‌ی کلی قبلی شد)*: تفکیک رسمی Extractorها به سطح Basic/Advanced/Deep با امکان انتخاب توسط کاربر.
 
-> ⚠️ **رفع تناقض:** نسخه‌ی قبلی این سند، «Plugin System» را در Backlog قرار داده بود، در حالی که در `09-DEVELOPMENT_ROADMAP` (Phase 11) به‌عنوان یک فاز رسمی با Spec وجود دارد — این دو با هم در تناقض بودند. اصلاح: **هسته‌ی Plugin System** (Plugin Loader, Plugin Registry, Custom Parser/Export API) دیگر Backlog نیست و فقط در سند 09 پیگیری می‌شود. آنچه واقعاً Backlog و بدون Spec است، **پلاگین‌های واقعی آینده** (مثلاً یک پلاگین خاص برای یک پروتکل جدید) است که اینجا ثبت شده.
+> ⚠️ **بازبینی P12-12 (شمارش واقعی):** شمارش مستقیم `ui/extractor/extractor-screen.tsx` (doc 07 §4.5) نشان می‌دهد **۴ Extractor کاملاً فعال** وجود دارد (UUID, IP, Domain, Reality) به‌علاوه **۲ Placeholder غیرفعال** (Worker, DNS — که Analyzerهای زیرینشان `core/analyzer/extended/worker-analyzer.js` و `dns-analyzer.js` ساخته شده‌اند ولی خودِ بخش Extractor Screen فعال نشده یا اصلاً به AnalysisBundle وصل نشده است). یعنی **۴ از ۶ کل**. هیچ Extractor مجزایی هم برای Password/SNI/Paths/Ports/Metadata عمومی (بالا، بخش ۳) هرگز ساخته نشده. با آستانه‌ی پیشنهادی ۸ تا ۱۰ Extractor مجزا، فاصله‌ی زیادی باقی است — **این آیتم Blocked می‌ماند** تا این عدد به آستانه برسد. جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX` بخش «P12-12».
+
+> ⚠️ **بازبینی P12-11 (گروه Visualization — حذف چهار مورد، ساخت یک مورد):** ULTIMATE_BLUEPRINT_INDEX این آیتم را به ۵ فیچر (Visual Topology Mapper, Node Relationship Map, Subscription Visualizer, Cloudflare Topology View, Reality Visualizer) گسترش داده بود. بررسی داده‌ی واقعی موجود در UNM/AnalysisBundle نشان داد: چهار مورد اول (شامل Visual Topology Mapper بالا) هیچ داده‌ی چندموجودیتی/رابطه‌ای واقعی ندارند (نه یک فیلد کم است، بلکه خودِ مفهوم رابطه/توپولوژی در معماری فعلی UNM بی‌معناست) — **به‌طور کامل از Backlog حذف شدند**، نه فقط Blocked. تنها Subscription Visualizer با داده‌ی واقعی `SubscriptionSummary.protocolDistribution` قابل‌ساخت بود و **ساخته شد** (`ui/subscription/chart.ts`, بدون Chart Library — `docs/adr/ADR-026-VISUALIZATION-GROUP-NO-CHART-LIBRARY.md`). جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX` بخش «P12-11».
+- **Plugin Extensions / Future Plugins** *(اصلاح‌شده — پیشنهاد بازبینی)*
+- **Custom Parser API / Custom Export API (عمومی/مستندشده)** *(بازبینی P12-13 — بند زیر)*
+
+> ⚠️ **رفع تناقض:** نسخه‌ی قبلی این سند، «Plugin System» را در Backlog قرار داده بود، در حالی که در `09-DEVELOPMENT_ROADMAP` (Phase 11) به‌عنوان یک فاز رسمی با Spec وجود دارد — این دو با هم در تناقض بودند. اصلاح: **هسته‌ی Plugin System** (Plugin Loader, Plugin Registry, Exporter Contract Checker) دیگر Backlog نیست و در Phase 11 با ADR-020 ساخته و تست شده. آنچه واقعاً Backlog و بدون Spec است، **پلاگین‌های واقعی آینده** (مثلاً یک پلاگین خاص برای یک پروتکل جدید) است که اینجا ثبت شده.
+
+> ⚠️ **اصلاح روی اصلاح (P12-13 — تصحیح ادعای نسخه‌ی قبلی):** جمله‌ی بالا («Custom Parser/Export API دیگر Backlog نیست») ادعایی بیش از واقعیت بود — مکانیزم زیرین (Loader/Registry) ساخته شده، ولی هیچ **API عمومی/مستندشده‌ای** روی آن استخراج نشده، چون از پایان Phase 11 تا امروز **هیچ Plugin واقعی نوشته نشده** (تنها نمونه، `plugins/example-parser/`, صراحتاً «EXAMPLE/TEST-ONLY, not production» است و روی یک فرمت خیالی کار می‌کند؛ هیچ صفحه‌ای در `ui/` حتی خودِ Loader/Registry را صدا نمی‌زند). بنابراین این دو مورد از فهرست «دیگر Backlog نیست» جدا و دوباره Blocked اعلام می‌شوند — با شرط دقیق (نه ابهام): تا نوشته‌شدن حداقل دو Custom Parser واقعی (فرمت‌های Community/کمتر رایج هم قابل‌قبول‌اند) یا یک Custom Exporter واقعی، که تنها بعد از آن الگوهای واقعی (نه فرضی) به یک API عمومی تبدیل می‌شوند. جزئیات کامل در `ULTIMATE_BLUEPRINT_INDEX` بخش «P12-13».
 
 ---
 
@@ -126,7 +133,10 @@
 
 | Field | Value |
 |---|---|
-| نسخه | v1.3 |
+| نسخه | v1.6 |
+| اصلاحات نسبت به v1.5 | (P12-11) گروه Visualization بررسی و ۴ از ۵ فیچر (بدون داده‌ی واقعی چندموجودیتی) کامل از Backlog حذف شدند؛ Subscription Visualizer با داده‌ی موجود ساخته شد، بدون Chart Library (ADR-026) |
+| اصلاحات نسبت به v1.4 | (P12-12) شمارش دقیق Extractorهای واقعی (۴ فعال از ۶ کل) جایگزین جمله‌ی کلی «اگر تعداد زیاد شد» شد — همچنان Blocked تا رسیدن به آستانه‌ی ۸-۱۰ |
+| اصلاحات نسبت به v1.3 | (P12-13) تصحیح ادعای نسخه‌ی v1.1 درباره‌ی Custom Parser/Export API: مکانیزم زیرین (Loader/Registry) ساخته شده، اما API عمومی هنوز Blocked است تا حداقل دو Plugin واقعی نوشته شود — Template Builder/Subscription Builder به «تکمیل‌شده» علامت خوردند (P12-8/P12-9) |
 | اصلاحات نسبت به v1.2 | (بازبینی نهایی) افزودن ایده‌ی Extractor Level System به Backlog — بدون تداخل واقعی با ساختار فعلی، فقط برای آینده ثبت شد |
 | اصلاحات نسبت به v1.1 | (بر اساس بازبینی مهدی) افزودن Subscription Validation، Extract Metadata، Performance Monitor؛ رفع تناقض Plugin System بین این سند و Roadmap |
 | سند بعدی | `04-BLUEPRINT_PARSER_ENGINE` |
