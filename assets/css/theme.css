@@ -2028,3 +2028,243 @@ code, kbd, samp, .mono {
     box-shadow: inset 0 1px 0 var(--unct-pill-hi);
   }
 }
+
+/* =======================================================================
+ * User Guide modal (Settings screen, `ui/settings/user-guide-modal.tsx`) —
+ * the app's first true modal dialog (the mobile "More" sheet above has no
+ * focus-trap/Escape/`role="dialog"`, so it wasn't a full precedent). Uses
+ * the same glass recipe as `.more-sheet` (strongest blur in the file, since
+ * this sits above everything else at z-index 200 > splash's 100) but is
+ * centered and desktop-sized rather than a mobile-only bottom sheet.
+ * The entrance transition is opt-in via `@media (prefers-reduced-motion:
+ * no-preference)` only — with no matching rule at all, a user who prefers
+ * reduced motion (or a browser with no support for the query) simply gets
+ * the dialog appearing with no animation, which is the correct default.
+ * ===================================================================== */
+.guide-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(6, 8, 18, 0.55);
+  border: none;
+  padding: 0;
+}
+.guide-modal {
+  /* `inset-inline-start: 50%` (logical) already flips to the right edge
+     under RTL, but `transform: translateX()`'s sign is physical, not
+     logical -- this custom property is the one piece that must flip with
+     it (used identically by both the static rule below and the
+     `guideModalIn` keyframe, so the entrance animation can't settle at the
+     wrong X offset in RTL the way two independently-hardcoded `-50%`/`50%`
+     values would). */
+  --guide-modal-tx: -50%;
+  position: fixed;
+  z-index: 201;
+  inset-block-start: 5vh;
+  inset-inline-start: 50%;
+  transform: translateX(var(--guide-modal-tx));
+  width: min(880px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  background: var(--unct-glass);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  border: 1px solid var(--unct-glass-bd);
+  box-shadow: inset 0 1px 0 var(--unct-glass-hi), 0 30px 80px rgba(0, 0, 0, 0.5);
+  padding: 26px 28px 34px;
+}
+:root[dir="rtl"] .guide-modal {
+  --guide-modal-tx: 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .guide-modal {
+    animation: guideModalIn 0.22s ease-out;
+  }
+}
+@keyframes guideModalIn {
+  0% { opacity: 0; transform: translateX(var(--guide-modal-tx)) translateY(10px); }
+  100% { opacity: 1; transform: translateX(var(--guide-modal-tx)) translateY(0); }
+}
+.guide-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block-end: 16px;
+  border-bottom: 1px solid var(--unct-glass2-bd);
+  margin-block-end: 18px;
+}
+.guide-modal__title {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text);
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+.guide-modal__close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--unct-glass-bd);
+  background: var(--unct-glass2);
+  color: var(--unct-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.guide-modal__close:hover {
+  color: var(--unct-text);
+}
+.guide-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-end: 22px;
+}
+.guide-toc__link {
+  position: relative;
+  z-index: 1;
+  border-radius: 99px;
+  padding: 7px 14px;
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass2-bd);
+  color: var(--unct-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.guide-toc__link:hover {
+  color: var(--unct-text);
+}
+.guide-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.guide-section__title {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text);
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+.guide-section__text {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+.guide-callout {
+  border-radius: 16px;
+  background: var(--unct-acc-soft);
+  border: 1px solid var(--unct-acc-bd);
+  padding: 14px 18px;
+}
+.guide-callout__title {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-acc-txt);
+  font-size: 13px;
+  font-weight: 800;
+  margin-block-end: 4px;
+}
+.guide-callout__text {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+  margin: 0;
+}
+.guide-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+.guide-step {
+  border-radius: 14px;
+  background: var(--unct-glass2);
+  border: 1px solid var(--unct-glass2-bd);
+  padding: 14px 18px;
+}
+.guide-step__title {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-block-end: 4px;
+}
+.guide-step__desc {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+.guide-screen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-screen-card__shot {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--unct-glass2-bd);
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 10;
+  background: var(--unct-glass2);
+}
+.guide-screen-card__title {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.guide-screen-card__desc {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+.guide-screen-card__when {
+  position: relative;
+  z-index: 1;
+  color: var(--unct-acc-txt);
+  font-size: 11.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+.guide-limitations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding-inline-start: 20px;
+  color: var(--unct-text-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .guide-modal {
+    inset-block-start: 2vh;
+    width: 96vw;
+    max-height: 96vh;
+    padding: 20px 16px 26px;
+  }
+}

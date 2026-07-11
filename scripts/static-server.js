@@ -20,6 +20,7 @@ const MIME_TYPES = {
   ".css": "text/css",
   ".json": "application/json",
   ".map": "application/json",
+  ".png": "image/png",
 };
 
 const server = createServer(async (req, res) => {
